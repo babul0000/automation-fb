@@ -11,3 +11,5 @@ services:
         value: production
       - key: PORT
         value: 3000
+      - key: CRON_SCHEDULE
+        value: "30 9 * * *"
