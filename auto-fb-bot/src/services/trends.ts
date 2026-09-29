@@ -7,6 +7,7 @@ import { getLearningFeedbackPrompt } from './learning';
 export interface DiscoveredTopic {
   title: string;
   category: string;
+  source?: string;
   utilityScore: number;
   recencyScore: number;
   shareabilityScore: number;
@@ -41,28 +42,39 @@ export function calculateTopicScore(utility: number, recency: number, shareabili
 }
 
 /**
- * Discovers and ranks trending topics using Gemini AI with autonomous deduplication
+ * Discovers and ranks trending topics using Gemini AI with Google Search Grounding across:
+ * 1. Product Hunt (Top AI products trending this week)
+ * 2. Reddit (Viral discussions in r/ChatGPT & r/ArtificialInteligence)
+ * 3. Hugging Face & GitHub (Trending open-source AI tools)
  */
 export async function discoverTopTrendingTopic(): Promise<DiscoveredTopic> {
-  console.log('[Trend Engine] 🔍 Initiating autonomous AI trend research...');
+  console.log('[Trend Engine] 🔍 Initiating live multi-source AI trend research (Product Hunt, Reddit, Hugging Face)...');
 
   if (isConfiguredForGemini()) {
     const learningMemory = await getLearningFeedbackPrompt();
 
-    const prompt = `You are the lead tech researcher for "ByteBangla".
+    const prompt = `You are the lead tech intelligence researcher for "ByteBangla".
 ${learningMemory}
 
-Generate 5 fresh, viral, and highly practical tech & AI topics in Bengali for students, freelancers, and professionals.
-Focus on: AI productivity tools, prompt engineering, browser tricks, time-saving workflows, and digital skills.
+LIVE WEB RESEARCH INSTRUCTIONS:
+Search the web right now for today's and this week's most viral and trending AI announcements from:
+1. Product Hunt: Top rated AI tools and launches of the week.
+2. Reddit: Viral discussions & tools praised on r/ChatGPT and r/ArtificialInteligence.
+3. Hugging Face & GitHub: Trending open-source tools, spaces, and productivity workflows.
+
+Discover 5 fresh, high-utility, and practical topics in Bengali.
+Target audience: Bengali students, freelancers, software developers, and professionals.
+Focus on: Free alternatives, prompt engineering secrets, automated workflows, and instant time-savers.
 
 Return ONLY a valid JSON array of 5 objects without markdown backticks:
 [
   {
-    "title": "বাংলায় আকর্ষণীয় ও সুনির্দিষ্ট টপিকের নাম",
-    "category": "AI Tools" or "Productivity Hacks" or "Workflows",
-    "utilityScore": 1 to 100,
-    "recencyScore": 1 to 100,
-    "shareabilityScore": 1 to 100
+    "title": "বাংলায় আকর্ষণীয় ও সুনির্দিষ্ট টপিকের নাম (যেমন: Product Hunt-এ ১ নম্বরে থাকা এই ফ্রি AI টুলটি দিয়ে ৩ মিনিটে স্লাইড তৈরি করুন)",
+    "category": "Product Hunt Trending" or "Reddit Viral AI" or "Hugging Face / OpenSource AI" or "AI Productivity Hacks",
+    "source": "Product Hunt" or "Reddit" or "Hugging Face" or "Tech News",
+    "utilityScore": 80 to 100,
+    "recencyScore": 85 to 100,
+    "shareabilityScore": 80 to 100
   }
 ]`;
 
@@ -75,14 +87,29 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
     for (const model of modelsToTry) {
       try {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
-        const response = await axios.post(
-          endpoint,
-          {
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.8, maxOutputTokens: 1000 },
-          },
-          { headers: { 'Content-Type': 'application/json' }, timeout: 25000 }
-        );
+        
+        // Attempt with Google Search Grounding for real-time live web facts
+        let requestBody: any = {
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          tools: [{ googleSearch: {} }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1200 },
+        };
+
+        let response: any;
+        try {
+          response = await axios.post(endpoint, requestBody, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 30000,
+          });
+        } catch (groundingError: any) {
+          // If search grounding fails or is restricted, retry without tools
+          console.warn(`[Trend Engine Notice] Search Grounding notice (${groundingError.message}). Retrying standard AI inference...`);
+          delete requestBody.tools;
+          response = await axios.post(endpoint, requestBody, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 25000,
+          });
+        }
 
         const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (raw) {
@@ -90,19 +117,20 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
           const items: any[] = JSON.parse(cleaned);
 
           if (Array.isArray(items) && items.length > 0) {
-            // Rank candidates by composite score
+            // Rank candidates by composite score (Utility 40%, Recency 30%, Shareability 30%)
             const candidates: DiscoveredTopic[] = items.map((item) => {
               const finalScore = calculateTopicScore(
-                item.utilityScore || 80,
-                item.recencyScore || 80,
-                item.shareabilityScore || 80
+                item.utilityScore || 85,
+                item.recencyScore || 90,
+                item.shareabilityScore || 85
               );
               return {
                 title: item.title,
                 category: item.category || 'AI Tools',
-                utilityScore: item.utilityScore || 80,
-                recencyScore: item.recencyScore || 80,
-                shareabilityScore: item.shareabilityScore || 80,
+                source: item.source || 'Product Hunt & Web',
+                utilityScore: item.utilityScore || 85,
+                recencyScore: item.recencyScore || 90,
+                shareabilityScore: item.shareabilityScore || 85,
                 finalScore,
                 hash: generateTopicHash(item.title),
               };
@@ -121,7 +149,7 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
                   score: cand.finalScore,
                   status: 'DISCOVERED',
                 });
-                console.log(`[Trend Engine] 🏆 Selected Top Fresh Topic (Score: ${cand.finalScore}): "${cand.title}"`);
+                console.log(`[Trend Engine] 🏆 Selected Top Fresh Topic from [${cand.source}] (Score: ${cand.finalScore}): "${cand.title}"`);
                 return cand;
               }
               console.log(`[Trend Engine] ⏭️ Skipping duplicate topic: "${cand.title}"`);
@@ -142,6 +170,7 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
       const fallbackTopic: DiscoveredTopic = {
         title: topic,
         category: 'AI Productivity',
+        source: 'Curated Evergreen',
         utilityScore: 90,
         recencyScore: 85,
         shareabilityScore: 90,
@@ -164,6 +193,7 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
   return {
     title: fallback,
     category: 'AI Productivity',
+    source: 'Curated',
     utilityScore: 85,
     recencyScore: 80,
     shareabilityScore: 85,

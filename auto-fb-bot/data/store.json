@@ -213,6 +213,20 @@
   ],
   "jobLogs": [
     {
+      "id": "log_1790707601073",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"Product Hunt-এ ট্রেন্ডিং ৩টি নতুন AI টুল\", Score: 95/100, Revised: true, Feedback: The draft is already well-structured, accurate, and engaging. Gamma, HeyGen, and Taskade are indeed trending tools. The Bengali is natural and conversational ('চোখের পলকে', 'একাই একশ'). Minor polish applied to enhance readability and smooth out the flow for maximum Facebook engagement.",
+      "createdAt": "2026-09-29T18:46:41.073Z"
+    },
+    {
+      "id": "log_1790707575615",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"Product Hunt-এ ট্রেন্ডিং ৩টি নতুন AI টুল\", Score: 83/100, Revised: true, Feedback: The draft is structured well with strong engagement loops. However, the 3 tools are described generically without mentioning their actual names (e.g., Gamma, Fireflies, Opus Clip), which lowers value delivery and credibility. The Bengali flow is mostly natural, but the hook can be punchier to stop the scroll completely.",
+      "createdAt": "2026-09-29T18:46:15.615Z"
+    },
+    {
       "id": "log_1790702829983",
       "jobName": "CRITIC_AUDIT",
       "status": "COMPLETED",

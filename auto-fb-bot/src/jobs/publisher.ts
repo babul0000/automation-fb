@@ -1,7 +1,7 @@
 import cron, { ScheduledTask } from 'node-cron';
 import { env } from '../config/env';
 import { discoverTopTrendingTopic, DiscoveredTopic } from '../services/trends';
-import { generateBanglaPostBundle, BanglaPostBundle } from '../services/ai';
+import { generateBanglaPostBundle, BanglaPostBundle, ReelsScriptData } from '../services/ai';
 import { auditAndReflectPost, CriticAuditResult } from '../services/critic';
 import { generateCarouselSlides } from '../services/media';
 import { publishMultiPhotoPost, addCommentToPost } from '../services/facebook';
@@ -12,12 +12,14 @@ export interface AutonomousPostResult {
   success: boolean;
   topic: string;
   category?: string;
+  source?: string;
   score?: number;
   content: string;
   postId?: string;
   imageUrls?: string[];
   firstCommentId?: string;
   firstCommentText?: string;
+  reelsScript?: ReelsScriptData;
   criticAudit?: {
     score: number;
     wasRevised: boolean;
@@ -29,15 +31,16 @@ export interface AutonomousPostResult {
 
 /**
  * Executes the complete autonomous publishing pipeline with:
- * 1. Autonomous Topic Discovery with Learning Feedback Loop (trends.ts + learning.ts)
- * 2. Fact-Checking & Web Grounded Caption + First Comment Bundle (ai.ts)
+ * 1. Autonomous Topic Discovery with Learning Feedback Loop + Product Hunt & Reddit Grounding (trends.ts)
+ * 2. Fact-Checking & Web Grounded Caption + First Comment Bundle + Viral Reels Script (ai.ts)
  * 3. AI Self-Reflection & Critic Audit (critic.ts)
- * 4. Multi-Slide Carousel Generation (media.ts)
+ * 4. Multi-Slide Branded Carousel Generation with Watermark & Cheatsheet (media.ts)
  * 5. Meta Graph API Multi-Photo Publishing (facebook.ts)
  * 6. Automated First Comment with Direct Tool Links (Reach Hack!)
  * 7. Database & Persistence Layer (db.ts)
  *
  * @param customTopic Optional topic override
+ * @param dryRun If true, runs all AI generation & preview without posting to Facebook
  */
 export async function triggerManualPost(
   customTopic?: string,
@@ -46,13 +49,14 @@ export async function triggerManualPost(
   const timestamp = new Date().toISOString();
   let selectedTopicTitle = '';
   let topicCategory = 'AI Tools & Productivity';
+  let topicSource = 'Product Hunt & Web';
   let topicScore = 90;
 
   console.log(`\n======================================================`);
   console.log(`[Autonomous Publisher] 🚀 Starting Facebook Pipeline at ${timestamp}`);
 
   try {
-    // 1. Topic Discovery with Self-Learning Feedback Loop
+    // 1. Topic Discovery with Self-Learning Feedback Loop & Multi-Source Intelligence
     if (customTopic && customTopic.trim().length > 0) {
       selectedTopicTitle = customTopic.trim();
       console.log(`[Autonomous Publisher] 🎯 Using Custom Topic Override: "${selectedTopicTitle}"`);
@@ -60,12 +64,13 @@ export async function triggerManualPost(
       const discovered: DiscoveredTopic = await discoverTopTrendingTopic();
       selectedTopicTitle = discovered.title;
       topicCategory = discovered.category;
+      topicSource = discovered.source || 'Product Hunt';
       topicScore = discovered.finalScore;
-      console.log(`[Autonomous Publisher] 🧠 Selected Top Ranked Topic (${topicCategory} | Score: ${topicScore}): "${selectedTopicTitle}"`);
+      console.log(`[Autonomous Publisher] 🧠 Selected Top Ranked Topic from [${topicSource}] (${topicCategory} | Score: ${topicScore}): "${selectedTopicTitle}"`);
     }
 
-    // 2. Generate Fact-Checked Bengali Content & First Comment Bundle
-    console.log(`[Autonomous Publisher] ✍️ Generating Bengali Caption & First-Comment Links Bundle...`);
+    // 2. Generate Fact-Checked Bengali Content, First-Comment Links & 30s Reels Script
+    console.log(`[Autonomous Publisher] ✍️ Generating Bengali Caption, First-Comment Links & Viral Reels Script...`);
     const bundle: BanglaPostBundle = await generateBanglaPostBundle(selectedTopicTitle);
 
     // 3. AI Self-Reflection & Critic Audit (Accuracy, Flow, Hook, Value Rubric)
@@ -75,8 +80,8 @@ export async function triggerManualPost(
 
     console.log(`[Autonomous Publisher] 🏆 Critic Evaluation: ${audit.overallScore}/100 (Revised: ${audit.wasRevised})`);
 
-    // 4. Generate Multi-Slide Visual Carousel (Cover + Infographic Workflow)
-    console.log(`[Autonomous Publisher] 🎨 Generating 2-slide visual tech carousel...`);
+    // 4. Generate Multi-Slide Branded Visual Carousel (Cover + Infographic Cheatsheet + Summary)
+    console.log(`[Autonomous Publisher] 🎨 Generating branded 3-slide visual tech carousel with ByteBangla watermark...`);
     const slides = await generateCarouselSlides(selectedTopicTitle);
     const imageUrls = slides.map((s) => s.imageUrl);
 
@@ -90,10 +95,12 @@ export async function triggerManualPost(
         success: true,
         topic: selectedTopicTitle,
         category: topicCategory,
+        source: topicSource,
         score: topicScore,
         content: finalCaption,
         imageUrls,
         firstCommentText: bundle.firstComment,
+        reelsScript: bundle.reelsScript,
         criticAudit: {
           score: audit.overallScore,
           wasRevised: audit.wasRevised,
@@ -103,11 +110,11 @@ export async function triggerManualPost(
       };
     }
 
-    // 5. Publish Multi-Photo Post to Facebook Page
-    console.log(`[Autonomous Publisher] 📤 Uploading Carousel Post to Meta Graph API...`);
+    // 6. Publish Multi-Photo Post to Facebook Page
+    console.log(`[Autonomous Publisher] 📤 Uploading 3-slide Carousel Post to Meta Graph API...`);
     const fbRes = await publishMultiPhotoPost(imageUrls, finalCaption);
 
-    // 6. First Comment Link Automation (Reach Hack)
+    // 7. First Comment Link Automation (Reach Hack)
     let firstCommentId: string | undefined;
     if (bundle.firstComment && bundle.firstComment.trim().length > 0) {
       try {
@@ -131,7 +138,7 @@ export async function triggerManualPost(
       }
     }
 
-    // 7. Persist to Database / Local store
+    // 8. Persist to Database / Local store
     await savePost({
       facebookPostId: fbRes.post_id,
       caption: finalCaption,
@@ -142,7 +149,7 @@ export async function triggerManualPost(
     await saveJobLog(
       'AUTONOMOUS_PUBLISHER',
       'SUCCESS',
-      `Post ID: ${fbRes.post_id}, Topic: ${selectedTopicTitle}, Critic: ${audit.overallScore}/100, Carousel: ${imageUrls.length} slides, FirstComment: ${Boolean(firstCommentId)}`
+      `Post ID: ${fbRes.post_id}, Topic: ${selectedTopicTitle} [${topicSource}], Critic: ${audit.overallScore}/100, Carousel: ${imageUrls.length} slides, FirstComment: ${Boolean(firstCommentId)}`
     );
 
     console.log(`[Autonomous Publisher] 🌟 PIPELINE COMPLETED! Post ID: ${fbRes.post_id}`);
@@ -152,12 +159,14 @@ export async function triggerManualPost(
       success: true,
       topic: selectedTopicTitle,
       category: topicCategory,
+      source: topicSource,
       score: topicScore,
       content: finalCaption,
       postId: fbRes.post_id,
       imageUrls,
       firstCommentId,
       firstCommentText: bundle.firstComment,
+      reelsScript: bundle.reelsScript,
       criticAudit: {
         score: audit.overallScore,
         wasRevised: audit.wasRevised,

@@ -358,11 +358,11 @@ app.get('/', async (_req: Request, res: Response) => {
             <!-- Bot 1 -->
             <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-cyan-500/40 transition">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-base">1️⃣ 🤖</span>
-                <span class="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-full font-bold text-[10px]">অ্যালগরিদম ৪০-৩০-৩০</span>
+                <span class="text-base">1️⃣ 🚀</span>
+                <span class="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-full font-bold text-[10px]">ProductHunt & Reddit</span>
               </div>
-              <p class="font-bold text-slate-200">ট্রেন্ড ও টপিক ডিসকভারি বট</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">গিটহাব, এআই প্রোডাক্ট ও টেক নিউজ থেকে হাই-এনগেজিং ট্রেন্ড খুঁজে বের করে এবং SHA-256 হ্যাশ দিয়ে ডুপ্লিকেট টপিক প্রতিরোধ করে।</p>
+              <p class="font-bold text-slate-200">ব্রেকিং ট্রেন্ড ট্র্যাকার বট</p>
+              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">Product Hunt, Reddit (r/ChatGPT) ও Hugging Face থেকে বিশ্বসেরা নতুন এআই টুলস সবার আগে লাইভ ট্র্যাক করে বাংলায় নিয়ে আসে।</p>
             </div>
 
             <!-- Bot 2 -->
@@ -378,11 +378,11 @@ app.get('/', async (_req: Request, res: Response) => {
             <!-- Bot 3 -->
             <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-cyan-500/40 transition">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-base">3️⃣ ✍️</span>
-                <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-full font-bold text-[10px]">Reach Hack</span>
+                <span class="text-base">3️⃣ 🎬</span>
+                <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-full font-bold text-[10px]">ক্যাপশন + রিলস</span>
               </div>
-              <p class="font-bold text-slate-200">বাংলা কন্টেন্ট ক্রিয়েটর বট</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">সহজ প্রাঞ্জল ভাষায় হুক, বুলেট পয়েন্ট ও অ্যাকশনেবল গাইড লেখে। ক্যাপশনে কোনো লিংক দেয় না যেন ফেসবুকের রিচ ডাউন না হয়।</p>
+              <p class="font-bold text-slate-200">বাংলা কন্টেন্ট ও রিলস স্ক্রিপ্টার</p>
+              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">হাই-কনভার্টিং ক্যাপশনের পাশাপাশি ৩০-৪৫ সেকেন্ডের ভাইরাল ফেসবুক রিলস/শর্টস ভয়েসওভার স্ক্রিপ্ট স্বয়ংক্রিয়ভাবে তৈরি করে দেয়।</p>
             </div>
 
             <!-- Bot 4 -->
@@ -399,10 +399,10 @@ app.get('/', async (_req: Request, res: Response) => {
             <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-purple-500/40 transition">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-base">5️⃣ 🎨</span>
-                <span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full font-bold text-[10px]">Flux AI 3D</span>
+                <span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full font-bold text-[10px]">ব্র্যান্ডেড ৩ডি চিটশিট</span>
               </div>
-              <p class="font-bold text-slate-200">৩ডি মাল্টি-স্লাইড ভিজ্যুয়াল বট</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">১:১ স্কয়ার রেশিওতে আকর্ষণীয় সাইবারপাঙ্ক কভার স্লাইড এবং স্টেপ-বাই-স্টেপ ইনফোগ্রাফিক তৈরি করে প্রিমিয়াম লুক নিশ্চিত করে।</p>
+              <p class="font-bold text-slate-200">ওয়াটারমার্ক ও চিটশিট ভিজ্যুয়াল</p>
+              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">১:১ স্কয়ার রেশিওতে ByteBangla ওয়াটারমার্কযুক্ত ৩ডি কভার, ইনফোগ্রাফিক চিটশিট ও সামারি স্লাইড তৈরি করে প্রিমিয়াম ব্র্যান্ডিং নিশ্চিত করে।</p>
             </div>
 
             <!-- Bot 6 -->
@@ -606,6 +606,38 @@ app.get('/', async (_req: Request, res: Response) => {
                 </button>
               </div>
               <pre id="previewFirstComment" class="text-xs text-slate-300 whitespace-pre-wrap font-sans leading-relaxed"></pre>
+            </div>
+
+            <!-- 🎬 Viral Facebook Reels & Shorts Script Preview -->
+            <div id="reelsCard" class="hidden bg-gradient-to-br from-indigo-950/70 via-slate-900 to-purple-950/50 p-4 rounded-2xl border border-indigo-700/50 space-y-3">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg">🎬</span>
+                  <div>
+                    <span class="text-xs font-bold text-purple-300">ফেসবুক রিলস ও শর্ট ভিডিও স্ক্রিপ্ট (৩০-৪৫ সেকেন্ড)</span>
+                    <p class="text-[10px] text-slate-400">এই স্ক্রিপ্ট পড়ে সরাসরি ফেসবুক রিলস বানিয়ে পেজকে ৩ গুণ দ্রুত গ্রো করান</p>
+                  </div>
+                </div>
+                <button onclick="copyToClipboard(document.getElementById('reelsFullScript').innerText, 'সম্পূর্ণ রিলস স্ক্রিপ্ট কপি করা হয়েছে!')" class="text-xs text-purple-300 hover:text-white bg-purple-900/60 hover:bg-purple-800/80 border border-purple-700/70 px-3 py-1 rounded-lg transition active:scale-95 flex items-center gap-1">
+                  <span>📋 রিলস স্ক্রিপ্ট কপি</span>
+                </button>
+              </div>
+
+              <div class="space-y-2 text-xs">
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                  <span class="text-purple-400 font-bold flex items-center gap-1">⚡ ভাইরাল হুক ডায়লগ (০-৫ সেকেন্ড):</span>
+                  <p id="reelsHook" class="text-slate-100 font-medium mt-1 leading-relaxed"></p>
+                </div>
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                  <span class="text-cyan-400 font-bold flex items-center gap-1">💡 মূল ভয়েসওভার বডি (৫-২৫ সেকেন্ড):</span>
+                  <p id="reelsBody" class="text-slate-200 mt-1 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                  <span class="text-amber-400 font-bold flex items-center gap-1">🚀 কল টু অ্যাকশন (২৫-৩০ সেকেন্ড):</span>
+                  <p id="reelsCta" class="text-slate-100 font-medium mt-1 leading-relaxed"></p>
+                </div>
+                <div id="reelsFullScript" class="hidden"></div>
+              </div>
             </div>
           </div>
         </section>
@@ -916,9 +948,20 @@ app.get('/', async (_req: Request, res: Response) => {
               document.getElementById('previewCaption').innerText = json.data.content;
               document.getElementById('previewFirstComment').innerText = json.data.firstCommentText || 'কোনো ফার্স্ট কমেন্ট নেই';
 
+              // Populate Reels Script
+              if (json.data.reelsScript) {
+                document.getElementById('reelsHook').innerText = json.data.reelsScript.hook || '';
+                document.getElementById('reelsBody').innerText = json.data.reelsScript.body || '';
+                document.getElementById('reelsCta').innerText = json.data.reelsScript.cta || '';
+                document.getElementById('reelsFullScript').innerText = json.data.reelsScript.fullScript || (json.data.reelsScript.hook + '\n\n' + json.data.reelsScript.body + '\n\n' + json.data.reelsScript.cta);
+                document.getElementById('reelsCard').classList.remove('hidden');
+              } else {
+                document.getElementById('reelsCard').classList.add('hidden');
+              }
+
               const grid = document.getElementById('carouselPreviewGrid');
               grid.innerHTML = (json.data.imageUrls || []).map((url, i) =>
-                '<div><p class="text-[11px] text-slate-400 mb-1 font-semibold">স্লাইড ' + (i+1) + '</p><img src="' + url + '" class="w-full h-44 object-cover rounded-xl border border-slate-700 shadow-md" /></div>'
+                '<div><p class="text-[11px] text-slate-400 mb-1 font-semibold">স্লাইড ' + (i+1) + (i === 0 ? ' (ব্র্যান্ডেড কভার)' : (i === 1 ? ' (ইনফোগ্রাফিক চিটশিট)' : ' (সামারি অ্যাকশন)')) + '</p><img src="' + url + '" class="w-full h-44 object-cover rounded-xl border border-slate-700 shadow-md" /></div>'
               ).join('');
 
               previewCard.classList.remove('hidden');
