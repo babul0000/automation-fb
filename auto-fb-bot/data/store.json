@@ -1,6 +1,15 @@
 {
   "topics": [
     {
+      "title": "r/ChatGPT-তে ভাইরাল হওয়া এই সিক্রেট প্রম্পট ফর্মুলা ব্যবহার করে চ্যাটজিপিটি থেকে একদম নিখুঁত এবং প্রফেশনাল উত্তর পাওয়ার উপায়!",
+      "titleHash": "004ba1b7b3b1a3a11a3192e20d3ba0da01a0eded4da928a0a4bba71d4bf3594b",
+      "category": "Reddit Viral AI",
+      "score": 97,
+      "status": "DISCOVERED",
+      "id": "topic_1790708281606_onufy",
+      "createdAt": "2026-09-29T18:58:01.606Z"
+    },
+    {
       "title": "এক ক্লিকে পুরো ইউটিউব ভিডিওর সামারি পাওয়ার সেরা ৩টি ফ্রি এআই টুল 🎥",
       "titleHash": "532cae53df748fcc9a38f667b2982941c398be722dddda6316091f3f6f61209c",
       "category": "AI Tools",
@@ -212,6 +221,13 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1790708287293",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"r/ChatGPT-তে ভাইরাল হওয়া এই সিক্রেট প্রম্পট ফর্মুলা ব্যবহার করে চ্যাটজিপিটি থেকে একদম নিখুঁত এবং প্রফেশনাল উত্তর পাওয়ার উপায়!\", Score: 95/100, Revised: true, Feedback: The draft is strong, factual, and follows the ByteBangla style well. However, the hook can be made punchier to immediately grab attention in the Facebook feed, and the Bengali flow can be tightened to sound more native and energetic.",
+      "createdAt": "2026-09-29T18:58:07.293Z"
+    },
     {
       "id": "log_1790707601073",
       "jobName": "CRITIC_AUDIT",
