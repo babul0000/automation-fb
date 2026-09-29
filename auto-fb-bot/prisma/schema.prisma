@@ -1,0 +1,74 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Topic {
+  id          String   @id @default(uuid())
+  title       String
+  titleHash   String   @unique
+  category    String   @default("AI & Productivity")
+  score       Float    @default(0)
+  status      String   @default("DISCOVERED") // DISCOVERED, PUBLISHED, SKIPPED
+  createdAt   DateTime @default(now())
+  posts       Post[]
+}
+
+model Post {
+  id             String       @id @default(uuid())
+  facebookPostId String       @unique
+  topicId        String?
+  topic          Topic?       @relation(fields: [topicId], references: [id])
+  caption        String
+  imageUrl       String?
+  status         String       @default("PUBLISHED")
+  publishedAt    DateTime     @default(now())
+  metrics        PostMetric[]
+  comments       Comment[]
+}
+
+model Comment {
+  id                String    @id @default(uuid())
+  facebookCommentId String    @unique
+  postId            String?
+  post              Post?     @relation(fields: [postId], references: [id])
+  senderId          String?
+  senderName        String?
+  text              String
+  classification    String    @default("NORMAL") // QUESTION, SOURCE_REQUEST, POSITIVE, SENSITIVE, ABUSIVE, NORMAL
+  isFlagged         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  replies           Reply[]
+}
+
+model Reply {
+  id              String   @id @default(uuid())
+  commentId       String
+  comment         Comment  @relation(fields: [commentId], references: [id])
+  replyText       String
+  facebookReplyId String?
+  status          String   @default("SENT") // SENT, FAILED
+  createdAt       DateTime @default(now())
+}
+
+model PostMetric {
+  id             String   @id @default(uuid())
+  postId         String
+  post           Post     @relation(fields: [postId], references: [id])
+  reactionsCount Int      @default(0)
+  commentsCount  Int      @default(0)
+  sharesCount    Int      @default(0)
+  capturedAt     DateTime @default(now())
+}
+
+model JobLog {
+  id        String   @id @default(uuid())
+  jobName   String
+  status    String   // SUCCESS, FAILED, RUNNING
+  details   String?
+  createdAt DateTime @default(now())
+}

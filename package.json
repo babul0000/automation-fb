@@ -1,0 +1,12 @@
+{
+  "name": "facebook-automation-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root workspace proxy for ByteBangla automated Facebook content bot",
+  "scripts": {
+    "dev": "npm --prefix auto-fb-bot run dev",
+    "build": "npm --prefix auto-fb-bot run build",
+    "start": "npm --prefix auto-fb-bot start",
+    "install:bot": "npm --prefix auto-fb-bot install"
+  }
+}
