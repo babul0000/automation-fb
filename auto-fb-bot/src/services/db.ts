@@ -288,3 +288,17 @@ export async function saveJobLog(jobName: string, status: string, details?: stri
   persistLocalStore();
   return record;
 }
+
+export async function getJobLogs(limit: number = 6): Promise<JobLogRecord[]> {
+  if (isPrismaAvailable && prismaInstance) {
+    try {
+      return await prismaInstance.jobLog.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (e: any) {
+      // Fallback
+    }
+  }
+  return memoryStore.jobLogs.slice(0, limit);
+}

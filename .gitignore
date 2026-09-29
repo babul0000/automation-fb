@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+auto-fb-bot/node_modules/
+
+# Compiled distribution files
+dist/
+auto-fb-bot/dist/
+
+# Environment files
+.env
+.env.*
+auto-fb-bot/.env
+auto-fb-bot/.env.*
+!.env.example
+!auto-fb-bot/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

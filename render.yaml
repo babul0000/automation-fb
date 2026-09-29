@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: bytebangla-bot
+    runtime: node
+    plan: free
+    buildCommand: npm --prefix auto-fb-bot install && npm --prefix auto-fb-bot run build
+    startCommand: npm --prefix auto-fb-bot start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
