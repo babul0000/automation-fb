@@ -13,3 +13,5 @@ services:
         value: 3000
       - key: CRON_SCHEDULE
         value: "30 9 * * *"
+      - key: GEMINI_MODEL
+        value: "gemini-3.5-flash-lite"
