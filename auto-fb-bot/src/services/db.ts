@@ -387,15 +387,16 @@ export function getAutomationSettings(): AutomationSettings {
           return found ? { ...defaultSlot, ...found } : defaultSlot;
         }),
       };
-      return cachedSettings!;
+      return JSON.parse(JSON.stringify(cachedSettings));
     }
   } catch (err: any) {
     console.warn(`[Database Service Warning] Failed reading settings.json: ${err.message}. Using default.`);
   }
 
-  cachedSettings = { ...DEFAULT_AUTOMATION_SETTINGS };
-  persistSettings(cachedSettings);
-  return cachedSettings;
+  const fallbackSettings: AutomationSettings = JSON.parse(JSON.stringify(DEFAULT_AUTOMATION_SETTINGS));
+  cachedSettings = fallbackSettings;
+  persistSettings(fallbackSettings);
+  return JSON.parse(JSON.stringify(fallbackSettings));
 }
 
 function persistSettings(settings: AutomationSettings): void {
@@ -425,10 +426,10 @@ export function updateAutomationSettings(updates: Partial<AutomationSettings>): 
     });
   }
 
-  cachedSettings = merged;
+  cachedSettings = JSON.parse(JSON.stringify(merged));
   persistSettings(merged);
   console.log(`[Database Service] ⚙️ Automation settings successfully updated.`);
-  return merged;
+  return JSON.parse(JSON.stringify(merged));
 }
 
 export function updateSlotExecution(

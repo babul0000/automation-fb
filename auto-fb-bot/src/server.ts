@@ -28,6 +28,15 @@ import { analyzeCommentWithAI } from './services/comments';
 
 const app = express();
 
+// Disable ETag and browser caching so dashboard settings always load live
+app.set('etag', false);
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -214,7 +223,7 @@ app.get('/', async (_req: Request, res: Response) => {
         : '';
 
       return `
-      <div class="bg-slate-900/90 border ${isEnabled ? 'border-slate-800 hover:border-cyan-500/50' : 'border-slate-800/50 opacity-60'} rounded-3xl p-5 flex flex-col justify-between shadow-xl transition-all duration-200">
+      <div id="slot_card_${slot.id}" class="bg-slate-900/90 border ${isEnabled ? 'border-slate-800 hover:border-cyan-500/50' : 'border-slate-800/50 opacity-60'} rounded-3xl p-5 flex flex-col justify-between shadow-xl transition-all duration-200">
         <div>
           <!-- Header: Icon, Slot Title & Toggle Switch -->
           <div class="flex items-start justify-between gap-3 mb-3">
@@ -225,7 +234,7 @@ app.get('/', async (_req: Request, res: Response) => {
               <div>
                 <div class="flex items-center gap-2">
                   <h3 class="text-sm font-bold text-white">${slot.nameBn}</h3>
-                  <span class="text-[10px] px-2 py-0.5 rounded-full font-mono bg-cyan-950/70 text-cyan-300 border border-cyan-800/60 font-bold">${slot.time} BST</span>
+                  <span id="slot_badge_${slot.id}" class="text-[10px] px-2 py-0.5 rounded-full font-mono bg-cyan-950/70 text-cyan-300 border border-cyan-800/60 font-bold">${slot.time} BST</span>
                 </div>
                 <p class="text-[11px] text-slate-400 font-sans mt-0.5">${slot.name}</p>
               </div>
@@ -249,7 +258,7 @@ app.get('/', async (_req: Request, res: Response) => {
           <div class="flex items-center gap-2 mb-3 bg-slate-950/60 p-2.5 rounded-2xl border border-slate-800">
             <label class="text-[11px] text-slate-300 font-semibold shrink-0">পোস্ট টাইম:</label>
             <input type="time" id="${slotTimeId}" value="${slot.time}" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-mono font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyan-500" />
-            <button onclick="saveSlotTime('${slot.id}')" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold transition active:scale-95 ml-auto">
+            <button onclick="saveSlotTime('${slot.id}')" id="btn_save_${slot.id}" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold transition active:scale-95 ml-auto">
               সেভ
             </button>
           </div>
@@ -314,6 +323,8 @@ app.get('/', async (_req: Request, res: Response) => {
     </style>
   </head>
   <body class="bg-slate-950 text-slate-100 min-h-screen pb-24 sm:pb-16 select-none sm:select-auto">
+    <!-- Floating Toast Notification Center -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
     
     <!-- Top Fixed Navigation Bar -->
     <header class="border-b border-slate-800/80 bg-slate-900/95 backdrop-blur-md sticky top-0 z-40">
@@ -493,7 +504,7 @@ app.get('/', async (_req: Request, res: Response) => {
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-lg">🌅</span>
-                  <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[0]?.time || '09:30'} AM</span>
+                  <span id="timeline_badge_slot_1" class="px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[0]?.time || '09:30'} AM</span>
                 </div>
                 <p class="font-bold text-slate-200">সকালের এআই টুলস</p>
                 <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">Product Hunt ও ট্রেন্ডিং নতুন এআই টুলসের সকালের ব্রিফিং।</p>
@@ -505,7 +516,7 @@ app.get('/', async (_req: Request, res: Response) => {
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-lg">☀️</span>
-                  <span class="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[1]?.time || '14:30'} PM</span>
+                  <span id="timeline_badge_slot_2" class="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[1]?.time || '14:30'} PM</span>
                 </div>
                 <p class="font-bold text-slate-200">দুপুরের চিটশিট</p>
                 <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">স্টেপ-বাই-স্টেপ গাইড, প্রম্পট ও ইনফোগ্রাফিক চিটশিট।</p>
@@ -517,7 +528,7 @@ app.get('/', async (_req: Request, res: Response) => {
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-lg">🌙</span>
-                  <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[2]?.time || '20:30'} PM</span>
+                  <span id="timeline_badge_slot_3" class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[2]?.time || '20:30'} PM</span>
                 </div>
                 <p class="font-bold text-slate-200">রাতের ভাইরাল টেক</p>
                 <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">টুল কম্প্যারিজন, ভাইরাল টেক আলোচনা ও রিলস স্ক্রিপ্ট।</p>
@@ -1048,10 +1059,32 @@ app.get('/', async (_req: Request, res: Response) => {
 
     <!-- Client-side Scripts -->
     <script>
+      function showToast(message, type) {
+        var t = type || 'success';
+        var container = document.getElementById('toastContainer');
+        if (!container) return;
+        var toast = document.createElement('div');
+        var bg = t === 'success' 
+          ? 'bg-slate-900/95 border-emerald-500/60 text-emerald-300' 
+          : 'bg-slate-900/95 border-rose-500/60 text-rose-300';
+        toast.className = 'p-4 rounded-2xl border shadow-2xl backdrop-blur-md text-xs font-semibold flex items-center justify-between gap-3 pointer-events-auto transition-all duration-300 transform translate-y-[-10px] opacity-0 ' + bg;
+        var icon = t === 'success' ? '✅' : '❌';
+        toast.innerHTML = '<div class="flex items-center gap-2"><span>' + icon + '</span><span>' + message + '</span></div><button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white ml-2 text-sm">✕</button>';
+        container.appendChild(toast);
+        setTimeout(function() {
+          toast.classList.remove('translate-y-[-10px]', 'opacity-0');
+          toast.classList.add('translate-y-0', 'opacity-100');
+        }, 10);
+        setTimeout(function() {
+          toast.classList.add('opacity-0', 'translate-y-[-10px]');
+          setTimeout(function() { toast.remove(); }, 300);
+        }, 4000);
+      }
+
       function copyToClipboard(text, msg) {
         if (!text) return;
         navigator.clipboard.writeText(text);
-        alert(msg || 'ক্লিপবোর্ডে কপি করা হয়েছে!');
+        showToast(msg || 'ক্লিপবোর্ডে কপি করা হয়েছে!', 'success');
       }
 
       function updateClock() {
@@ -1064,6 +1097,8 @@ app.get('/', async (_req: Request, res: Response) => {
       updateClock();
 
       function switchTab(tabId) {
+        sessionStorage.setItem('activeTab', tabId);
+
         document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
         
         const target = document.getElementById('tab-content-' + tabId);
@@ -1094,6 +1129,14 @@ app.get('/', async (_req: Request, res: Response) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
+      // Auto-restore active tab on load
+      window.addEventListener('DOMContentLoaded', () => {
+        const savedTab = sessionStorage.getItem('activeTab');
+        if (savedTab && document.getElementById('tab-content-' + savedTab)) {
+          switchTab(savedTab);
+        }
+      });
+
       // Master Auto-Pilot Switch
       async function toggleMasterAutoPilot(enabled) {
         try {
@@ -1104,13 +1147,13 @@ app.get('/', async (_req: Request, res: Response) => {
           });
           const json = await res.json();
           if (json.success) {
-            alert(enabled ? '✅ মাস্টার অটো-পাইলট চালু করা হয়েছে! প্রতিদিন ৩টি পোস্ট স্বয়ংক্রিয়ভাবে পাবলিশ হবে।' : '⏸️ মাস্টার অটো-পাইলট সাময়িক পজ করা হয়েছে।');
-            window.location.reload();
+            showToast(enabled ? '✅ মাস্টার অটো-পাইলট চালু করা হয়েছে! প্রতিদিন ৩টি পোস্ট স্বয়ংক্রিয়ভাবে হবে।' : '⏸️ মাস্টার অটো-পাইলট সাময়িক পজ করা হয়েছে।', 'success');
+            setTimeout(() => window.location.reload(), 800);
           } else {
-            alert('এরর: ' + (json.error || 'Failed to update'));
+            showToast('এরর: ' + (json.error || 'Failed to update'), 'error');
           }
         } catch (e) {
-          alert('নেটওয়ার্ক এরর: ' + e.message);
+          showToast('নেটওয়ার্ক এরর: ' + e.message, 'error');
         }
       }
 
@@ -1126,19 +1169,35 @@ app.get('/', async (_req: Request, res: Response) => {
           });
           const json = await res.json();
           if (json.success) {
-            // Updated
+            showToast(enabled ? '✅ স্লট চালু করা হয়েছে!' : '⚪ স্লট সাময়িক বন্ধ করা হয়েছে!', 'success');
+            const card = document.getElementById('slot_card_' + slotId);
+            if (card) {
+              if (enabled) {
+                card.classList.remove('opacity-60', 'border-slate-800/50');
+                card.classList.add('border-slate-800', 'hover:border-cyan-500/50');
+              } else {
+                card.classList.add('opacity-60', 'border-slate-800/50');
+                card.classList.remove('border-slate-800', 'hover:border-cyan-500/50');
+              }
+            }
+            const formToggle = document.getElementById('form_slot_enabled_' + slotId);
+            if (formToggle) formToggle.checked = enabled;
           } else {
-            alert('এরর: ' + (json.error || 'Failed'));
+            showToast('এরর: ' + (json.error || 'Failed'), 'error');
           }
         } catch (e) {
-          alert('নেটওয়ার্ক এরর: ' + e.message);
+          showToast('নেটওয়ার্ক এরর: ' + e.message, 'error');
         }
       }
 
-      // Save Individual Slot Time
+      // Save Individual Slot Time (Direct Inline Live Update)
       async function saveSlotTime(slotId) {
         const input = document.getElementById('slot_time_' + slotId);
         if (!input || !input.value) return;
+
+        const btn = document.getElementById('btn_save_' + slotId);
+        const originalText = btn ? btn.innerText : 'সেভ';
+        if (btn) btn.innerText = 'সেভ হচ্ছে...';
 
         try {
           const res = await fetch('/api/settings', {
@@ -1150,16 +1209,43 @@ app.get('/', async (_req: Request, res: Response) => {
           });
           const json = await res.json();
           if (json.success) {
-            alert('✅ স্লটের সময় ' + input.value + ' BST সফলভাবে সেভ করা হয়েছে!');
+            showToast('✅ স্লটের সময় ' + input.value + ' BST সফলভাবে সেভ করা হয়েছে!', 'success');
+            
+            // 1. Update Card Badge
+            const badge = document.getElementById('slot_badge_' + slotId);
+            if (badge) badge.innerText = input.value + ' BST';
+
+            // 2. Update 24h Timeline Badge
+            const timelineBadge = document.getElementById('timeline_badge_' + slotId);
+            if (timelineBadge) {
+              const h = parseInt(input.value.split(':')[0], 10) || 0;
+              timelineBadge.innerText = input.value + (h >= 12 ? ' PM' : ' AM');
+            }
+
+            // 3. Sync input in Schedule tab
+            const formInput = document.getElementById('form_slot_time_' + slotId);
+            if (formInput) formInput.value = input.value;
+
+            // 4. Button feedback
+            if (btn) {
+              btn.innerText = '✅ সেভড!';
+              btn.className = 'px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-semibold transition active:scale-95 ml-auto';
+              setTimeout(() => {
+                btn.innerText = 'সেভ';
+                btn.className = 'px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold transition active:scale-95 ml-auto';
+              }, 2000);
+            }
           } else {
-            alert('এরর: ' + (json.error || 'Failed'));
+            showToast('এরর: ' + (json.error || 'Failed'), 'error');
+            if (btn) btn.innerText = originalText;
           }
         } catch (e) {
-          alert('নেটওয়ার্ক এরর: ' + e.message);
+          showToast('নেটওয়ার্ক এরর: ' + e.message, 'error');
+          if (btn) btn.innerText = originalText;
         }
       }
 
-      // Save All Settings Form
+      // Save All Settings Form (Schedule Tab)
       async function saveAllSettingsForm() {
         const btn = document.getElementById('saveAllSettingsBtn');
         const spinner = document.getElementById('saveSettingsSpinner');
@@ -1167,9 +1253,10 @@ app.get('/', async (_req: Request, res: Response) => {
         spinner.classList.remove('hidden');
 
         try {
-          const autoFirstComment = document.getElementById('toggleFirstComment').checked;
-          const autoCommentReply = document.getElementById('toggleCommentReply').checked;
-          const autoDm = document.getElementById('toggleAutoDm').checked;
+          const autoPilotEnabled = document.getElementById('masterAutoPilotToggle')?.checked ?? true;
+          const autoFirstComment = document.getElementById('toggleFirstComment')?.checked ?? true;
+          const autoCommentReply = document.getElementById('toggleCommentReply')?.checked ?? true;
+          const autoDm = document.getElementById('toggleAutoDm')?.checked ?? true;
 
           const slots = ['slot_1', 'slot_2', 'slot_3'].map(id => {
             const timeEl = document.getElementById('form_slot_time_' + id);
@@ -1187,6 +1274,7 @@ app.get('/', async (_req: Request, res: Response) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              autoPilotEnabled,
               autoFirstComment,
               autoCommentReply,
               autoDm,
@@ -1195,13 +1283,14 @@ app.get('/', async (_req: Request, res: Response) => {
           });
           const json = await res.json();
           if (json.success) {
-            alert('✅ সকল সেটিংস ও ৩টি দৈনিক শিডিউল সফলভাবে আপডেট করা হয়েছে!');
-            window.location.reload();
+            sessionStorage.setItem('activeTab', 'schedule');
+            showToast('✅ সকল সেটিংস ও ৩টি দৈনিক শিডিউল সফলভাবে আপডেট করা হয়েছে!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
           } else {
-            alert('এরর: ' + (json.error || 'Failed to update'));
+            showToast('এরর: ' + (json.error || 'Failed to update'), 'error');
           }
         } catch (e) {
-          alert('নেটওয়ার্ক এরর: ' + e.message);
+          showToast('নেটওয়ার্ক এরর: ' + e.message, 'error');
         } finally {
           btn.disabled = false;
           spinner.classList.add('hidden');
@@ -1215,11 +1304,11 @@ app.get('/', async (_req: Request, res: Response) => {
           const res = await fetch('/api/reset-settings', { method: 'POST' });
           const json = await res.json();
           if (json.success) {
-            alert('✅ ডিফল্ট ৩-স্লট সেটিংস সফলভাবে রিস্টোর করা হয়েছে!');
-            window.location.reload();
+            showToast('✅ ডিফল্ট ৩-স্লট সেটিংস সফলভাবে রিস্টোর করা হয়েছে!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
           }
         } catch (e) {
-          alert('এরর: ' + e.message);
+          showToast('এরর: ' + e.message, 'error');
         }
       }
 

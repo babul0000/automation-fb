@@ -35,8 +35,10 @@ export interface AutonomousPostResult {
  */
 export function timeToCron(timeStr: string): string {
   const parts = (timeStr || '').trim().split(':');
-  const hour = parseInt(parts[0], 10) || 9;
-  const minute = parseInt(parts[1], 10) || 30;
+  const rawHour = parseInt(parts[0], 10);
+  const rawMinute = parseInt(parts[1], 10);
+  const hour = Number.isNaN(rawHour) ? 9 : Math.max(0, Math.min(23, rawHour));
+  const minute = Number.isNaN(rawMinute) ? 0 : Math.max(0, Math.min(59, rawMinute));
   return `${minute} ${hour} * * *`;
 }
 
