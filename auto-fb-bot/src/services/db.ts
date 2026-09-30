@@ -328,7 +328,15 @@ export async function getJobLogs(limit: number = 6): Promise<JobLogRecord[]> {
   return memoryStore.jobLogs.slice(0, limit);
 }
 
-const SETTINGS_FILE_PATH = path.resolve(process.cwd(), 'data', 'settings.json');
+function getSettingsFilePath(): string {
+  const p1 = path.resolve(process.cwd(), 'data', 'settings.json');
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.resolve(__dirname, '../../data/settings.json');
+  if (fs.existsSync(p2)) return p2;
+  const p3 = path.resolve(__dirname, '../../../auto-fb-bot/data/settings.json');
+  if (fs.existsSync(p3)) return p3;
+  return p1;
+}
 
 export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
   autoPilotEnabled: true,
@@ -372,11 +380,12 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
 let cachedSettings: AutomationSettings | null = null;
 
 export function getAutomationSettings(): AutomationSettings {
-  if (cachedSettings) return cachedSettings;
+  if (cachedSettings) return JSON.parse(JSON.stringify(cachedSettings));
 
+  const filePath = getSettingsFilePath();
   try {
-    if (fs.existsSync(SETTINGS_FILE_PATH)) {
-      const raw = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
+    if (fs.existsSync(filePath)) {
+      const raw = fs.readFileSync(filePath, 'utf-8');
       const parsed = JSON.parse(raw);
       // Merge with defaults to ensure all required fields are present
       cachedSettings = {
@@ -401,11 +410,12 @@ export function getAutomationSettings(): AutomationSettings {
 
 function persistSettings(settings: AutomationSettings): void {
   try {
-    const dir = path.dirname(SETTINGS_FILE_PATH);
+    const filePath = getSettingsFilePath();
+    const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(settings, null, 2), 'utf-8');
+    fs.writeFileSync(filePath, JSON.stringify(settings, null, 2), 'utf-8');
   } catch (err: any) {
     console.error(`[Database Service Error] Failed saving settings.json: ${err.message}`);
   }

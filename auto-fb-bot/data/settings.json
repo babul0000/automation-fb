@@ -31,8 +31,12 @@
       "time": "20:30",
       "category": "Viral AI Debates, Comparisons & Breaking Tech News",
       "categoryBn": "ভাইরাল এআই তুলনা ও ব্রেকিং টেক নিউজ",
-      "enabled": true
+      "enabled": true,
+      "lastRun": "2026-09-30T14:30:51.894Z",
+      "lastStatus": "SUCCESS",
+      "lastPostId": "1248686841665823_122115469701444051",
+      "lastTopic": "Product Hunt-এর ১ নম্বরে থাকা এই ফ্রি AI টুল দিয়ে ১ ক্লিকে যেকোনো বড় PDF থেকে বানিয়ে নিন মাস্টারনোট!"
     }
   ],
-  "updatedAt": "2026-09-30T14:11:29.395Z"
+  "updatedAt": "2026-09-30T14:37:15.812Z"
 }

@@ -257,7 +257,7 @@ app.get('/', async (_req: Request, res: Response) => {
           <!-- Time Picker & Quick Inline Save -->
           <div class="flex items-center gap-2 mb-3 bg-slate-950/60 p-2.5 rounded-2xl border border-slate-800">
             <label class="text-[11px] text-slate-300 font-semibold shrink-0">পোস্ট টাইম:</label>
-            <input type="time" id="${slotTimeId}" value="${slot.time}" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-mono font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyan-500" />
+            <input type="time" id="${slotTimeId}" value="${slot.time}" autocomplete="off" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-mono font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyan-500" />
             <button onclick="saveSlotTime('${slot.id}')" id="btn_save_${slot.id}" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold transition active:scale-95 ml-auto">
               সেভ
             </button>
@@ -702,11 +702,11 @@ app.get('/', async (_req: Request, res: Response) => {
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label class="text-[11px] text-slate-400 block mb-1">পোস্টিং সময় (BST):</label>
-                      <input type="time" id="form_slot_time_${s.id}" value="${s.time}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500" />
+                      <input type="time" id="form_slot_time_${s.id}" value="${s.time}" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div class="sm:col-span-2">
                       <label class="text-[11px] text-slate-400 block mb-1">কনটেন্ট ক্যাটাগরি ও থিম ফোকাস:</label>
-                      <input type="text" id="form_slot_category_${s.id}" value="${s.category}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-sans" />
+                      <input type="text" id="form_slot_category_${s.id}" value="${s.category}" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-sans" />
                     </div>
                   </div>
                 </div>
@@ -1195,6 +1195,9 @@ app.get('/', async (_req: Request, res: Response) => {
         const input = document.getElementById('slot_time_' + slotId);
         if (!input || !input.value) return;
 
+        const toggleEl = document.getElementById('slot_toggle_' + slotId);
+        const isEnabled = toggleEl ? toggleEl.checked : true;
+
         const btn = document.getElementById('btn_save_' + slotId);
         const originalText = btn ? btn.innerText : 'সেভ';
         if (btn) btn.innerText = 'সেভ হচ্ছে...';
@@ -1204,7 +1207,7 @@ app.get('/', async (_req: Request, res: Response) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              slots: [{ id: slotId, time: input.value }]
+              slots: [{ id: slotId, time: input.value, enabled: isEnabled }]
             }),
           });
           const json = await res.json();
@@ -1399,8 +1402,8 @@ app.get('/', async (_req: Request, res: Response) => {
               if (json.data.reelsScript) {
                 document.getElementById('reelsHook').innerText = json.data.reelsScript.hook || '';
                 document.getElementById('reelsBody').innerText = json.data.reelsScript.body || '';
-                document.getElementById('reelsCta').innerText = json.data.reelsScript.cta || '';
-                document.getElementById('reelsFullScript').innerText = json.data.reelsScript.fullScript || (json.data.reelsScript.hook + '\n\n' + json.data.reelsScript.body + '\n\n' + json.data.reelsScript.cta);
+                const fullReels = json.data.reelsScript.fullScript || [json.data.reelsScript.hook, json.data.reelsScript.body, json.data.reelsScript.cta].filter(Boolean).join(String.fromCharCode(10) + String.fromCharCode(10));
+                document.getElementById('reelsFullScript').innerText = fullReels;
                 document.getElementById('reelsCard').classList.remove('hidden');
               } else {
                 document.getElementById('reelsCard').classList.add('hidden');
