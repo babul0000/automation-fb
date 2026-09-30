@@ -50,6 +50,31 @@ export interface JobLogRecord {
   createdAt: string;
 }
 
+export interface SlotConfig {
+  id: 'slot_1' | 'slot_2' | 'slot_3';
+  name: string;
+  nameBn: string;
+  time: string; // HH:mm (24h format)
+  category: string;
+  categoryBn: string;
+  enabled: boolean;
+  lastRun?: string;
+  lastStatus?: 'SUCCESS' | 'FAILED' | 'PENDING';
+  lastPostId?: string;
+  lastTopic?: string;
+}
+
+export interface AutomationSettings {
+  autoPilotEnabled: boolean;
+  approvalRequired: boolean;
+  timezone: string;
+  autoFirstComment: boolean;
+  autoCommentReply: boolean;
+  autoDm: boolean;
+  slots: SlotConfig[];
+  updatedAt: string;
+}
+
 interface LocalStore {
   topics: TopicRecord[];
   posts: PostRecord[];
@@ -302,3 +327,144 @@ export async function getJobLogs(limit: number = 6): Promise<JobLogRecord[]> {
   }
   return memoryStore.jobLogs.slice(0, limit);
 }
+
+const SETTINGS_FILE_PATH = path.resolve(process.cwd(), 'data', 'settings.json');
+
+export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
+  autoPilotEnabled: true,
+  approvalRequired: false, // 100% autonomous by default as requested
+  timezone: 'Asia/Dhaka',
+  autoFirstComment: true,
+  autoCommentReply: true,
+  autoDm: true,
+  slots: [
+    {
+      id: 'slot_1',
+      name: 'Morning Tech Boost',
+      nameBn: 'সকালের এআই ও টেক টুলস',
+      time: '09:30',
+      category: 'Product Hunt Trending & AI Tools',
+      categoryBn: 'প্রোডাক্ট হান্ট ও ট্রেন্ডিং এআই টুলস',
+      enabled: true,
+    },
+    {
+      id: 'slot_2',
+      name: 'Mid-Day Cheat Sheet',
+      nameBn: 'দুপুরের প্র্যাকটিক্যাল চিটশিট',
+      time: '14:30',
+      category: 'Step-by-Step AI Cheat Sheet & Workflow Hacks',
+      categoryBn: 'স্টেপ-বাই-স্টেপ চিটশিট ও প্রম্পট হ্যাক্স',
+      enabled: true,
+    },
+    {
+      id: 'slot_3',
+      name: 'Prime Evening Viral Post',
+      nameBn: 'রাতের ভাইরাল টেক ডিপ ডাইভ',
+      time: '20:30',
+      category: 'Viral AI Debates, Comparisons & Breaking Tech News',
+      categoryBn: 'ভাইরাল এআই তুলনা ও ব্রেকিং টেক নিউজ',
+      enabled: true,
+    },
+  ],
+  updatedAt: new Date().toISOString(),
+};
+
+let cachedSettings: AutomationSettings | null = null;
+
+export function getAutomationSettings(): AutomationSettings {
+  if (cachedSettings) return cachedSettings;
+
+  try {
+    if (fs.existsSync(SETTINGS_FILE_PATH)) {
+      const raw = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      // Merge with defaults to ensure all required fields are present
+      cachedSettings = {
+        ...DEFAULT_AUTOMATION_SETTINGS,
+        ...parsed,
+        slots: DEFAULT_AUTOMATION_SETTINGS.slots.map((defaultSlot) => {
+          const found = (parsed.slots || []).find((s: SlotConfig) => s.id === defaultSlot.id);
+          return found ? { ...defaultSlot, ...found } : defaultSlot;
+        }),
+      };
+      return cachedSettings!;
+    }
+  } catch (err: any) {
+    console.warn(`[Database Service Warning] Failed reading settings.json: ${err.message}. Using default.`);
+  }
+
+  cachedSettings = { ...DEFAULT_AUTOMATION_SETTINGS };
+  persistSettings(cachedSettings);
+  return cachedSettings;
+}
+
+function persistSettings(settings: AutomationSettings): void {
+  try {
+    const dir = path.dirname(SETTINGS_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(settings, null, 2), 'utf-8');
+  } catch (err: any) {
+    console.error(`[Database Service Error] Failed saving settings.json: ${err.message}`);
+  }
+}
+
+export function updateAutomationSettings(updates: Partial<AutomationSettings>): AutomationSettings {
+  const current = getAutomationSettings();
+  const merged: AutomationSettings = {
+    ...current,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (updates.slots) {
+    merged.slots = current.slots.map((slot) => {
+      const incoming = updates.slots!.find((s) => s.id === slot.id);
+      return incoming ? { ...slot, ...incoming } : slot;
+    });
+  }
+
+  cachedSettings = merged;
+  persistSettings(merged);
+  console.log(`[Database Service] ⚙️ Automation settings successfully updated.`);
+  return merged;
+}
+
+export function updateSlotExecution(
+  slotId: string,
+  status: 'SUCCESS' | 'FAILED',
+  postId?: string,
+  topic?: string
+): AutomationSettings {
+  const settings = getAutomationSettings();
+  const now = new Date().toISOString();
+
+  settings.slots = settings.slots.map((s) => {
+    if (s.id === slotId) {
+      return {
+        ...s,
+        lastRun: now,
+        lastStatus: status,
+        lastPostId: postId || s.lastPostId,
+        lastTopic: topic || s.lastTopic,
+      };
+    }
+    return s;
+  });
+
+  settings.updatedAt = now;
+  cachedSettings = settings;
+  persistSettings(settings);
+  return settings;
+}
+
+export function resetAutomationSettings(): AutomationSettings {
+  cachedSettings = {
+    ...DEFAULT_AUTOMATION_SETTINGS,
+    updatedAt: new Date().toISOString(),
+  };
+  persistSettings(cachedSettings);
+  return cachedSettings;
+}
+

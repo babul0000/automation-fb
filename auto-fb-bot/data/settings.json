@@ -1,0 +1,38 @@
+{
+  "autoPilotEnabled": true,
+  "approvalRequired": false,
+  "timezone": "Asia/Dhaka",
+  "autoFirstComment": true,
+  "autoCommentReply": true,
+  "autoDm": true,
+  "slots": [
+    {
+      "id": "slot_1",
+      "name": "Morning Tech Boost",
+      "nameBn": "সকালের এআই ও টেক টুলস",
+      "time": "09:30",
+      "category": "Product Hunt Trending & AI Tools",
+      "categoryBn": "প্রোডাক্ট হান্ট ও ট্রেন্ডিং এআই টুলস",
+      "enabled": true
+    },
+    {
+      "id": "slot_2",
+      "name": "Mid-Day Cheat Sheet",
+      "nameBn": "দুপুরের প্র্যাকটিক্যাল চিটশিট",
+      "time": "14:30",
+      "category": "Step-by-Step AI Cheat Sheet & Workflow Hacks",
+      "categoryBn": "স্টেপ-বাই-স্টেপ চিটশিট ও প্রম্পট হ্যাক্স",
+      "enabled": true
+    },
+    {
+      "id": "slot_3",
+      "name": "Prime Evening Viral Post",
+      "nameBn": "রাতের ভাইরাল টেক ডিপ ডাইভ",
+      "time": "20:30",
+      "category": "Viral AI Debates, Comparisons & Breaking Tech News",
+      "categoryBn": "ভাইরাল এআই তুলনা ও ব্রেকিং টেক নিউজ",
+      "enabled": true
+    }
+  ],
+  "updatedAt": "2026-09-30T13:48:17.298Z"
+}

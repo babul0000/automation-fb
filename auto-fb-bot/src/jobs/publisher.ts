@@ -5,7 +5,7 @@ import { generateBanglaPostBundle, BanglaPostBundle, ReelsScriptData } from '../
 import { auditAndReflectPost, CriticAuditResult } from '../services/critic';
 import { generateCarouselSlides } from '../services/media';
 import { publishMultiPhotoPost, addCommentToPost } from '../services/facebook';
-import { savePost, saveJobLog, saveComment, saveReply } from '../services/db';
+import { savePost, saveJobLog, saveComment, saveReply, getAutomationSettings, updateSlotExecution } from '../services/db';
 import { collectAllRecentMetrics } from '../services/analytics';
 
 export interface AutonomousPostResult {
@@ -16,6 +16,7 @@ export interface AutonomousPostResult {
   score?: number;
   content: string;
   postId?: string;
+  slotId?: string;
   imageUrls?: string[];
   firstCommentId?: string;
   firstCommentText?: string;
@@ -30,8 +31,22 @@ export interface AutonomousPostResult {
 }
 
 /**
+ * Converts HH:mm (e.g., "09:30", "14:30", "20:30") to standard 5-part cron expression
+ */
+export function timeToCron(timeStr: string): string {
+  const parts = (timeStr || '').trim().split(':');
+  const hour = parseInt(parts[0], 10) || 9;
+  const minute = parseInt(parts[1], 10) || 30;
+  return `${minute} ${hour} * * *`;
+}
+
+// Active scheduled cron tasks in memory
+const activeSlotTasks: { [slotId: string]: ScheduledTask } = {};
+let analyticsCronTask: ScheduledTask | null = null;
+
+/**
  * Executes the complete autonomous publishing pipeline with:
- * 1. Autonomous Topic Discovery with Learning Feedback Loop + Product Hunt & Reddit Grounding (trends.ts)
+ * 1. Autonomous Topic Discovery tailored to slot category (trends.ts)
  * 2. Fact-Checking & Web Grounded Caption + First Comment Bundle + Viral Reels Script (ai.ts)
  * 3. AI Self-Reflection & Critic Audit (critic.ts)
  * 4. Multi-Slide Branded Carousel Generation with Watermark & Cheatsheet (media.ts)
@@ -41,19 +56,23 @@ export interface AutonomousPostResult {
  *
  * @param customTopic Optional topic override
  * @param dryRun If true, runs all AI generation & preview without posting to Facebook
+ * @param slotId Optional slot identifier ('slot_1', 'slot_2', 'slot_3')
+ * @param slotCategory Optional editorial category for the slot
  */
 export async function triggerManualPost(
   customTopic?: string,
-  dryRun: boolean = false
+  dryRun: boolean = false,
+  slotId?: string,
+  slotCategory?: string
 ): Promise<AutonomousPostResult> {
   const timestamp = new Date().toISOString();
   let selectedTopicTitle = '';
-  let topicCategory = 'AI Tools & Productivity';
+  let topicCategory = slotCategory || 'AI Tools & Productivity';
   let topicSource = 'Product Hunt & Web';
   let topicScore = 90;
 
   console.log(`\n======================================================`);
-  console.log(`[Autonomous Publisher] 🚀 Starting Facebook Pipeline at ${timestamp}`);
+  console.log(`[Autonomous Publisher] 🚀 Starting Facebook Pipeline ${slotId ? `for [${slotId}]` : ''} at ${timestamp}`);
 
   try {
     // 1. Topic Discovery with Self-Learning Feedback Loop & Multi-Source Intelligence
@@ -61,7 +80,7 @@ export async function triggerManualPost(
       selectedTopicTitle = customTopic.trim();
       console.log(`[Autonomous Publisher] 🎯 Using Custom Topic Override: "${selectedTopicTitle}"`);
     } else {
-      const discovered: DiscoveredTopic = await discoverTopTrendingTopic();
+      const discovered: DiscoveredTopic = await discoverTopTrendingTopic(slotCategory);
       selectedTopicTitle = discovered.title;
       topicCategory = discovered.category;
       topicSource = discovered.source || 'Product Hunt';
@@ -98,6 +117,7 @@ export async function triggerManualPost(
         source: topicSource,
         score: topicScore,
         content: finalCaption,
+        slotId,
         imageUrls,
         firstCommentText: bundle.firstComment,
         reelsScript: bundle.reelsScript,
@@ -114,9 +134,11 @@ export async function triggerManualPost(
     console.log(`[Autonomous Publisher] 📤 Uploading 3-slide Carousel Post to Meta Graph API...`);
     const fbRes = await publishMultiPhotoPost(imageUrls, finalCaption);
 
-    // 7. First Comment Link Automation (Reach Hack)
+    // 7. First Comment Link Automation (Reach Hack - respect settings)
+    const settings = getAutomationSettings();
     let firstCommentId: string | undefined;
-    if (bundle.firstComment && bundle.firstComment.trim().length > 0) {
+
+    if (settings.autoFirstComment && bundle.firstComment && bundle.firstComment.trim().length > 0) {
       try {
         console.log(`[Autonomous Publisher] 📌 Posting First Comment with direct resource links...`);
         // Small delay to ensure post is indexed on Meta side
@@ -146,8 +168,12 @@ export async function triggerManualPost(
       status: 'PUBLISHED',
     });
 
+    if (slotId) {
+      updateSlotExecution(slotId, 'SUCCESS', fbRes.post_id, selectedTopicTitle);
+    }
+
     await saveJobLog(
-      'AUTONOMOUS_PUBLISHER',
+      slotId ? `AUTONOMOUS_${slotId.toUpperCase()}` : 'AUTONOMOUS_PUBLISHER',
       'SUCCESS',
       `Post ID: ${fbRes.post_id}, Topic: ${selectedTopicTitle} [${topicSource}], Critic: ${audit.overallScore}/100, Carousel: ${imageUrls.length} slides, FirstComment: ${Boolean(firstCommentId)}`
     );
@@ -163,6 +189,7 @@ export async function triggerManualPost(
       score: topicScore,
       content: finalCaption,
       postId: fbRes.post_id,
+      slotId,
       imageUrls,
       firstCommentId,
       firstCommentText: bundle.firstComment,
@@ -176,12 +203,16 @@ export async function triggerManualPost(
     };
   } catch (error: any) {
     console.error(`[Autonomous Publisher] ❌ Pipeline Execution Failed:`, error.message);
-    await saveJobLog('AUTONOMOUS_PUBLISHER', 'FAILED', error.message);
+    if (slotId) {
+      updateSlotExecution(slotId, 'FAILED', undefined, selectedTopicTitle);
+    }
+    await saveJobLog(slotId ? `AUTONOMOUS_${slotId.toUpperCase()}` : 'AUTONOMOUS_PUBLISHER', 'FAILED', error.message);
 
     return {
       success: false,
       topic: selectedTopicTitle || 'Unknown Topic',
       content: '',
+      slotId,
       error: error.message || 'Pipeline failed',
       timestamp,
     };
@@ -189,36 +220,137 @@ export async function triggerManualPost(
 }
 
 /**
- * Initializes the automated cron schedule for posting and nightly analytics
+ * Dynamically re-configures and reschedules all 3 daily posting cron jobs
+ * based on the latest automation settings in data/settings.json
  */
-export function initPublisherJob(): { publisherTask: ScheduledTask; analyticsTask: ScheduledTask } {
-  const cronExpression = env.CRON_SCHEDULE || '30 9 * * *';
+export function rescheduleAllJobs(): { scheduledCount: number; autoPilot: boolean } {
+  const settings = getAutomationSettings();
 
-  console.log(`[Scheduler] ⏰ ByteBangla Autonomous Publisher scheduled with expression: "${cronExpression}" (Asia/Dhaka)`);
-
-  const publisherTask = cron.schedule(
-    cronExpression,
-    async () => {
-      console.log(`\n[Scheduler Trigger] ⏰ Scheduled autonomous post executing at ${new Date().toISOString()}...`);
-      await triggerManualPost();
-    },
-    {
-      scheduled: true,
-      timezone: 'Asia/Dhaka',
+  // 1. Stop and remove all running slot tasks
+  for (const slotId of Object.keys(activeSlotTasks)) {
+    try {
+      activeSlotTasks[slotId].stop();
+      delete activeSlotTasks[slotId];
+    } catch (e: any) {
+      console.warn(`[Scheduler Warning] Could not stop previous task for ${slotId}: ${e.message}`);
     }
-  );
+  }
 
-  const analyticsTask = cron.schedule(
-    '0 0 * * *',
-    async () => {
-      console.log(`\n[Scheduler Trigger] 📊 Collecting nightly post metrics at ${new Date().toISOString()}...`);
-      await collectAllRecentMetrics();
-    },
-    {
-      scheduled: true,
-      timezone: 'Asia/Dhaka',
+  // 2. If Master Auto-Pilot is disabled, do not schedule
+  if (!settings.autoPilotEnabled) {
+    console.log('[Scheduler] ⏸️ Master Auto-Pilot is PAUSED. Daily 3-post cron jobs are inactive.');
+    return { scheduledCount: 0, autoPilot: false };
+  }
+
+  // 3. Register each active slot
+  let count = 0;
+  for (const slot of settings.slots) {
+    if (slot.enabled) {
+      const cronExpr = timeToCron(slot.time);
+      const slotRef = slot;
+
+      activeSlotTasks[slot.id] = cron.schedule(
+        cronExpr,
+        async () => {
+          const currentSettings = getAutomationSettings();
+          const targetSlot = currentSettings.slots.find((s) => s.id === slotRef.id);
+
+          if (!currentSettings.autoPilotEnabled) {
+            console.log(`[Scheduler Trigger] Skipped ${slotRef.name} because Master Auto-Pilot is paused.`);
+            return;
+          }
+
+          if (targetSlot && !targetSlot.enabled) {
+            console.log(`[Scheduler Trigger] Skipped ${slotRef.name} because this slot is disabled.`);
+            return;
+          }
+
+          console.log(`\n[Scheduler Trigger] ⏰ 100% Autonomous Post for [${slotRef.nameBn} - ${slotRef.time} BST] executing at ${new Date().toISOString()}...`);
+          await triggerManualPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category);
+        },
+        {
+          scheduled: true,
+          timezone: settings.timezone || 'Asia/Dhaka',
+        }
+      );
+
+      console.log(`[Scheduler] ⏰ Slot registered: [${slot.nameBn}] at ${slot.time} BST (cron: "${cronExpr}")`);
+      count++;
+    } else {
+      console.log(`[Scheduler] ⚪ Slot skipped (Disabled by user): [${slot.nameBn}]`);
     }
-  );
+  }
 
-  return { publisherTask, analyticsTask };
+  console.log(`[Scheduler] ✅ Successfully initialized ${count} daily autonomous posting slots (Asia/Dhaka).`);
+  return { scheduledCount: count, autoPilot: true };
 }
+
+/**
+ * Returns the current live status of the scheduler
+ */
+export function getSchedulerStatus(): {
+  autoPilotEnabled: boolean;
+  activeSlotsCount: number;
+  activeSlotIds: string[];
+  timezone: string;
+} {
+  const settings = getAutomationSettings();
+  return {
+    autoPilotEnabled: settings.autoPilotEnabled,
+    activeSlotsCount: Object.keys(activeSlotTasks).length,
+    activeSlotIds: Object.keys(activeSlotTasks),
+    timezone: settings.timezone || 'Asia/Dhaka',
+  };
+}
+
+/**
+ * Initializes the automated multi-slot cron schedule and nightly analytics
+ */
+export function initPublisherJob(): {
+  activeSlotTasks: { [slotId: string]: ScheduledTask };
+  analyticsTask: ScheduledTask;
+  rescheduleAllJobs: typeof rescheduleAllJobs;
+} {
+  console.log(`[Scheduler] 🚀 Initializing ByteBangla 3-Slot Autonomous Scheduler (Asia/Dhaka)...`);
+  rescheduleAllJobs();
+
+  if (!analyticsCronTask) {
+    analyticsCronTask = cron.schedule(
+      '0 0 * * *',
+      async () => {
+        console.log(`\n[Scheduler Trigger] 📊 Collecting nightly post metrics at ${new Date().toISOString()}...`);
+        await collectAllRecentMetrics();
+      },
+      {
+        scheduled: true,
+        timezone: 'Asia/Dhaka',
+      }
+    );
+  }
+
+  return {
+    activeSlotTasks,
+    analyticsTask: analyticsCronTask,
+    rescheduleAllJobs,
+  };
+}
+
+export function stopAllScheduledTasks(): void {
+  for (const slotId of Object.keys(activeSlotTasks)) {
+    try {
+      activeSlotTasks[slotId].stop();
+      delete activeSlotTasks[slotId];
+    } catch (e: any) {
+      // ignore
+    }
+  }
+  if (analyticsCronTask) {
+    try {
+      analyticsCronTask.stop();
+      analyticsCronTask = null;
+    } catch (e: any) {
+      // ignore
+    }
+  }
+}
+

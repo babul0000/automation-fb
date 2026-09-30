@@ -3,8 +3,25 @@ import os from 'os';
 import { env, validateEnv, isConfiguredForFacebook, isConfiguredForGemini } from './config/env';
 import healthRouter from './routes/health';
 import webhookRouter from './routes/webhook';
-import { initPublisherJob, triggerManualPost } from './jobs/publisher';
-import { getRecentPosts, getRecentComments, isDatabaseConnected, getJobLogs, saveComment, saveReply } from './services/db';
+import {
+  initPublisherJob,
+  triggerManualPost,
+  rescheduleAllJobs,
+  getSchedulerStatus,
+  stopAllScheduledTasks,
+} from './jobs/publisher';
+import {
+  getRecentPosts,
+  getRecentComments,
+  isDatabaseConnected,
+  getJobLogs,
+  saveComment,
+  saveReply,
+  getAutomationSettings,
+  updateAutomationSettings,
+  resetAutomationSettings,
+  SlotConfig,
+} from './services/db';
 import { analyzeAudienceEngagement } from './services/learning';
 import { collectAllRecentMetrics } from './services/analytics';
 import { analyzeCommentWithAI } from './services/comments';
@@ -50,7 +67,7 @@ function getLocalIpAddress(): string {
 }
 
 /**
- * Root Dashboard: 100% Mobile-First Responsive All-in-One Command Center
+ * Root Dashboard: 100% Autonomous 3-Post Content Operations Center
  * Route: GET /
  */
 app.get('/', async (_req: Request, res: Response) => {
@@ -61,6 +78,8 @@ app.get('/', async (_req: Request, res: Response) => {
   const dbConnected = isDatabaseConnected();
   const localIp = getLocalIpAddress();
   const mobileUrl = `http://${localIp}:${env.PORT}`;
+  const settings = getAutomationSettings();
+  const scheduler = getSchedulerStatus();
 
   const postsHtml = recentPosts.length === 0
     ? `<div class="p-8 text-center text-slate-400 bg-slate-900/60 rounded-2xl border border-slate-800">
@@ -178,6 +197,88 @@ app.get('/', async (_req: Request, res: Response) => {
        </div>`
     : '';
 
+  // Generate 3 Daily Slot Cards
+  const slotCardsHtml = settings.slots
+    .map((slot, index) => {
+      const icon = index === 0 ? '🌅' : index === 1 ? '☀️' : '🌙';
+      const slotTimeId = `slot_time_${slot.id}`;
+      const toggleId = `slot_toggle_${slot.id}`;
+      const isEnabled = slot.enabled;
+      const statusColor = slot.lastStatus === 'SUCCESS' ? 'text-emerald-400' : slot.lastStatus === 'FAILED' ? 'text-rose-400' : 'text-cyan-400';
+      const statusText = slot.lastRun
+        ? `সর্বশেষ: ${new Date(slot.lastRun).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })} (${slot.lastStatus || 'OK'})`
+        : `শিডিউল: প্রতিদিন ${slot.time} BST`;
+
+      const fbPostLink = slot.lastPostId
+        ? `<a href="https://www.facebook.com/${env.PAGE_ID}/posts/${slot.lastPostId.includes('_') ? slot.lastPostId.split('_')[1] : slot.lastPostId}" target="_blank" class="text-[11px] text-cyan-400 hover:underline flex items-center gap-1 font-sans"><span>পোস্ট দেখুন ➔</span></a>`
+        : '';
+
+      return `
+      <div class="bg-slate-900/90 border ${isEnabled ? 'border-slate-800 hover:border-cyan-500/50' : 'border-slate-800/50 opacity-60'} rounded-3xl p-5 flex flex-col justify-between shadow-xl transition-all duration-200">
+        <div>
+          <!-- Header: Icon, Slot Title & Toggle Switch -->
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-10 h-10 rounded-2xl bg-slate-950 flex items-center justify-center text-xl border border-slate-800 shadow-inner">
+                ${icon}
+              </span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-bold text-white">${slot.nameBn}</h3>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-mono bg-cyan-950/70 text-cyan-300 border border-cyan-800/60 font-bold">${slot.time} BST</span>
+                </div>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">${slot.name}</p>
+              </div>
+            </div>
+            
+            <!-- Slot Active Switch -->
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="${toggleId}" ${isEnabled ? 'checked' : ''} onchange="toggleSlotActive('${slot.id}', this.checked)" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          <!-- Category Banner -->
+          <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800/90 mb-3">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">থিম ও কনটেন্ট ক্যাটাগরি:</span>
+            <p class="text-xs font-semibold text-cyan-300 mt-0.5">${slot.categoryBn || slot.category}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">${slot.category}</p>
+          </div>
+
+          <!-- Time Picker & Quick Inline Save -->
+          <div class="flex items-center gap-2 mb-3 bg-slate-950/60 p-2.5 rounded-2xl border border-slate-800">
+            <label class="text-[11px] text-slate-300 font-semibold shrink-0">পোস্ট টাইম:</label>
+            <input type="time" id="${slotTimeId}" value="${slot.time}" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-mono font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyan-500" />
+            <button onclick="saveSlotTime('${slot.id}')" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold transition active:scale-95 ml-auto">
+              সেভ
+            </button>
+          </div>
+
+          <!-- Execution Status -->
+          <div class="flex items-center justify-between text-[11px] px-1 mb-4">
+            <span class="flex items-center gap-1.5 ${statusColor} font-mono text-[10px]">
+              <span class="w-2 h-2 rounded-full ${slot.lastStatus === 'SUCCESS' ? 'bg-emerald-400' : slot.lastStatus === 'FAILED' ? 'bg-rose-400' : 'bg-cyan-400'} animate-pulse"></span>
+              <span>${statusText}</span>
+            </span>
+            ${fbPostLink}
+          </div>
+        </div>
+
+        <!-- Action Buttons: Post Now & Simulate -->
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
+          <button onclick="triggerSpecificSlot('${slot.id}')" id="btn-trigger-${slot.id}" class="py-2.5 px-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 text-xs font-bold rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1">
+            <span id="spinner-trigger-${slot.id}" class="hidden animate-spin text-xs">🌀</span>
+            <span>🚀 এখনই পোস্ট</span>
+          </button>
+          <button onclick="simulateSlot('${slot.id}', '${slot.category}')" class="py-2.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition active:scale-95 flex items-center justify-center gap-1">
+            <span>🧪 সিমুলেট</span>
+          </button>
+        </div>
+      </div>
+      `;
+    })
+    .join('');
+
   const html = `
   <!DOCTYPE html>
   <html lang="bn" class="dark">
@@ -187,7 +288,7 @@ app.get('/', async (_req: Request, res: Response) => {
     <meta name="theme-color" content="#020617">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>ByteBangla - Autonomous AI Facebook Hub</title>
+    <title>ByteBangla - ৩টি দৈনিক পোস্ট অটোমেশন হাব</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -206,7 +307,6 @@ app.get('/', async (_req: Request, res: Response) => {
       .mobile-tab-active svg {
         stroke: #22d3ee !important;
       }
-      /* Custom smooth scrollbar */
       ::-webkit-scrollbar { width: 6px; height: 6px; }
       ::-webkit-scrollbar-track { background: #020617; }
       ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -229,17 +329,28 @@ app.get('/', async (_req: Request, res: Response) => {
               <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-cyan-400 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
                 ByteBangla
               </h1>
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-[10px] font-bold rounded-full">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                ACTIVE
+              <span id="masterHeaderBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 ${settings.autoPilotEnabled ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' : 'bg-amber-500/10 text-amber-400 border border-amber-500/25'} text-[10px] font-bold rounded-full">
+                <span class="w-1.5 h-1.5 rounded-full ${settings.autoPilotEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}"></span>
+                <span>${settings.autoPilotEnabled ? '৩টি দৈনিক পোস্ট সক্রিয়' : 'পজ করা আছে'}</span>
               </span>
             </div>
-            <p class="text-[11px] text-slate-400 -mt-0.5">সহজ বাংলায় এআই ও টেকনোলজি টিপস</p>
+            <p class="text-[11px] text-slate-400 -mt-0.5">১০০% স্বয়ংক্রিয় এআই ফেসবুক কন্টেন্ট হাব</p>
           </div>
         </div>
 
         <!-- Top Actions -->
         <div class="flex items-center gap-2">
+          <!-- Live Dhaka Clock -->
+          <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-slate-300 font-mono">
+            <span>⏰</span>
+            <span id="dhakaLiveClock">--:--:-- BST</span>
+          </div>
+
+          <!-- Master Auto-Pilot Fast Toggle -->
+          <button onclick="toggleMasterAutoPilot(${!settings.autoPilotEnabled})" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition active:scale-95 ${settings.autoPilotEnabled ? 'bg-emerald-500/10 hover:bg-rose-500/10 text-emerald-400 hover:text-rose-400 border-emerald-500/30 hover:border-rose-500/30' : 'bg-amber-500/10 hover:bg-emerald-500/10 text-amber-400 hover:text-emerald-400 border-amber-500/30 hover:border-emerald-500/30'}">
+            <span>${settings.autoPilotEnabled ? '🟢 অটো-পাইলট ON' : '⏸️ অটো-পাইলট PAUSED'}</span>
+          </button>
+
           <!-- Refresh Button -->
           <button onclick="window.location.reload()" title="Refresh" class="p-2 text-slate-400 hover:text-white bg-slate-800/80 active:bg-slate-700 rounded-xl border border-slate-700 active:scale-95 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -258,10 +369,13 @@ app.get('/', async (_req: Request, res: Response) => {
       <div class="hidden sm:block border-t border-slate-800/60 bg-slate-900/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 py-2 overflow-x-auto">
           <button onclick="switchTab('overview')" id="desk-tab-overview" class="tab-btn tab-active px-4 py-1.5 rounded-xl text-xs font-semibold border border-transparent transition flex items-center gap-2">
-            <span>🏠</span><span>ওভারভিউ (সব কিছু এক নজরে)</span>
+            <span>🏠</span><span>ওভারভিউ ও ৩টি স্লট</span>
+          </button>
+          <button onclick="switchTab('schedule')" id="desk-tab-schedule" class="tab-btn px-4 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white border border-transparent transition flex items-center gap-2">
+            <span>⏰</span><span>শিডিউল ও কন্ট্রোল সেটিংস</span>
           </button>
           <button onclick="switchTab('studio')" id="desk-tab-studio" class="tab-btn px-4 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white border border-transparent transition flex items-center gap-2">
-            <span>🧪</span><span>এআই স্টুডিও ও সিমুলেটর</span>
+            <span>🧪</span><span>এআই স্টুডিও ও কাস্টম পোস্ট</span>
           </button>
           <button onclick="switchTab('posts')" id="desk-tab-posts" class="tab-btn px-4 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white border border-transparent transition flex items-center gap-2">
             <span>📸</span><span>পোস্টসমূহ (${recentPosts.length})</span>
@@ -279,29 +393,35 @@ app.get('/', async (_req: Request, res: Response) => {
     <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
       
-      <!-- 📱 Mobile Access Notice Card (Always accessible) -->
-      <section class="bg-gradient-to-r from-cyan-950/40 via-slate-900 to-indigo-950/40 border border-cyan-800/40 rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm font-bold border border-cyan-500/30">
-            📱
+      <!-- ⚡ Autonomous Mode Notification Banner -->
+      <section class="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-cyan-950/40 border border-emerald-800/40 rounded-2xl p-3.5 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold border border-emerald-500/30 shrink-0">
+            ⚡
           </div>
           <div>
-            <p class="text-xs font-bold text-cyan-300">মোবাইল থেকে সরাসরি ড্যাশবোর্ড দেখুন:</p>
-            <p class="text-[11px] text-slate-300 font-mono select-all">${mobileUrl}</p>
+            <p class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+              <span>১০০% স্বয়ংক্রিয় মোড সক্রিয় (জিরো-অ্যাপ্রুভাল)</span>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.2 rounded-full font-bold">৩টি দৈনিক স্লট</span>
+            </p>
+            <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed">
+              আপনার কোনো ম্যানুয়াল অনুমোদনের প্রয়োজন নেই। এআই নিজে থেকেই প্রতিদিন সকাল ০৯:৩০, দুপুর ০২:৩০ ও রাত ০৮:৩০ মিনিটে স্বয়ংক্রিয়ভাবে ফেসবুকে পোস্ট পাবলিশ করবে।
+            </p>
           </div>
         </div>
-        <button onclick="copyToClipboard('${mobileUrl}', 'মোবাইল এক্সেস লিংক কপি করা হয়েছে!')" class="w-full sm:w-auto px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-semibold rounded-xl border border-cyan-500/40 active:scale-95 transition flex items-center justify-center gap-1.5">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-          <span>লিংক কপি করুন</span>
-        </button>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="switchTab('schedule')" class="w-full sm:w-auto px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold rounded-xl border border-slate-700 transition active:scale-95 flex items-center justify-center gap-1.5">
+            <span>⚙️ সেটিংস পরিবর্তন করুন</span>
+          </button>
+        </div>
       </section>
 
       <!-- ========================================================================= -->
-      <!-- TAB 1: OVERVIEW (হোম - এক নজরে সব কিছু) -->
+      <!-- TAB 1: OVERVIEW & 3 SLOTS (হোম - ৩টি দৈনিক স্লট ও এক নজরে সব কিছু) -->
       <!-- ========================================================================= -->
       <div id="tab-content-overview" class="tab-pane space-y-5">
         
-        <!-- 4 Quick Metric Cards (2x2 on mobile, 4 in row on desktop) -->
+        <!-- 4 Quick Metric Cards -->
         <section class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
           <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm">
             <div class="flex items-center justify-between text-slate-400 text-xs">
@@ -314,11 +434,11 @@ app.get('/', async (_req: Request, res: Response) => {
 
           <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span class="font-medium">দৈনিক পোস্ট টাইম</span>
+              <span class="font-medium">দৈনিক পোস্ট স্লট</span>
               <span>⏰</span>
             </div>
-            <p class="text-xl sm:text-2xl font-bold text-amber-400 font-mono mt-1">০৯:৩০ AM</p>
-            <p class="text-[10px] text-slate-400 mt-0.5">প্রতিদিন (BST)</p>
+            <p class="text-2xl font-bold text-amber-400 font-mono mt-1">৩টি পোস্ট</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">সকাল • দুপুর • রাত</p>
           </div>
 
           <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm">
@@ -340,100 +460,24 @@ app.get('/', async (_req: Request, res: Response) => {
           </div>
         </section>
 
-        <!-- 🤖 Bot Fleet Showcase (৮টি স্বয়ংক্রিয় এআই বট ও তাদের কাজ) -->
-        <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
-          <div class="flex items-center justify-between">
+        <!-- 🌟 ৩টি দৈনিক স্লট কন্ট্রোল সেকশন (The 3 Daily Slots Dashboard) -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <div class="flex items-center gap-2">
-                <span class="text-base sm:text-lg font-bold text-white">🤖 ৮টি স্বয়ংক্রিয় এআই বট ও সিস্টেম আর্কিটেকচার</span>
-              </div>
-              <p class="text-xs text-slate-400 mt-0.5">আপনার পেজে ২৪ ঘণ্টা ব্যাকগ্রাউন্ডে সক্রিয় থাকা প্রতিটি বটের ভূমিকা:</p>
+              <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <span>🕒 প্রতিদিনের ৩টি পোস্টের লাইভ কন্ট্রোল হাব</span>
+                <span class="text-xs px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-bold">১০০% অটোমেশন</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">যেকোনো স্লটের সময় পরিবর্তন, চালু/বন্ধ বা তাৎক্ষণিক পোস্ট করুন:</p>
             </div>
-            <span class="hidden sm:inline-flex px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-full">
-              ৮/৮ ফুল একটিভ
-            </span>
+            <button onclick="switchTab('schedule')" class="text-xs text-cyan-400 hover:text-cyan-300 transition">
+              বিস্তারিত সেটিংস ➔
+            </button>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <!-- Bot 1 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-cyan-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">1️⃣ 🚀</span>
-                <span class="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-full font-bold text-[10px]">ProductHunt & Reddit</span>
-              </div>
-              <p class="font-bold text-slate-200">ব্রেকিং ট্রেন্ড ট্র্যাকার বট</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">Product Hunt, Reddit (r/ChatGPT) ও Hugging Face থেকে বিশ্বসেরা নতুন এআই টুলস সবার আগে লাইভ ট্র্যাক করে বাংলায় নিয়ে আসে।</p>
-            </div>
-
-            <!-- Bot 2 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-cyan-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">2️⃣ 🌐</span>
-                <span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full font-bold text-[10px]">Google Search</span>
-              </div>
-              <p class="font-bold text-slate-200">ফ্যাক্ট-চেকার ও ওয়েব গ্রাউন্ডিং</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">গুগল লাইভ সার্চ দিয়ে নিশ্চিত করে যে টুলস, ওয়েবসাইট ও ফিচারগুলো আসলেই সত্য ও চালু আছে। ভুয়া বা হ্যালুসিনেটেড টুলস ১০০% নিষিদ্ধ।</p>
-            </div>
-
-            <!-- Bot 3 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-cyan-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">3️⃣ 🎬</span>
-                <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-full font-bold text-[10px]">ক্যাপশন + রিলস</span>
-              </div>
-              <p class="font-bold text-slate-200">বাংলা কন্টেন্ট ও রিলস স্ক্রিপ্টার</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">হাই-কনভার্টিং ক্যাপশনের পাশাপাশি ৩০-৪৫ সেকেন্ডের ভাইরাল ফেসবুক রিলস/শর্টস ভয়েসওভার স্ক্রিপ্ট স্বয়ংক্রিয়ভাবে তৈরি করে দেয়।</p>
-            </div>
-
-            <!-- Bot 4 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-cyan-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">4️⃣ 🧐</span>
-                <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full font-bold text-[10px]">৮৫%+ কোয়ালিটি</span>
-              </div>
-              <p class="font-bold text-slate-200">সেলফ-রিফ্লেকশন ক্রিটিক অডিটর</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">পাবলিশের পূর্বে ড্রাফটের যথার্থতা, বাংলা ভাষার মান ও হুক অডিট করে। ৮৫ পয়েন্টের কম পেলে নিজে থেকেই ড্রাফটটি রিরাইট করে পরিমার্জন করে।</p>
-            </div>
-
-            <!-- Bot 5 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-purple-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">5️⃣ 🎨</span>
-                <span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full font-bold text-[10px]">ব্র্যান্ডেড ৩ডি চিটশিট</span>
-              </div>
-              <p class="font-bold text-slate-200">ওয়াটারমার্ক ও চিটশিট ভিজ্যুয়াল</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">১:১ স্কয়ার রেশিওতে ByteBangla ওয়াটারমার্কযুক্ত ৩ডি কভার, ইনফোগ্রাফিক চিটশিট ও সামারি স্লাইড তৈরি করে প্রিমিয়াম ব্র্যান্ডিং নিশ্চিত করে।</p>
-            </div>
-
-            <!-- Bot 6 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-blue-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">6️⃣ 🚀</span>
-                <span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full font-bold text-[10px]">Graph API v21</span>
-              </div>
-              <p class="font-bold text-slate-200">ফেসবুক মাল্টি-ফটো পাবলিশার</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">মেটা গ্রাফ এপিআই দিয়ে ক্যারোসেল পোস্ট করে এবং পোস্ট হওয়ার সাথে সাথে ফার্স্ট কমেন্টে অফিসিয়াল ও রিসোর্স লিংক পিন করে দেয়।</p>
-            </div>
-
-            <!-- Bot 7 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-amber-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">7️⃣ 💬</span>
-                <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-full font-bold text-[10px]">২৪/৭ ইনস্ট্যান্ট</span>
-              </div>
-              <p class="font-bold text-slate-200">কমেন্ট ও মেসেঞ্জার ডিএম বট</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">পোস্টের বিষয়বস্তু বিশ্লেষণ করে কমেন্টের প্রাসঙ্গিক উত্তর দেয় এবং 'AI / টুল / লিংক' চাইলে স্বয়ংক্রিয়ভাবে ইনবক্সে ডিরেক্ট রিসোর্স পাঠিয়ে দেয়।</p>
-            </div>
-
-            <!-- Bot 8 -->
-            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 hover:border-rose-500/40 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-base">8️⃣ 📈</span>
-                <span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 rounded-full font-bold text-[10px]">রাত ১১:৩০ BST</span>
-              </div>
-              <p class="font-bold text-slate-200">অ্যানালিটিক্স ও লার্নিং ব্রেন</p>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">প্রতি রাতে পোস্টের রিঅ্যাকশন, কমেন্ট ও শেয়ার অডিট করে বের করে কোন ধরণের পোস্ট দর্শকরা বেশি ভালোবাসে এবং পরবর্তী পোস্টের কৌশল উন্নত করে।</p>
-            </div>
+          <!-- 3 Slot Interactive Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${slotCardsHtml}
           </div>
         </section>
 
@@ -443,70 +487,111 @@ app.get('/', async (_req: Request, res: Response) => {
             <span class="text-base sm:text-lg font-bold text-white">🕒 ২৪ ঘণ্টার স্বয়ংক্রিয় কাজের সময়সূচী</span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="bg-slate-950/70 border border-amber-500/20 rounded-2xl p-3.5 flex items-start gap-3">
-              <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm shrink-0">
-                🌅
-              </div>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <!-- Morning -->
+            <div class="bg-slate-950/70 border border-amber-500/20 rounded-2xl p-3.5 flex flex-col justify-between">
               <div>
-                <p class="text-xs font-bold text-amber-300">সকাল ০৯:৩০ AM (BST)</p>
-                <p class="text-xs font-semibold text-slate-200 mt-0.5">স্বয়ংক্রিয় ফেসবুক পোস্ট</p>
-                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">ট্রেন্ডিং টপিক রিসার্চ, ফ্যাক্ট-চেক, ৩ডি ইমেজ তৈরি এবং ফার্স্ট কমেন্টসহ মেটা এপিআই-এর মাধ্যমে পেজে পোস্ট পাবলিশ হয়।</p>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-lg">🌅</span>
+                  <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[0]?.time || '09:30'} AM</span>
+                </div>
+                <p class="font-bold text-slate-200">সকালের এআই টুলস</p>
+                <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">Product Hunt ও ট্রেন্ডিং নতুন এআই টুলসের সকালের ব্রিফিং।</p>
               </div>
             </div>
 
-            <div class="bg-slate-950/70 border border-cyan-500/20 rounded-2xl p-3.5 flex items-start gap-3">
-              <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold text-sm shrink-0">
-                ☀️
-              </div>
+            <!-- Afternoon -->
+            <div class="bg-slate-950/70 border border-cyan-500/20 rounded-2xl p-3.5 flex flex-col justify-between">
               <div>
-                <p class="text-xs font-bold text-cyan-300">সারাদিন (২৪/৭ রিয়েল-টাইম)</p>
-                <p class="text-xs font-semibold text-slate-200 mt-0.5">অটো কমেন্ট ও ডিএম ডেলিভারি</p>
-                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">ফেসবুক ব্যবহারকারীরা পোস্টে কোনো কমেন্ট বা রিসোর্স চাইলেই এআই সাথে সাথে উত্তর ও ইনবক্সে ডিরেক্ট মেসেজ পাঠায়।</p>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-lg">☀️</span>
+                  <span class="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[1]?.time || '14:30'} PM</span>
+                </div>
+                <p class="font-bold text-slate-200">দুপুরের চিটশিট</p>
+                <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">স্টেপ-বাই-স্টেপ গাইড, প্রম্পট ও ইনফোগ্রাফিক চিটশিট।</p>
               </div>
             </div>
 
-            <div class="bg-slate-950/70 border border-purple-500/20 rounded-2xl p-3.5 flex items-start gap-3">
-              <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-sm shrink-0">
-                🌙
-              </div>
+            <!-- Evening -->
+            <div class="bg-slate-950/70 border border-indigo-500/20 rounded-2xl p-3.5 flex flex-col justify-between">
               <div>
-                <p class="text-xs font-bold text-purple-300">রাত ১১:৩০ PM (BST)</p>
-                <p class="text-xs font-semibold text-slate-200 mt-0.5">অডিয়েন্স অ্যানালাইসিস ও লার্নিং</p>
-                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">সারাদিনের পোস্টের ইনসাইটস, রিঅ্যাকশন ও শেয়ার বিশ্লেষণ করে এআই নিজের স্ট্র্যাটেজি আপডেট করে।</p>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-lg">🌙</span>
+                  <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-full font-mono font-bold text-[10px]">${settings.slots[2]?.time || '20:30'} PM</span>
+                </div>
+                <p class="font-bold text-slate-200">রাতের ভাইরাল টেক</p>
+                <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">টুল কম্প্যারিজন, ভাইরাল টেক আলোচনা ও রিলস স্ক্রিপ্ট।</p>
+              </div>
+            </div>
+
+            <!-- Night Analytics -->
+            <div class="bg-slate-950/70 border border-purple-500/20 rounded-2xl p-3.5 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-lg">📊</span>
+                  <span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full font-mono font-bold text-[10px]">12:00 AM</span>
+                </div>
+                <p class="font-bold text-slate-200">অ্যানালিটিক্স ব্রেন</p>
+                <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">রিঅ্যাকশন, কমেন্ট বিশ্লেষণ করে আগামীকালের স্ট্র্যাটেজি আপডেট।</p>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- 🧠 AI Self-Learning Insights & Problem Solving -->
-        <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-900/40 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
+        <!-- 🤖 Bot Fleet Showcase -->
+        <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
           <div class="flex items-center justify-between">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-              🧠 পেজ অ্যানালাইসিস ও প্রবলেম সলভিং
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-base sm:text-lg font-bold text-white">🤖 ৮টি স্বয়ংক্রিয় এআই বট ও তাদের ভূমিকা</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">আপনার পেজে ২৪ ঘণ্টা ব্যাকগ্রাউন্ডে সক্রিয় থাকা বটের ভূমিকা:</p>
+            </div>
+            <span class="hidden sm:inline-flex px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-full">
+              ৮/৮ ফুল একটিভ
             </span>
-            <span class="text-xs text-slate-400">রিয়েল-টাইম মেমোরি</span>
           </div>
 
-          ${topPostSummary}
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800">
-              <span class="font-bold text-emerald-400 flex items-center gap-1.5">
-                <span>🛡️ প্রবলেম ১: ফেসবুক লিংক রিচ ডাউন</span>
-              </span>
-              <p class="mt-1 leading-relaxed text-slate-300">
-                <span class="text-slate-400 font-semibold">সমাধান:</span> ক্যাপশনে কোনো লিংক না দিয়ে মূল ক্যাপশন সম্পূর্ণ ক্লিন রাখা হয়েছে। পোস্ট পাবলিশ হওয়ার পর স্বয়ংক্রিয়ভাবে ১ম কমেন্টে অফিসিয়াল রিসোর্স লিংক পিন করা হয়।
-              </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">1️⃣ 🚀</span>
+              <p class="font-bold text-slate-200">ট্রেন্ড ট্র্যাকার বট</p>
+              <p class="text-slate-400 text-[11px] mt-1">Product Hunt, Reddit ও Hugging Face থেকে বিশ্বসেরা এআই টুলস ট্র্যাক করে।</p>
             </div>
-
-            <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800">
-              <span class="font-bold text-amber-400 flex items-center gap-1.5">
-                <span>🛡️ প্রবলেম ২: এআই ভুয়া টুলসের ঝুঁকি</span>
-              </span>
-              <p class="mt-1 leading-relaxed text-slate-300">
-                <span class="text-slate-400 font-semibold">সমাধান:</span> গুগল সার্চ গ্রাউন্ডিং দিয়ে রিয়েল-টাইম তথ্য যাচাই করা হয়। ফলে কাল্পনিক কোনো টুলসের নাম বা লিংক তৈরি হওয়া সম্পূর্ণভাবে বন্ধ।
-              </p>
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">2️⃣ 🌐</span>
+              <p class="font-bold text-slate-200">ফ্যাক্ট-চেকার বট</p>
+              <p class="text-slate-400 text-[11px] mt-1">গুগল লাইভ সার্চ দিয়ে টুলস ও তথ্যের সত্যতা ১০০% যাচাই করে।</p>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">3️⃣ 🎬</span>
+              <p class="font-bold text-slate-200">কন্টেন্ট ও রিলস স্ক্রিপ্টার</p>
+              <p class="text-slate-400 text-[11px] mt-1">আকর্ষণীয় বাংলা ক্যাপশন ও ৩০ সেকেন্ডের রিলস স্ক্রিপ্ট তৈরি করে।</p>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">4️⃣ 🧐</span>
+              <p class="font-bold text-slate-200">ক্রিটিক অডিটর</p>
+              <p class="text-slate-400 text-[11px] mt-1">৮৫-এর কম স্কোর পেলে ড্রাফট নিজেই পরিমার্জন ও রিরাইট করে।</p>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">5️⃣ 🎨</span>
+              <p class="font-bold text-slate-200">চিটশিট ও ইমেজ বট</p>
+              <p class="text-slate-400 text-[11px] mt-1">১:১ স্কয়ার রেশিওতে ওয়াটারমার্কযুক্ত ৩ডি ইনফোগ্রাফিক স্লাইড তৈরি করে।</p>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">6️⃣ 🚀</span>
+              <p class="font-bold text-slate-200">গ্রাফ এপিআই পাবলিশার</p>
+              <p class="text-slate-400 text-[11px] mt-1">মেটা গ্রাফ এপিআই দিয়ে পোস্ট করে ১ম কমেন্টে লিংক পিন করে দেয়।</p>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">7️⃣ 💬</span>
+              <p class="font-bold text-slate-200">কমেন্ট ও ডিএম বট</p>
+              <p class="text-slate-400 text-[11px] mt-1">কমেন্টের উত্তর দেয় এবং ইনবক্সে ডিরেক্ট রিসোর্স টুল লিংক পাঠিয়ে দেয়।</p>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+              <span class="text-base mb-1 block">8️⃣ 📈</span>
+              <p class="font-bold text-slate-200">অ্যানালিটিক্স ব্রেন</p>
+              <p class="text-slate-400 text-[11px] mt-1">অডিয়েন্সের রিঅ্যাকশন ও এনগেজমেন্টের ওপর ভিত্তি করে সেলফ-লার্ন করে।</p>
             </div>
           </div>
         </section>
@@ -514,7 +599,123 @@ app.get('/', async (_req: Request, res: Response) => {
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 2: AI STUDIO & SIMULATOR (এআই স্টুডিও ও সিমুলেটর) -->
+      <!-- TAB 2: SCHEDULE & CONTROL SETTINGS (শিডিউল ও সেটিংস কন্ট্রোল প্যানেল) -->
+      <!-- ========================================================================= -->
+      <div id="tab-content-schedule" class="tab-pane hidden space-y-5">
+        <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-6">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/25">
+                ⚙️ সম্পূর্ণ অটোমেশন কন্ট্রোল
+              </span>
+              <h2 class="text-lg sm:text-xl font-bold text-white mt-2">৩টি দৈনিক পোস্টের সময়সূচী ও ফিচার সেটিংস</h2>
+              <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                আপনার পেজের জন্য প্রয়োজনীয় প্রতিটি ফিচার ও সময়সূচী সরাসরি এই প্যানেল থেকে কনফিগার করুন।
+              </p>
+            </div>
+            <button onclick="resetSettingsToDefault()" class="text-xs text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/40 px-3 py-1.5 rounded-xl transition">
+              ডিফল্ট সেটিংসে রিসেট
+            </button>
+          </div>
+
+          <!-- Master Auto-Pilot Box -->
+          <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-bold text-white flex items-center gap-2">
+                <span>🤖 মাস্টার অটো-পাইলট (Master Auto-Pilot)</span>
+                <span id="masterStatusBadge" class="text-xs px-2 py-0.5 rounded-full font-bold ${settings.autoPilotEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}">
+                  ${settings.autoPilotEnabled ? 'সক্রিয় (Active)' : 'পজ করা (Paused)'}
+                </span>
+              </p>
+              <p class="text-xs text-slate-400 mt-1">
+                চালু থাকলে প্রতিদিন নির্ধারিত সময়ে স্বয়ংক্রিয়ভাবে ৩টি পোস্ট ফেসবুকে লাইভ হবে। বন্ধ রাখলে শিডিউল স্থগিত থাকবে।
+              </p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+              <input type="checkbox" id="masterAutoPilotToggle" ${settings.autoPilotEnabled ? 'checked' : ''} onchange="toggleMasterAutoPilot(this.checked)" class="sr-only peer">
+              <div class="w-14 h-7 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          <!-- Feature Toggles Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Auto First Comment -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-slate-200">🔗 ফার্স্ট কমেন্ট অটোমেশন</p>
+                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">পোস্ট পাবলিশের ৩ সেকেন্ড পর ১ম কমেন্টে অফিশিয়াল লিংক পিন করে (রিচ বাড়ানোর জন্য)।</p>
+              </div>
+              <input type="checkbox" id="toggleFirstComment" ${settings.autoFirstComment ? 'checked' : ''} class="w-5 h-5 accent-cyan-500 rounded cursor-pointer mt-1" />
+            </div>
+
+            <!-- Auto Comment Reply -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-slate-200">💬 এআই অটো কমেন্ট রিপ্লাই</p>
+                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">ইউজারদের কমেন্টের ভাব বুঝে এআই প্রাসঙ্গিক ও তথ্যবহুল বাংলা উত্তর পাঠাবে।</p>
+              </div>
+              <input type="checkbox" id="toggleCommentReply" ${settings.autoCommentReply ? 'checked' : ''} class="w-5 h-5 accent-cyan-500 rounded cursor-pointer mt-1" />
+            </div>
+
+            <!-- Auto DM Resource -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-slate-200">📩 ইনবক্স ডিএম ডেলিভারি</p>
+                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">কেউ 'টুল' বা 'লিংক' চাইলে স্বয়ংক্রিয়ভাবে মেসেঞ্জারে ডিরেক্ট রিসোর্স পাঠাবে।</p>
+              </div>
+              <input type="checkbox" id="toggleAutoDm" ${settings.autoDm ? 'checked' : ''} class="w-5 h-5 accent-cyan-500 rounded cursor-pointer mt-1" />
+            </div>
+          </div>
+
+          <!-- 3 Slots Detailed Time & Theme Editor -->
+          <div class="space-y-4 pt-2">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span>⏰ ৩টি পোস্টের স্লট টাইম ও থিম সম্পাদনা:</span>
+            </h3>
+
+            ${settings.slots
+              .map((s, idx) => {
+                const icon = idx === 0 ? '🌅' : idx === 1 ? '☀️' : '🌙';
+                return `
+                <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+                  <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-lg">${icon}</span>
+                      <span class="text-xs font-bold text-white">${s.nameBn} (${s.name})</span>
+                    </div>
+                    <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                      <input type="checkbox" id="form_slot_enabled_${s.id}" ${s.enabled ? 'checked' : ''} class="w-4 h-4 accent-cyan-500 rounded cursor-pointer">
+                      <span>এই স্লট চালু রাখুন</span>
+                    </label>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label class="text-[11px] text-slate-400 block mb-1">পোস্টিং সময় (BST):</label>
+                      <input type="time" id="form_slot_time_${s.id}" value="${s.time}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500" />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label class="text-[11px] text-slate-400 block mb-1">কনটেন্ট ক্যাটাগরি ও থিম ফোকাস:</label>
+                      <input type="text" id="form_slot_category_${s.id}" value="${s.category}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-sans" />
+                    </div>
+                  </div>
+                </div>
+                `;
+              })
+              .join('')}
+          </div>
+
+          <!-- Save All Settings Button -->
+          <div class="pt-3 border-t border-slate-800 flex justify-end">
+            <button onclick="saveAllSettingsForm()" id="saveAllSettingsBtn" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+              <span id="saveSettingsSpinner" class="hidden animate-spin">🌀</span>
+              <span>💾 সকল সেটিংস সেভ ও কার্যকর করুন</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 3: AI STUDIO & SIMULATOR (এআই স্টুডিও ও কাস্টম পোস্ট) -->
       <!-- ========================================================================= -->
       <div id="tab-content-studio" class="tab-pane hidden space-y-5">
         <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
@@ -539,19 +740,17 @@ app.get('/', async (_req: Request, res: Response) => {
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <!-- Safe Preview Button (Prominent & Primary) -->
             <button id="previewBtn" onclick="runPipeline(true)" class="w-full py-4 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm rounded-2xl shadow-lg shadow-purple-600/25 transition duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
               <span id="previewSpinner" class="hidden animate-spin">🌀</span>
               <span id="previewText">🧪 Simulate & Preview (ফেসবুকে পোস্ট ছাড়া)</span>
             </button>
 
-            <!-- Direct Live Publish (Safeguarded with confirmation modal) -->
             <button id="liveBtn" onclick="openLiveConfirmModal()" class="w-full py-4 px-4 bg-slate-800/90 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 font-bold text-xs sm:text-sm rounded-2xl border border-slate-700 transition duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
               <span>🚀 ফেসবুকে সরাসরি পোস্ট করুন</span>
             </button>
           </div>
 
-          <!-- Live Progress Tracker Pipeline -->
+          <!-- Live Progress Feedback -->
           <div id="liveFeedback" class="hidden mt-4 pt-4 border-t border-slate-800 text-xs sm:text-sm">
             <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2">
               <div class="flex items-center gap-2 text-cyan-400 font-semibold">
@@ -562,7 +761,7 @@ app.get('/', async (_req: Request, res: Response) => {
             </div>
           </div>
 
-          <!-- Safe Preview Result Box -->
+          <!-- Preview Result Card -->
           <div id="previewCard" class="hidden mt-4 pt-4 border-t border-slate-800 space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2 flex-wrap">
@@ -576,18 +775,16 @@ app.get('/', async (_req: Request, res: Response) => {
               <button onclick="document.getElementById('previewCard').classList.add('hidden')" class="text-xs text-slate-400 hover:text-white p-1">✕ বন্ধ করুন</button>
             </div>
 
-            <!-- Carousel Preview Cards -->
+            <!-- Carousel Preview -->
             <div>
               <p class="text-xs font-bold text-slate-300 mb-2">📸 তৈরি হওয়া ৩ডি ভিজ্যুয়াল স্লাইডসমূহ:</p>
-              <div id="carouselPreviewGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+              <div id="carouselPreviewGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
             </div>
 
-            <!-- Caption Preview -->
+            <!-- Caption -->
             <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                  <span>📝 মূল বাংলা ক্যাপশন:</span>
-                </span>
+                <span class="text-xs font-bold text-cyan-400">📝 মূল বাংলা ক্যাপশন:</span>
                 <button onclick="copyToClipboard(document.getElementById('previewCaption').innerText, 'ক্যাপশন কপি করা হয়েছে!')" class="text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-950/70 border border-cyan-800/60 px-2.5 py-1 rounded-lg">
                   কপি করুন
                 </button>
@@ -595,12 +792,10 @@ app.get('/', async (_req: Request, res: Response) => {
               <pre id="previewCaption" class="text-xs text-slate-200 whitespace-pre-wrap font-sans leading-relaxed"></pre>
             </div>
 
-            <!-- First Comment Preview -->
+            <!-- First Comment -->
             <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                  <span>🔗 ১ম কমেন্ট (অফিসিয়াল রিসোর্স লিংক):</span>
-                </span>
+                <span class="text-xs font-bold text-amber-400">🔗 ১ম কমেন্ট (অফিসিয়াল রিসোর্স লিংক):</span>
                 <button onclick="copyToClipboard(document.getElementById('previewFirstComment').innerText, 'ফার্স্ট কমেন্ট কপি করা হয়েছে!')" class="text-xs text-amber-400 hover:text-amber-300 bg-amber-950/70 border border-amber-800/60 px-2.5 py-1 rounded-lg">
                   কপি করুন
                 </button>
@@ -608,33 +803,29 @@ app.get('/', async (_req: Request, res: Response) => {
               <pre id="previewFirstComment" class="text-xs text-slate-300 whitespace-pre-wrap font-sans leading-relaxed"></pre>
             </div>
 
-            <!-- 🎬 Viral Facebook Reels & Shorts Script Preview -->
+            <!-- Reels Script -->
             <div id="reelsCard" class="hidden bg-gradient-to-br from-indigo-950/70 via-slate-900 to-purple-950/50 p-4 rounded-2xl border border-indigo-700/50 space-y-3">
               <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-2">
                   <span class="text-lg">🎬</span>
-                  <div>
-                    <span class="text-xs font-bold text-purple-300">ফেসবুক রিলস ও শর্ট ভিডিও স্ক্রিপ্ট (৩০-৪৫ সেকেন্ড)</span>
-                    <p class="text-[10px] text-slate-400">এই স্ক্রিপ্ট পড়ে সরাসরি ফেসবুক রিলস বানিয়ে পেজকে ৩ গুণ দ্রুত গ্রো করান</p>
-                  </div>
+                  <span class="text-xs font-bold text-purple-300">ফেসবুক রিলস স্ক্রিপ্ট (৩০-৪৫ সেকেন্ড)</span>
                 </div>
-                <button onclick="copyToClipboard(document.getElementById('reelsFullScript').innerText, 'সম্পূর্ণ রিলস স্ক্রিপ্ট কপি করা হয়েছে!')" class="text-xs text-purple-300 hover:text-white bg-purple-900/60 hover:bg-purple-800/80 border border-purple-700/70 px-3 py-1 rounded-lg transition active:scale-95 flex items-center gap-1">
-                  <span>📋 রিলস স্ক্রিপ্ট কপি</span>
+                <button onclick="copyToClipboard(document.getElementById('reelsFullScript').innerText, 'রিলস স্ক্রিপ্ট কপি করা হয়েছে!')" class="text-xs text-purple-300 hover:text-white bg-purple-900/60 border border-purple-700/70 px-3 py-1 rounded-lg transition active:scale-95">
+                  📋 কপি
                 </button>
               </div>
-
               <div class="space-y-2 text-xs">
                 <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                  <span class="text-purple-400 font-bold flex items-center gap-1">⚡ ভাইরাল হুক ডায়লগ (০-৫ সেকেন্ড):</span>
-                  <p id="reelsHook" class="text-slate-100 font-medium mt-1 leading-relaxed"></p>
+                  <span class="text-purple-400 font-bold">⚡ ভাইরাল হুক ডায়লগ (০-৫ সেকেন্ড):</span>
+                  <p id="reelsHook" class="text-slate-100 font-medium mt-1"></p>
                 </div>
                 <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                  <span class="text-cyan-400 font-bold flex items-center gap-1">💡 মূল ভয়েসওভার বডি (৫-২৫ সেকেন্ড):</span>
-                  <p id="reelsBody" class="text-slate-200 mt-1 leading-relaxed whitespace-pre-wrap"></p>
+                  <span class="text-cyan-400 font-bold">💡 মূল ভয়েসওভার বডি (৫-২৫ সেকেন্ড):</span>
+                  <p id="reelsBody" class="text-slate-200 mt-1 whitespace-pre-wrap"></p>
                 </div>
                 <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                  <span class="text-amber-400 font-bold flex items-center gap-1">🚀 কল টু অ্যাকশন (২৫-৩০ সেকেন্ড):</span>
-                  <p id="reelsCta" class="text-slate-100 font-medium mt-1 leading-relaxed"></p>
+                  <span class="text-amber-400 font-bold">🚀 কল টু অ্যাকশন (২৫-৩০ সেকেন্ড):</span>
+                  <p id="reelsCta" class="text-slate-100 font-medium mt-1"></p>
                 </div>
                 <div id="reelsFullScript" class="hidden"></div>
               </div>
@@ -644,7 +835,7 @@ app.get('/', async (_req: Request, res: Response) => {
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 3: POSTS & METRICS (পোস্টসমূহ ও পারফরম্যান্স) -->
+      <!-- TAB 4: POSTS & METRICS (পোস্টসমূহ ও পারফরম্যান্স) -->
       <!-- ========================================================================= -->
       <div id="tab-content-posts" class="tab-pane hidden space-y-5">
         <div class="flex items-center justify-between">
@@ -669,11 +860,9 @@ app.get('/', async (_req: Request, res: Response) => {
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 4: COMMUNITY & COMMENTS (কমেন্ট ও ইনবক্স ডিএম) -->
+      <!-- TAB 5: COMMUNITY & COMMENTS (কমেন্ট ও ইনবক্স ডিএম) -->
       <!-- ========================================================================= -->
       <div id="tab-content-community" class="tab-pane hidden space-y-5">
-        
-        <!-- Interactive Comment Bot Tester -->
         <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3">
           <div>
             <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/25">
@@ -694,7 +883,6 @@ app.get('/', async (_req: Request, res: Response) => {
           <div id="testCommentResult" class="hidden p-3.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs space-y-2"></div>
         </section>
 
-        <!-- Comments Feed -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
@@ -709,11 +897,9 @@ app.get('/', async (_req: Request, res: Response) => {
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 5: AI BRAIN & SYSTEM HEALTH (এআই ব্রেন ও হেলথ) -->
+      <!-- TAB 6: AI BRAIN & SYSTEM HEALTH (এআই ব্রেন ও হেলথ) -->
       <!-- ========================================================================= -->
       <div id="tab-content-brain" class="tab-pane hidden space-y-5">
-        
-        <!-- Live System Health Checkers -->
         <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3">
           <h3 class="text-base font-bold text-white flex items-center gap-2">
             <span>🛡️ লাইভ সিস্টেম ও এপিআই কানেকশন স্ট্যাটাস</span>
@@ -753,14 +939,14 @@ app.get('/', async (_req: Request, res: Response) => {
               </span>
             </div>
 
-            <!-- Scheduler -->
+            <!-- 3-Slot Multi Scheduler -->
             <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
               <div>
-                <p class="font-bold text-slate-200">অটো ক্রন শিডিউলার</p>
-                <p class="text-[11px] text-slate-400 font-mono mt-0.5">"30 9 * * *" (০৯:৩০ AM)</p>
+                <p class="font-bold text-slate-200">৩টি দৈনিক স্লট ক্রন শিডিউলার</p>
+                <p class="text-[11px] text-slate-400 font-mono mt-0.5">${scheduler.activeSlotsCount}/3 Active Slots</p>
               </div>
-              <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-bold text-[11px]">
-                ● Running
+              <span class="px-2.5 py-1 ${scheduler.autoPilotEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'} rounded-full font-bold text-[11px]">
+                ● ${scheduler.autoPilotEnabled ? 'Running' : 'Paused'}
               </span>
             </div>
 
@@ -775,20 +961,20 @@ app.get('/', async (_req: Request, res: Response) => {
               </span>
             </div>
 
-            <!-- Safe Mode Status -->
+            <!-- First Comment Hack -->
             <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
               <div>
-                <p class="font-bold text-slate-200">সিমুলেশন মোড</p>
-                <p class="text-[11px] text-slate-400 font-mono mt-0.5">Zero Post Protection</p>
+                <p class="font-bold text-slate-200">ফার্স্ট কমেন্ট অটোমেশন</p>
+                <p class="text-[11px] text-slate-400 font-mono mt-0.5">${settings.autoFirstComment ? 'Enabled' : 'Disabled'}</p>
               </div>
-              <span class="px-2.5 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full font-bold text-[11px]">
-                ● Safe
+              <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-bold text-[11px]">
+                ● Active
               </span>
             </div>
           </div>
         </section>
 
-        <!-- Audit Log Column -->
+        <!-- Audit Log -->
         <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3">
           <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
             <span>🛡️ সিস্টেম অডিট ও জব হিস্ট্রি লগ</span>
@@ -801,13 +987,16 @@ app.get('/', async (_req: Request, res: Response) => {
 
     </main>
 
-    <!-- ========================================================================= -->
     <!-- 📱 MOBILE STICKY BOTTOM NAVIGATION BAR -->
-    <!-- ========================================================================= -->
     <nav class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-2 py-2 flex items-center justify-around sm:hidden">
       <button onclick="switchTab('overview')" id="mob-tab-overview" class="mobile-tab-btn mobile-tab-active flex flex-col items-center gap-1 text-slate-400 active:scale-95 transition">
         <svg class="w-5 h-5 stroke-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         <span class="text-[10px] font-semibold">হোম</span>
+      </button>
+
+      <button onclick="switchTab('schedule')" id="mob-tab-schedule" class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-95 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span class="text-[10px] font-semibold">শিডিউল</span>
       </button>
 
       <button onclick="switchTab('studio')" id="mob-tab-studio" class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-95 transition">
@@ -865,15 +1054,21 @@ app.get('/', async (_req: Request, res: Response) => {
         alert(msg || 'ক্লিপবোর্ডে কপি করা হয়েছে!');
       }
 
+      function updateClock() {
+        const now = new Date();
+        const str = now.toLocaleTimeString('bn-BD', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' BST';
+        const el = document.getElementById('dhakaLiveClock');
+        if (el) el.innerText = str;
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
       function switchTab(tabId) {
-        // Hide all tab panes
         document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
         
-        // Show target tab pane
         const target = document.getElementById('tab-content-' + tabId);
         if (target) target.classList.remove('hidden');
 
-        // Update desktop tab styles
         document.querySelectorAll('.tab-btn').forEach(btn => {
           btn.classList.remove('tab-active');
           btn.classList.add('text-slate-400');
@@ -884,7 +1079,6 @@ app.get('/', async (_req: Request, res: Response) => {
           activeDeskTab.classList.remove('text-slate-400');
         }
 
-        // Update mobile bottom tab styles
         document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
           btn.classList.remove('mobile-tab-active');
           const svg = btn.querySelector('svg');
@@ -898,6 +1092,171 @@ app.get('/', async (_req: Request, res: Response) => {
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // Master Auto-Pilot Switch
+      async function toggleMasterAutoPilot(enabled) {
+        try {
+          const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ autoPilotEnabled: enabled }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            alert(enabled ? '✅ মাস্টার অটো-পাইলট চালু করা হয়েছে! প্রতিদিন ৩টি পোস্ট স্বয়ংক্রিয়ভাবে পাবলিশ হবে।' : '⏸️ মাস্টার অটো-পাইলট সাময়িক পজ করা হয়েছে।');
+            window.location.reload();
+          } else {
+            alert('এরর: ' + (json.error || 'Failed to update'));
+          }
+        } catch (e) {
+          alert('নেটওয়ার্ক এরর: ' + e.message);
+        }
+      }
+
+      // Toggle Individual Slot Switch
+      async function toggleSlotActive(slotId, enabled) {
+        try {
+          const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              slots: [{ id: slotId, enabled: enabled }]
+            }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            // Updated
+          } else {
+            alert('এরর: ' + (json.error || 'Failed'));
+          }
+        } catch (e) {
+          alert('নেটওয়ার্ক এরর: ' + e.message);
+        }
+      }
+
+      // Save Individual Slot Time
+      async function saveSlotTime(slotId) {
+        const input = document.getElementById('slot_time_' + slotId);
+        if (!input || !input.value) return;
+
+        try {
+          const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              slots: [{ id: slotId, time: input.value }]
+            }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            alert('✅ স্লটের সময় ' + input.value + ' BST সফলভাবে সেভ করা হয়েছে!');
+          } else {
+            alert('এরর: ' + (json.error || 'Failed'));
+          }
+        } catch (e) {
+          alert('নেটওয়ার্ক এরর: ' + e.message);
+        }
+      }
+
+      // Save All Settings Form
+      async function saveAllSettingsForm() {
+        const btn = document.getElementById('saveAllSettingsBtn');
+        const spinner = document.getElementById('saveSettingsSpinner');
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+
+        try {
+          const autoFirstComment = document.getElementById('toggleFirstComment').checked;
+          const autoCommentReply = document.getElementById('toggleCommentReply').checked;
+          const autoDm = document.getElementById('toggleAutoDm').checked;
+
+          const slots = ['slot_1', 'slot_2', 'slot_3'].map(id => {
+            const timeEl = document.getElementById('form_slot_time_' + id);
+            const catEl = document.getElementById('form_slot_category_' + id);
+            const enabledEl = document.getElementById('form_slot_enabled_' + id);
+            return {
+              id: id,
+              time: timeEl ? timeEl.value : '09:30',
+              category: catEl ? catEl.value : '',
+              enabled: enabledEl ? enabledEl.checked : true,
+            };
+          });
+
+          const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              autoFirstComment,
+              autoCommentReply,
+              autoDm,
+              slots,
+            }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            alert('✅ সকল সেটিংস ও ৩টি দৈনিক শিডিউল সফলভাবে আপডেট করা হয়েছে!');
+            window.location.reload();
+          } else {
+            alert('এরর: ' + (json.error || 'Failed to update'));
+          }
+        } catch (e) {
+          alert('নেটওয়ার্ক এরর: ' + e.message);
+        } finally {
+          btn.disabled = false;
+          spinner.classList.add('hidden');
+        }
+      }
+
+      // Reset Settings to Defaults
+      async function resetSettingsToDefault() {
+        if (!confirm('আপনি কি ডিফল্ট সেটিংসে ফিরে যেতে চান?')) return;
+        try {
+          const res = await fetch('/api/reset-settings', { method: 'POST' });
+          const json = await res.json();
+          if (json.success) {
+            alert('✅ ডিফল্ট ৩-স্লট সেটিংস সফলভাবে রিস্টোর করা হয়েছে!');
+            window.location.reload();
+          }
+        } catch (e) {
+          alert('এরর: ' + e.message);
+        }
+      }
+
+      // Trigger Specific Slot Live
+      async function triggerSpecificSlot(slotId) {
+        if (!confirm('আপনি কি এই স্লটের পোস্ট এখনই ফেসবুকে সরাসরি পাবলিশ করতে চান?')) return;
+
+        const btn = document.getElementById('btn-trigger-' + slotId);
+        const spinner = document.getElementById('spinner-trigger-' + slotId);
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+
+        try {
+          const res = await fetch('/api/trigger-slot/' + slotId, {
+            method: 'POST',
+          });
+          const json = await res.json();
+          if (json.success) {
+            alert('🌟 পোস্ট সফলভাবে ফেসবুকে লাইভ পাবলিশ করা হয়েছে! পোস্ট আইডি: ' + json.data.postId);
+            window.location.reload();
+          } else {
+            alert('❌ পোস্ট তৈরিতে সমস্যা হয়েছে: ' + (json.data?.error || json.error || 'Failed'));
+          }
+        } catch (e) {
+          alert('নেটওয়ার্ক এরর: ' + e.message);
+        } finally {
+          btn.disabled = false;
+          spinner.classList.add('hidden');
+        }
+      }
+
+      // Simulate a Slot in Studio
+      function simulateSlot(slotId, category) {
+        switchTab('studio');
+        const input = document.getElementById('customTopicInput');
+        if (input) input.value = category || '';
+        runPipeline(true);
       }
 
       function openLiveConfirmModal() {
@@ -948,7 +1307,6 @@ app.get('/', async (_req: Request, res: Response) => {
               document.getElementById('previewCaption').innerText = json.data.content;
               document.getElementById('previewFirstComment').innerText = json.data.firstCommentText || 'কোনো ফার্স্ট কমেন্ট নেই';
 
-              // Populate Reels Script
               if (json.data.reelsScript) {
                 document.getElementById('reelsHook').innerText = json.data.reelsScript.hook || '';
                 document.getElementById('reelsBody').innerText = json.data.reelsScript.body || '';
@@ -961,7 +1319,7 @@ app.get('/', async (_req: Request, res: Response) => {
 
               const grid = document.getElementById('carouselPreviewGrid');
               grid.innerHTML = (json.data.imageUrls || []).map((url, i) =>
-                '<div><p class="text-[11px] text-slate-400 mb-1 font-semibold">স্লাইড ' + (i+1) + (i === 0 ? ' (ব্র্যান্ডেড কভার)' : (i === 1 ? ' (ইনফোগ্রাফিক চিটশিট)' : ' (সামারি অ্যাকশন)')) + '</p><img src="' + url + '" class="w-full h-44 object-cover rounded-xl border border-slate-700 shadow-md" /></div>'
+                '<div><p class="text-[11px] text-slate-400 mb-1 font-semibold">স্লাইড ' + (i+1) + (i === 0 ? ' (কভার)' : (i === 1 ? ' (চিটশিট)' : ' (অ্যাকশন)')) + '</p><img src="' + url + '" class="w-full h-44 object-cover rounded-xl border border-slate-700 shadow-md" /></div>'
               ).join('');
 
               previewCard.classList.remove('hidden');
@@ -1052,10 +1410,10 @@ app.get('/', async (_req: Request, res: Response) => {
           const res = await fetch('/api/sync-metrics', { method: 'POST' });
           const json = await res.json();
           if (json.success) {
-            result.innerText = '✅ সফলভাবে ' + (json.metrics?.length || 0) + ' টি পোস্টের লাইভ ফেসবুক মেট্রিক্স আপডেট হয়েছে!';
-            setTimeout(() => window.location.reload(), 2000);
+            result.innerText = '✅ মেট্রিক্স সিঙ্ক সম্পন্ন হয়েছে!';
+            setTimeout(() => window.location.reload(), 1500);
           } else {
-            result.innerText = '❌ সিঙ্ক ব্যর্থ: ' + (json.error || 'Unknown');
+            result.innerText = '❌ সিঙ্ক ত্রুটি: ' + json.error;
           }
         } catch (err) {
           result.innerText = '❌ এরর: ' + err.message;
@@ -1070,6 +1428,64 @@ app.get('/', async (_req: Request, res: Response) => {
   `;
 
   res.status(200).send(html);
+});
+
+// Settings Read API
+app.get('/api/settings', async (_req: Request, res: Response) => {
+  try {
+    const settings = getAutomationSettings();
+    const scheduler = getSchedulerStatus();
+    res.status(200).json({ success: true, settings, scheduler });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Settings Update API
+app.post('/api/settings', async (req: Request, res: Response) => {
+  try {
+    const updated = updateAutomationSettings(req.body);
+    rescheduleAllJobs();
+    res.status(200).json({ success: true, settings: updated, scheduler: getSchedulerStatus() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Reset Settings API
+app.post('/api/reset-settings', async (_req: Request, res: Response) => {
+  try {
+    const reset = resetAutomationSettings();
+    rescheduleAllJobs();
+    res.status(200).json({ success: true, settings: reset });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Trigger a specific slot immediately
+app.post('/api/trigger-slot/:slotId', async (req: Request, res: Response) => {
+  try {
+    const slotId = req.params.slotId;
+    const settings = getAutomationSettings();
+    const slot = settings.slots.find((s) => s.id === slotId);
+
+    if (!slot) {
+      res.status(404).json({ success: false, error: `Slot ${slotId} not found` });
+      return;
+    }
+
+    console.log(`[Manual Slot Trigger] Firing [${slot.nameBn} - ${slot.id}] immediately...`);
+    const result = await triggerManualPost(undefined, false, slot.id, slot.category);
+
+    res.status(result.success ? 200 : 500).json({
+      success: result.success,
+      data: result,
+      error: result.error,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Interactive Comment Test API
@@ -1170,6 +1586,10 @@ app.use((_req: Request, res: Response) => {
       'GET /health',
       'GET /webhook',
       'POST /webhook',
+      'GET /api/settings',
+      'POST /api/settings',
+      'POST /api/reset-settings',
+      'POST /api/trigger-slot/:slotId',
       'POST /test-post',
       'POST /api/simulate-draft',
       'POST /api/test-comment',
@@ -1191,23 +1611,23 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 const startServer = () => {
   validateEnv(false);
 
-  const { publisherTask, analyticsTask } = initPublisherJob();
+  const { activeSlotTasks, analyticsTask, rescheduleAllJobs: reInit } = initPublisherJob();
 
   const server = app.listen(env.PORT, '0.0.0.0', () => {
     const localIp = getLocalIpAddress();
     console.log(`\n======================================================`);
-    console.log(`🚀 ByteBangla 100% Autonomous Content Hub is live!`);
+    console.log(`🚀 ByteBangla 100% Autonomous 3-Post Content Hub is live!`);
     console.log(`📡 Local:   http://localhost:${env.PORT}`);
     console.log(`📱 Mobile:  http://${localIp}:${env.PORT}`);
     console.log(`🛡️  Environment: ${env.NODE_ENV}`);
-    console.log(`🕒 Cron Schedule: "${env.CRON_SCHEDULE}" (Asia/Dhaka)`);
+    console.log(`🕒 Daily 3 Slots: 09:30 AM, 02:30 PM, 08:30 PM (Asia/Dhaka)`);
+    console.log(`⚡ Mode: 100% Autonomous (No approval needed)`);
     console.log(`======================================================\n`);
   });
 
   const shutdown = (signal: string) => {
     console.log(`\n[Process] ${signal} received: closing server & cron...`);
-    publisherTask.stop();
-    analyticsTask.stop();
+    stopAllScheduledTasks();
     server.close(() => {
       console.log('[Process] Server closed gracefully.');
       process.exit(0);

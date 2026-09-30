@@ -47,15 +47,19 @@ export function calculateTopicScore(utility: number, recency: number, shareabili
  * 2. Reddit (Viral discussions in r/ChatGPT & r/ArtificialInteligence)
  * 3. Hugging Face & GitHub (Trending open-source AI tools)
  */
-export async function discoverTopTrendingTopic(): Promise<DiscoveredTopic> {
-  console.log('[Trend Engine] 🔍 Initiating live multi-source AI trend research (Product Hunt, Reddit, Hugging Face)...');
+export async function discoverTopTrendingTopic(slotCategory?: string): Promise<DiscoveredTopic> {
+  console.log(`[Trend Engine] 🔍 Initiating live multi-source AI trend research ${slotCategory ? `for slot category: "${slotCategory}"` : '(Product Hunt, Reddit, Hugging Face)'}...`);
 
   if (isConfiguredForGemini()) {
     const learningMemory = await getLearningFeedbackPrompt();
 
+    const categoryDirective = slotCategory
+      ? `\nSPECIAL EDITORIAL FOCUS FOR THIS SLOT:\nTheme / Target Niche: "${slotCategory}". Prioritize finding breakthroughs, guides, or viral tools matching this exact category.\n`
+      : '';
+
     const prompt = `You are the lead tech intelligence researcher for "ByteBangla".
 ${learningMemory}
-
+${categoryDirective}
 LIVE WEB RESEARCH INSTRUCTIONS:
 Search the web right now for today's and this week's most viral and trending AI announcements from:
 1. Product Hunt: Top rated AI tools and launches of the week.
