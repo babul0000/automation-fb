@@ -23,3 +23,10 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Temporary and generated media
+data/temp_reels/
+data/reels/*.mp4
+data/reels/*.mp3
+*.mp4
+*.mp3

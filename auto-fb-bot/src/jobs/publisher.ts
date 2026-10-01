@@ -4,7 +4,8 @@ import { discoverTopTrendingTopic, DiscoveredTopic } from '../services/trends';
 import { generateBanglaPostBundle, BanglaPostBundle, ReelsScriptData } from '../services/ai';
 import { auditAndReflectPost, CriticAuditResult } from '../services/critic';
 import { generateCarouselSlides } from '../services/media';
-import { publishMultiPhotoPost, addCommentToPost } from '../services/facebook';
+import { generateReelVideo } from '../services/video';
+import { publishMultiPhotoPost, publishReelToFacebookPage, addCommentToPost } from '../services/facebook';
 import { savePost, saveJobLog, saveComment, saveReply, getAutomationSettings, updateSlotExecution } from '../services/db';
 import { collectAllRecentMetrics } from '../services/analytics';
 
@@ -221,6 +222,152 @@ export async function triggerManualPost(
   }
 }
 
+export interface AutonomousReelResult {
+  success: boolean;
+  topic: string;
+  category?: string;
+  reelScript?: ReelsScriptData;
+  criticScore?: number;
+  postId?: string;
+  slotId?: string;
+  videoPath?: string;
+  error?: string;
+  timestamp: string;
+}
+
+/**
+ * Executes the complete autonomous Facebook Reel publishing pipeline:
+ * 1. Topic discovery tailored for viral short video (trends.ts)
+ * 2. Fact-checked Bengali caption, 30s Reels Script & Voiceover (ai.ts)
+ * 3. AI Self-Reflection & Critic Audit (critic.ts)
+ * 4. MP4 video synthesis with Google TTS Bengali voiceover & 9:16 vertical 3D frames (video.ts)
+ * 5. Meta Graph API Reel Publishing (facebook.ts)
+ * 6. Automated First Comment with resource links
+ * 7. Persistence to store and execution logs (db.ts)
+ */
+export async function triggerAutonomousReelPost(
+  customTopic?: string,
+  dryRun: boolean = false,
+  slotId: string = 'slot_reel',
+  slotCategory?: string
+): Promise<AutonomousReelResult> {
+  const timestamp = new Date().toISOString();
+  let selectedTopicTitle = '';
+  let topicCategory = slotCategory || 'Viral 30s Short-Form Video Guide & Tools';
+
+  console.log(`\n======================================================`);
+  console.log(`[Reel Publisher] 🎬 Starting Facebook Reel Pipeline for [${slotId}] at ${timestamp}`);
+
+  try {
+    // 1. Topic discovery tailored for viral short video
+    if (customTopic && customTopic.trim().length > 0) {
+      selectedTopicTitle = customTopic.trim();
+      console.log(`[Reel Publisher] 🎯 Custom Topic Override: "${selectedTopicTitle}"`);
+    } else {
+      const discovered = await discoverTopTrendingTopic(topicCategory);
+      selectedTopicTitle = discovered.title;
+      topicCategory = discovered.category;
+      console.log(`[Reel Publisher] 🧠 Selected Reel Topic: "${selectedTopicTitle}"`);
+    }
+
+    // 2. Generate Bengali Post Bundle with Reels Script
+    console.log(`[Reel Publisher] ✍️ Generating Bengali 30s Reel script & voiceover lines...`);
+    const bundle: BanglaPostBundle = await generateBanglaPostBundle(selectedTopicTitle);
+
+    if (!bundle.reelsScript) {
+      throw new Error('AI did not return reelsScript for Reel generation.');
+    }
+
+    // 3. Critic Audit
+    const audit: CriticAuditResult = await auditAndReflectPost(bundle.caption, selectedTopicTitle);
+    console.log(`[Reel Publisher] 🏆 Critic Evaluation: ${audit.overallScore}/100`);
+
+    // 4. Generate MP4 Video with Voiceover & Vertical Visual Frames
+    console.log(`[Reel Publisher] 🎥 Synthesizing 9:16 MP4 video Reel...`);
+    const generatedReel = await generateReelVideo({
+      topic: selectedTopicTitle,
+      hookText: bundle.reelsScript.hook,
+      bodyText: bundle.reelsScript.body,
+      ctaText: bundle.reelsScript.cta,
+      fullScript: bundle.reelsScript.fullScript,
+    });
+
+    if (dryRun) {
+      console.log(`[Reel Publisher] 🧪 DRY RUN: Generated Reel successfully at ${generatedReel.videoPath}`);
+      return {
+        success: true,
+        topic: selectedTopicTitle,
+        category: topicCategory,
+        reelScript: bundle.reelsScript,
+        criticScore: audit.overallScore,
+        slotId,
+        videoPath: generatedReel.videoPath,
+        timestamp,
+      };
+    }
+
+    // 5. Upload & Publish Reel to Meta Graph API
+    console.log(`[Reel Publisher] 🚀 Uploading Reel to Facebook Page via Meta Graph API...`);
+    const caption = `${bundle.reelsScript.hook}\n\n${bundle.reelsScript.body}\n\n👉 ${bundle.reelsScript.cta}\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels`;
+    const reelRes = await publishReelToFacebookPage(generatedReel.videoBuffer, caption);
+
+    // Clean up temporary files
+    generatedReel.cleanup();
+
+    // 6. First comment link automation if configured
+    const settings = getAutomationSettings();
+    if (settings.autoFirstComment && bundle.firstComment) {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await addCommentToPost(reelRes.video_id, bundle.firstComment);
+      } catch (cErr: any) {
+        console.warn(`[Reel Publisher Warning] Reel first comment notice: ${cErr.message}`);
+      }
+    }
+
+    // 7. Persist to DB
+    await savePost({
+      facebookPostId: reelRes.video_id,
+      caption,
+      status: 'PUBLISHED_REEL',
+    });
+
+    updateSlotExecution(slotId, 'SUCCESS', reelRes.video_id, selectedTopicTitle);
+
+    await saveJobLog(
+      'AUTONOMOUS_REEL_PUBLISHER',
+      'SUCCESS',
+      `Reel ID: ${reelRes.video_id}, Topic: ${selectedTopicTitle}, Critic: ${audit.overallScore}/100, Duration: ${generatedReel.durationSeconds}s`
+    );
+
+    console.log(`[Reel Publisher] 🌟 REEL PIPELINE COMPLETED! Video ID: ${reelRes.video_id}`);
+    console.log(`======================================================\n`);
+
+    return {
+      success: true,
+      topic: selectedTopicTitle,
+      category: topicCategory,
+      reelScript: bundle.reelsScript,
+      criticScore: audit.overallScore,
+      postId: reelRes.video_id,
+      slotId,
+      timestamp,
+    };
+  } catch (error: any) {
+    console.error(`[Reel Publisher] ❌ Reel Pipeline Execution Failed:`, error.message);
+    updateSlotExecution(slotId, 'FAILED', undefined, selectedTopicTitle);
+    await saveJobLog('AUTONOMOUS_REEL_PUBLISHER', 'FAILED', error.message);
+
+    return {
+      success: false,
+      topic: selectedTopicTitle || 'Unknown Topic',
+      slotId,
+      error: error.message || 'Reel pipeline failed',
+      timestamp,
+    };
+  }
+}
+
 /**
  * Dynamically re-configures and reschedules all 3 daily posting cron jobs
  * based on the latest automation settings in data/settings.json
@@ -267,8 +414,13 @@ export function rescheduleAllJobs(): { scheduledCount: number; autoPilot: boolea
             return;
           }
 
-          console.log(`\n[Scheduler Trigger] ⏰ 100% Autonomous Post for [${slotRef.nameBn} - ${slotRef.time} BST] executing at ${new Date().toISOString()}...`);
-          await triggerManualPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category);
+          if (slotRef.type === 'REEL' || slotRef.id === 'slot_reel') {
+            console.log(`\n[Scheduler Trigger] 🎬 100% Autonomous REEL for [${slotRef.nameBn} - ${slotRef.time} BST] executing at ${new Date().toISOString()}...`);
+            await triggerAutonomousReelPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category);
+          } else {
+            console.log(`\n[Scheduler Trigger] ⏰ 100% Autonomous POST for [${slotRef.nameBn} - ${slotRef.time} BST] executing at ${new Date().toISOString()}...`);
+            await triggerManualPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category);
+          }
         },
         {
           scheduled: true,

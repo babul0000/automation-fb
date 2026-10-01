@@ -1,11 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import os from 'os';
+import fs from 'fs';
+import path from 'path';
 import { env, validateEnv, isConfiguredForFacebook, isConfiguredForGemini } from './config/env';
 import healthRouter from './routes/health';
 import webhookRouter from './routes/webhook';
 import {
   initPublisherJob,
   triggerManualPost,
+  triggerAutonomousReelPost,
   rescheduleAllJobs,
   getSchedulerStatus,
   stopAllScheduledTasks,
@@ -206,10 +209,11 @@ app.get('/', async (_req: Request, res: Response) => {
        </div>`
     : '';
 
-  // Generate 3 Daily Slot Cards
+  // Generate 4 Daily Slot Cards (3 Posts + 1 Reel)
   const slotCardsHtml = settings.slots
     .map((slot, index) => {
-      const icon = index === 0 ? '🌅' : index === 1 ? '☀️' : '🌙';
+      const isReel = slot.type === 'REEL' || slot.id === 'slot_reel';
+      const icon = isReel ? '🎬' : index === 0 ? '🌅' : index === 1 ? '☀️' : '🌙';
       const slotTimeId = `slot_time_${slot.id}`;
       const toggleId = `slot_toggle_${slot.id}`;
       const isEnabled = slot.enabled;
@@ -234,7 +238,7 @@ app.get('/', async (_req: Request, res: Response) => {
               <div>
                 <div class="flex items-center gap-2">
                   <h3 class="text-sm font-bold text-white">${slot.nameBn}</h3>
-                  <span id="slot_badge_${slot.id}" class="text-[10px] px-2 py-0.5 rounded-full font-mono bg-cyan-950/70 text-cyan-300 border border-cyan-800/60 font-bold">${slot.time} BST</span>
+                  <span id="slot_badge_${slot.id}" class="text-[10px] px-2 py-0.5 rounded-full font-mono ${isReel ? 'bg-fuchsia-950/70 text-fuchsia-300 border border-fuchsia-800/60' : 'bg-cyan-950/70 text-cyan-300 border border-cyan-800/60'} font-bold">${isReel ? '🎬 REEL' : '📝 POST'} • ${slot.time} BST</span>
                 </div>
                 <p class="text-[11px] text-slate-400 font-sans mt-0.5">${slot.name}</p>
               </div>
@@ -275,9 +279,9 @@ app.get('/', async (_req: Request, res: Response) => {
 
         <!-- Action Buttons: Post Now & Simulate -->
         <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
-          <button onclick="triggerSpecificSlot('${slot.id}')" id="btn-trigger-${slot.id}" class="py-2.5 px-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 text-xs font-bold rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1">
+          <button onclick="triggerSpecificSlot('${slot.id}')" id="btn-trigger-${slot.id}" class="py-2.5 px-2.5 ${isReel ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:from-fuchsia-400 hover:to-purple-500 text-white' : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950'} text-xs font-bold rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1">
             <span id="spinner-trigger-${slot.id}" class="hidden animate-spin text-xs">🌀</span>
-            <span>🚀 এখনই পোস্ট</span>
+            <span>🚀 ${isReel ? 'রিল আপলোড' : 'এখনই পোস্ট'}</span>
           </button>
           <button onclick="simulateSlot('${slot.id}', '${slot.category}')" class="py-2.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition active:scale-95 flex items-center justify-center gap-1">
             <span>🧪 সিমুলেট</span>
@@ -297,7 +301,7 @@ app.get('/', async (_req: Request, res: Response) => {
     <meta name="theme-color" content="#020617">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>ByteBangla - ৩টি দৈনিক পোস্ট অটোমেশন হাব</title>
+    <title>ByteBangla - ৩টি পোস্ট ও ১টি রিল অটোমেশন হাব</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -750,14 +754,19 @@ app.get('/', async (_req: Request, res: Response) => {
             <input id="customTopicInput" type="text" placeholder="যেমন: ৫টি সেরা ফ্রি এআই টুলস (ফাঁকা রাখলে এআই নিজে ট্রেন্ডিং টপিক খুঁজবে)" class="w-full bg-slate-950 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition shadow-inner font-sans" />
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <button id="previewBtn" onclick="runPipeline(true)" class="w-full py-4 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm rounded-2xl shadow-lg shadow-purple-600/25 transition duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            <button id="previewBtn" onclick="runPipeline(true)" class="w-full py-3.5 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-purple-600/25 transition duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
               <span id="previewSpinner" class="hidden animate-spin">🌀</span>
-              <span id="previewText">🧪 Simulate & Preview (ফেসবুকে পোস্ট ছাড়া)</span>
+              <span id="previewText">🧪 টেস্ট পোস্ট ক্যারোসেল</span>
             </button>
 
-            <button id="liveBtn" onclick="openLiveConfirmModal()" class="w-full py-4 px-4 bg-slate-800/90 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 font-bold text-xs sm:text-sm rounded-2xl border border-slate-700 transition duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
-              <span>🚀 ফেসবুকে সরাসরি পোস্ট করুন</span>
+            <button id="previewReelBtn" onclick="runReelPipeline(true)" class="w-full py-3.5 px-4 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-pink-600/25 transition duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+              <span id="previewReelSpinner" class="hidden animate-spin">🌀</span>
+              <span id="previewReelText">🎬 টেস্ট রিল ও অডিও শুনুন</span>
+            </button>
+
+            <button id="liveBtn" onclick="openLiveConfirmModal()" class="w-full py-3.5 px-4 bg-slate-800/90 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 font-bold text-xs sm:text-sm rounded-2xl border border-slate-700 transition duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+              <span>🚀 ফেসবুকে লাইভ পোস্ট</span>
             </button>
           </div>
 
@@ -768,7 +777,63 @@ app.get('/', async (_req: Request, res: Response) => {
                 <span class="animate-spin text-base">⚙️</span>
                 <span id="feedbackText">এআই পাইপলাইন কাজ করছে...</span>
               </div>
-              <p class="text-[11px] text-slate-400">ট্রেন্ড রিসার্চ ➔ ফ্যাক্ট চেক ➔ ক্রিটিক অডিট ➔ ৩ডি স্লাইড তৈরি (অনুগ্রহ করে ২০-৩০ সেকেন্ড অপেক্ষা করুন)</p>
+              <p class="text-[11px] text-slate-400">ট্রেন্ড রিসার্চ ➔ ফ্যাক্ট চেক ➔ হিউম্যান নিউরাল ভয়েসওভার ➔ ৩ডি ভিজ্যুয়াল (অনুগ্রহ করে ১৫-২৫ সেকেন্ড অপেক্ষা করুন)</p>
+            </div>
+          </div>
+
+          <!-- Reel Video & Audio Player Card -->
+          <div id="reelPlayerCard" class="hidden mt-4 pt-4 border-t border-slate-800 space-y-4">
+            <div class="bg-gradient-to-br from-purple-950/80 via-slate-900 to-indigo-950/70 border border-purple-600/40 rounded-3xl p-5 shadow-2xl space-y-4">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl">🎬</span>
+                  <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                      <span>১০০/১০০ হিউম্যান ভয়েস রিল প্রিভিউ</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">Microsoft Neural Voice</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">ন্যাচারাল ক্রিয়েটর ভয়েসওভার ও ৯:১৬ এইচডি ভিডিও</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="publishLatestReelNow()" id="publishReelDirectBtn" class="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center gap-1.5">
+                    <span id="publishReelDirectSpinner" class="hidden animate-spin">🌀</span>
+                    <span>🚀 এই রিলটি ফেসবুকে পোস্ট করুন</span>
+                  </button>
+                  <button onclick="document.getElementById('reelPlayerCard').classList.add('hidden')" class="text-xs text-slate-400 hover:text-white p-1">✕</button>
+                </div>
+              </div>
+
+              <!-- Video & Audio Player Center -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+                <!-- 9:16 Video Player -->
+                <div class="flex flex-col items-center">
+                  <div class="w-full max-w-[240px] aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
+                    <video id="previewVideoElement" controls playsinline class="w-full h-full object-cover"></video>
+                  </div>
+                  <span class="text-[11px] text-slate-400 mt-2">📱 ৯:১৬ এইচডি ফেসবুক রিল ফরম্যাট (1080x1920)</span>
+                </div>
+
+                <!-- Voiceover & Script breakdown -->
+                <div class="space-y-3">
+                  <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                    <span class="text-xs font-bold text-pink-400 flex items-center gap-1.5">
+                      <span>🎙️</span><span>হিউম্যান ভয়েসওভার অডিও (সরাসরি শুনুন):</span>
+                    </span>
+                    <audio id="previewAudioElement" controls class="w-full h-10 rounded-lg"></audio>
+                  </div>
+
+                  <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
+                    <span class="text-xs font-bold text-purple-400">📜 ডায়লগ ও স্ক্রিপ্ট:</span>
+                    <p id="reelPlayerScript" class="text-xs text-slate-200 leading-relaxed font-sans"></p>
+                  </div>
+
+                  <div class="bg-emerald-950/30 border border-emerald-800/40 rounded-2xl p-3 text-xs text-emerald-300 flex items-center gap-2">
+                    <span>✨</span>
+                    <span>কোনো রোবটিক ড্রোন বা বুলেট নম্বর নেই। একদম ন্যাচারাল সাবলীল কথ্য ভাষা!</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1348,7 +1413,11 @@ app.get('/', async (_req: Request, res: Response) => {
         switchTab('studio');
         const input = document.getElementById('customTopicInput');
         if (input) input.value = category || '';
-        runPipeline(true);
+        if (slotId === 'slot_reel') {
+          runReelPipeline(true);
+        } else {
+          runPipeline(true);
+        }
       }
 
       function openLiveConfirmModal() {
@@ -1431,6 +1500,111 @@ app.get('/', async (_req: Request, res: Response) => {
         } finally {
           previewBtn.disabled = false;
           liveBtn.disabled = false;
+        }
+      }
+
+      async function runReelPipeline(dryRun) {
+        const btn = document.getElementById('previewReelBtn');
+        const spinner = document.getElementById('previewReelSpinner');
+        const customInput = document.getElementById('customTopicInput');
+        const feedback = document.getElementById('liveFeedback');
+        const feedbackText = document.getElementById('feedbackText');
+        const reelPlayerCard = document.getElementById('reelPlayerCard');
+
+        const topic = customInput ? customInput.value.trim() : '';
+
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        feedback.classList.remove('hidden');
+        feedbackText.className = 'text-pink-400 font-semibold';
+        feedbackText.innerText = dryRun
+          ? '🎬 এআই রিল স্ক্রিপ্ট, মাইক্রোসফট নিউরাল হিউম্যান ভয়েসওভার ও ৯:১৬ ভার্টিক্যাল এইচডি ভিডিও তৈরি করছে (১৫-২৫ সেকেন্ড অপেক্ষা করুন)...'
+          : '🚀 রিল ভিডিও তৈরি হচ্ছে এবং ফেসবুকে লাইভ আপলোড হচ্ছে...';
+
+        try {
+          const res = await fetch('/api/trigger-reel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, dryRun }),
+          });
+          const json = await res.json();
+
+          if (json.success) {
+            feedbackText.innerText = dryRun
+              ? '✅ ১০০/১০০ পারফেক্ট রিল সফলভাবে প্রস্তুত হয়েছে! নিচে লাইভ প্লে করুন এবং শুনুন।'
+              : '🚀 রিল সফলভাবে ফেসবুকে লাইভ পাবলিশ করা হয়েছে!';
+            feedbackText.className = 'text-emerald-400 font-bold';
+
+            if (reelPlayerCard) {
+              reelPlayerCard.classList.remove('hidden');
+              const v = document.getElementById('previewVideoElement');
+              const a = document.getElementById('previewAudioElement');
+              const ts = Date.now();
+              if (v) { v.src = '/api/reels/latest-video?t=' + ts; v.load(); }
+              if (a) { a.src = '/api/reels/latest-audio?t=' + ts; a.load(); }
+              
+              if (json.data && json.data.reelScript) {
+                const s = json.data.reelScript;
+                document.getElementById('reelPlayerScript').innerText = 
+                  s.fullScript || ([s.hook, s.body, s.cta].filter(Boolean).join(' '));
+              }
+              reelPlayerCard.scrollIntoView({ behavior: 'smooth' });
+            }
+          } else {
+            feedbackText.innerText = '❌ রিল তৈরিতে ব্যর্থ: ' + (json.error || 'Unknown error');
+            feedbackText.className = 'text-rose-400 font-bold';
+          }
+        } catch (err) {
+          feedbackText.innerText = '❌ নেটওয়ার্ক এরর: ' + err.message;
+          feedbackText.className = 'text-rose-400 font-bold';
+        } finally {
+          if (btn) btn.disabled = false;
+          if (spinner) spinner.classList.add('hidden');
+        }
+      }
+
+      async function publishLatestReelNow() {
+        const btn = document.getElementById('publishReelDirectBtn');
+        const spinner = document.getElementById('publishReelDirectSpinner');
+        const feedback = document.getElementById('liveFeedback');
+        const feedbackText = document.getElementById('feedbackText');
+        const customInput = document.getElementById('customTopicInput');
+        const topic = customInput ? customInput.value.trim() : '';
+
+        if (!confirm('আপনি কি নিশ্চিত যে এই রিলটি আপনার ফেসবুক পেজে এখনই লাইভ পাবলিশ করবেন?')) {
+          return;
+        }
+
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        feedback.classList.remove('hidden');
+        feedbackText.className = 'text-purple-400 font-semibold';
+        feedbackText.innerText = '🚀 রিল ফেসবুকে আপলোড হচ্ছে (ভিডিও ফাইল মেটা সার্ভারে প্রসেসিং হচ্ছে)...';
+
+        try {
+          const res = await fetch('/api/trigger-reel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, dryRun: false }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            feedbackText.innerText = '🌟 রিল সফলভাবে ফেসবুকে লাইভ পাবলিশ করা হয়েছে!';
+            feedbackText.className = 'text-emerald-400 font-bold';
+            alert('🌟 রিল সফলভাবে ফেসবুক পেজে লাইভ আপলোড করা হয়েছে!');
+            setTimeout(() => window.location.reload(), 2000);
+          } else {
+            feedbackText.innerText = '❌ আপলোড ব্যর্থ: ' + (json.error || 'Unknown error');
+            feedbackText.className = 'text-rose-400 font-bold';
+            alert('❌ রিল পাবলিশে সমস্যা: ' + (json.error || 'Unknown error'));
+          }
+        } catch (err) {
+          feedbackText.innerText = '❌ নেটওয়ার্ক এরর: ' + err.message;
+          feedbackText.className = 'text-rose-400 font-bold';
+          alert('❌ নেটওয়ার্ক এরর: ' + err.message);
+        } finally {
+          if (btn) btn.disabled = false;
+          if (spinner) spinner.classList.add('hidden');
         }
       }
 
@@ -1568,6 +1742,16 @@ app.post('/api/trigger-slot/:slotId', async (req: Request, res: Response) => {
     }
 
     console.log(`[Manual Slot Trigger] Firing [${slot.nameBn} - ${slot.id}] immediately...`);
+    if (slot.type === 'REEL' || slot.id === 'slot_reel') {
+      const result = await triggerAutonomousReelPost(undefined, false, slot.id, slot.category);
+      res.status(result.success ? 200 : 500).json({
+        success: result.success,
+        data: result,
+        error: result.error,
+      });
+      return;
+    }
+
     const result = await triggerManualPost(undefined, false, slot.id, slot.category);
 
     res.status(result.success ? 200 : 500).json({
@@ -1577,6 +1761,52 @@ app.post('/api/trigger-slot/:slotId', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Manual Reel Trigger Endpoint
+app.post('/api/trigger-reel', async (req: Request, res: Response) => {
+  try {
+    const customTopic = req.body?.topic as string | undefined;
+    const dryRun = Boolean(req.body?.dryRun);
+
+    console.log(`[Manual Reel Trigger] Topic: ${customTopic || 'Autonomous AI Trend'}, DryRun: ${dryRun}`);
+    const result = await triggerAutonomousReelPost(customTopic, dryRun);
+
+    res.status(result.success ? 200 : 500).json({
+      success: result.success,
+      message: dryRun
+        ? 'Reel video synthesized and previewed successfully (Not posted to Facebook).'
+        : 'Reel generated and published to Facebook successfully!',
+      data: result,
+      error: result.error,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Stream latest generated Reel video
+app.get('/api/reels/latest-video', (_req: Request, res: Response) => {
+  const filePath = path.resolve(process.cwd(), 'data', 'reels', 'latest_reel.mp4');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', 'inline; filename="latest_reel.mp4"');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ success: false, error: 'No reel generated yet.' });
+  }
+});
+
+// Stream latest generated Reel audio
+app.get('/api/reels/latest-audio', (_req: Request, res: Response) => {
+  const filePath = path.resolve(process.cwd(), 'data', 'reels', 'latest_audio.mp3');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Disposition', 'inline; filename="latest_audio.mp3"');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ success: false, error: 'No audio generated yet.' });
   }
 });
 

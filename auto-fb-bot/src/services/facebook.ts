@@ -265,3 +265,115 @@ export async function sendPrivateReplyToComment(commentId: string, message: stri
     return false;
   }
 }
+
+export interface FacebookReelPublishResponse {
+  id: string;
+  video_id: string;
+}
+
+/**
+ * Publishes a 9:16 vertical video Reel to the Facebook Page using Meta Graph API v21.0
+ */
+export async function publishReelToFacebookPage(
+  videoBuffer: Buffer,
+  caption: string
+): Promise<FacebookReelPublishResponse> {
+  if (!isConfiguredForFacebook()) {
+    throw new Error('Facebook credentials are missing. Update your .env file.');
+  }
+
+  console.log(`[Facebook Service] 🎬 Publishing Reel to Page ID (${env.PAGE_ID}) [Size: ${(videoBuffer.length / (1024 * 1024)).toFixed(2)} MB]...`);
+
+  // Attempt Method 1: Meta Video Reels API (v21.0)
+  try {
+    // Step 1: Start upload phase
+    const initRes = await axios.post<{ video_id: string; upload_url: string }>(
+      `https://graph.facebook.com/v21.0/${env.PAGE_ID}/video_reels`,
+      {
+        upload_phase: 'start',
+      },
+      {
+        params: { access_token: env.PAGE_ACCESS_TOKEN },
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 25000,
+      }
+    );
+
+    const { video_id, upload_url } = initRes.data;
+    if (!video_id || !upload_url) {
+      throw new Error('Meta Reels API did not return video_id or upload_url');
+    }
+
+    console.log(`[Facebook Service] 📤 Uploading Reel binary to Meta RUpload servers (Video ID: ${video_id})...`);
+
+    // Step 2: Upload binary buffer to rupload URL
+    await axios.post(upload_url, videoBuffer, {
+      headers: {
+        Authorization: `OAuth ${env.PAGE_ACCESS_TOKEN}`,
+        offset: '0',
+        file_size: videoBuffer.length.toString(),
+        'Content-Type': 'application/octet-stream',
+      },
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+      timeout: 120000,
+    });
+
+    console.log(`[Facebook Service] 🚀 Finalizing and publishing Reel (Video ID: ${video_id})...`);
+
+    // Step 3: Finish and publish
+    const finishRes = await axios.post<{ success: boolean; id?: string }>(
+      `https://graph.facebook.com/v21.0/${env.PAGE_ID}/video_reels`,
+      {
+        upload_phase: 'finish',
+        video_id: video_id,
+        video_state: 'PUBLISHED',
+        description: caption.trim(),
+      },
+      {
+        params: { access_token: env.PAGE_ACCESS_TOKEN },
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+      }
+    );
+
+    console.log(`[Facebook Service] ✅ Facebook Reel published successfully! Video ID: ${video_id}`);
+    return {
+      id: finishRes.data.id || video_id,
+      video_id: video_id,
+    };
+  } catch (reelError: any) {
+    console.warn(`[Facebook Service Notice] Video Reels endpoint notice (${reelError.response?.data?.error?.message || reelError.message}). Executing Page Videos upload fallback...`);
+
+    // Fallback: Standard Page Videos API
+    try {
+      const formData = new FormData();
+      const blob = new Blob([new Uint8Array(videoBuffer)], { type: 'video/mp4' });
+      formData.append('source', blob, 'reel.mp4');
+      formData.append('description', caption.trim());
+
+      const fallbackRes = await axios.post<{ id: string }>(
+        `https://graph.facebook.com/v21.0/${env.PAGE_ID}/videos`,
+        formData,
+        {
+          params: { access_token: env.PAGE_ACCESS_TOKEN },
+          timeout: 120000,
+        }
+      );
+
+      if (fallbackRes.data?.id) {
+        console.log(`[Facebook Service] ✅ Video published via Page Videos endpoint! ID: ${fallbackRes.data.id}`);
+        return {
+          id: fallbackRes.data.id,
+          video_id: fallbackRes.data.id,
+        };
+      }
+      throw new Error('Fallback video publish did not return an ID.');
+    } catch (fallbackError: any) {
+      const msg = fallbackError.response?.data?.error?.message || fallbackError.message;
+      console.error(`[Facebook Service Error] Video upload failed:`, msg);
+      throw new Error(`Facebook Reel / Video publishing failed: ${msg}`);
+    }
+  }
+}
+

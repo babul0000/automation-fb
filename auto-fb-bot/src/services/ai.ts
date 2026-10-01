@@ -36,10 +36,14 @@ Content Structure:
 3. Call To Action (কল টু অ্যাকশন): Friendly invitation to save the post, tag colleagues, and comment "AI" to get the full guide.
 4. Hashtags: Exactly these tags at the end: #ByteBangla #AITools #TechBangla #Productivity #BanglaTech
 
-Reels / Short Video Script Rules (৩০-৪৫ সেকেন্ডের ভাইরাল স্ক্রিপ্ট):
-- Hook (0-5s): স্ক্রল-থামানো আকর্ষণীয় ডায়লগ
-- Body (5-25s): ৩টি দ্রুত ও কাজের পয়েন্ট
-- CTA (25-30s): "কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা"`;
+VIRAL REELS VOICE RULES (১০/১০ ফ্লুয়েন্ট ক্রিয়েটর ডায়লগ):
+- Speak in authentic conversational Bengali (একদম একজন জনপ্রিয় ইউটিউব বা রিল ক্রিয়েটরের মতো সাবলীল কথ্য ভাষা)।
+- কড়া নিয়ম ১: হুক, বডি বা সিটিতে কখনোই '১.', '২.', '৩.', 'প্রথমত', 'দ্বিতীয়ত' বা কোনো পয়েন্ট নম্বর ব্যবহার করবেন না! এটি ভিডিওর ফ্লো নষ্ট করে দেয়।
+- কড়া নিয়ম ২: বডি (body)-এর মধ্যে কখনোই কমেন্ট বা ফলো করার কথা লিখবেন না। কমেন্ট ও ফলো করার কথা শুধুমাত্র cta ফিল্ডে একবারই থাকবে।
+- Hook (৩-৪ সেকেন্ড): মনোযোগ আকর্ষণকারী কৌতূহলী একটি বাক্য।
+- Body (৬-৮ সেকেন্ড): কোনো নম্বর বা পয়েন্ট ছাড়া সরাসরি ১-২ বাক্যে মূল সমাধান বা টুলের কাজ।
+- CTA (৩-৪ সেকেন্ড): "লিংক পেতে কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!"
+- মোট শব্দের পরিমাণ: ২৫ থেকে ৩৫ শব্দের মধ্যে (১২-১৫ সেকেন্ডের ডায়লগ)।`;
 
 interface GeminiResponse {
   candidates?: {
@@ -51,7 +55,7 @@ interface GeminiResponse {
 
 /**
  * Generates an engaging Bengali Facebook post along with a First Comment link bundle, lead-magnet keyword,
- * and a viral 30-second Facebook Reel / Shorts voiceover script.
+ * and a viral 15-second Facebook Reel voiceover script.
  */
 export async function generateBanglaPostBundle(topicPrompt: string): Promise<BanglaPostBundle> {
   if (!isConfiguredForGemini()) {
@@ -69,10 +73,10 @@ Return ONLY a valid JSON object without markdown code fences:
   "firstComment": "The text for the FIRST COMMENT containing: 🔗 আজকের পোস্টে উল্লেখিত টুলগুলোর অফিসিয়াল ওয়েবসাইট লিংকসমূহ (List the verified tool names and their real URLs like https://chatgpt.com, https://claude.ai, etc.) এবং পোস্টটি সেভ করার অনুরোধ",
   "keywordTrigger": "AI",
   "reelsScript": {
-    "hook": "ভিডিওর প্রথম ৫ সেকেন্ডের ভাইরাল হুক ডায়লগ",
-    "body": "ভিডিওর মূল অংশের ৩টি দ্রুত পয়েন্ট (ভয়েসওভার)",
-    "cta": "নিচের কমেন্টে 'AI' লিখুন ডিরেক্ট লিংকের জন্য আর ফলো করুন বাইট বাংলা!",
-    "fullScript": "সম্পূর্ণ ৩০ সেকেন্ডের রিডিং স্ক্রিপ্ট যাতে এক ক্লিকে পড়ে ভিডিও বানিয়ে ফেলা যায়"
+    "hook": "১ লাইনের কৌতূহলী হুক (কোনো নম্বর বা পয়েন্ট ছাড়া)",
+    "body": "১-২ লাইনের সরাসরি আকর্ষণীয় সমাধান (কোনো নম্বর ও কোনো কমেন্ট/ফলো কথা ছাড়া)",
+    "cta": "লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!",
+    "fullScript": "সম্পূর্ণ ১২-১৫ সেকেন্ডের সাবলীল ক্রিয়েটর ডায়লগ (হুক + বডি + সিটএ মিলে মোট ২৫-৩৫ শব্দ, কোনো রিপিট ছাড়া)"
   }
 }`;
 
@@ -108,10 +112,10 @@ Return ONLY a valid JSON object without markdown code fences:
             firstComment: parsed.firstComment.trim(),
             keywordTrigger: parsed.keywordTrigger || 'AI',
             reelsScript: parsed.reelsScript || {
-              hook: `আজকের ভাইরাল এআই টিপস মিস করবেন না!`,
-              body: `পোস্টে উল্লেখিত ৩টি স্টেপ ফলো করে আপনার কাজের সময় বাঁচান।`,
-              cta: `নিচের কমেন্টে AI লিখুন লিংক পেতে আর পেজটি ফলো রাখুন!`,
-              fullScript: `${parsed.caption.substring(0, 200)}...`,
+              hook: `সহজ উপায়ে আজকের সেরা এআই ট্রিকস মিস করবেন না!`,
+              body: `এই দারুণ টুলটি আপনার কাজের গতি বাড়িয়ে দেবে কয়েক গুণ।`,
+              cta: `লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
+              fullScript: `সহজ উপায়ে আজকের সেরা এআই ট্রিকস মিস করবেন না! এই দারুণ টুলটি আপনার কাজের গতি বাড়িয়ে দেবে কয়েক গুণ। লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
             },
           };
         }
@@ -129,9 +133,9 @@ Return ONLY a valid JSON object without markdown code fences:
     keywordTrigger: 'AI',
     reelsScript: {
       hook: `সহজ বাংলায় আজকের সেরা এআই আপডেট!`,
-      body: `পোস্টে উল্লেখিত টুলসগুলো আজই ট্রাই করে দেখুন।`,
-      cta: `কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
-      fullScript: `${plainCaption.substring(0, 200)}...`,
+      body: `এই টুলটি আজই ব্যবহার করে দেখুন আপনার সময় অনেক বাঁচবে।`,
+      cta: `লিংক পেতে কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
+      fullScript: `সহজ বাংলায় আজকের সেরা এআই আপডেট! এই টুলটি আজই ব্যবহার করে দেখুন আপনার সময় অনেক বাঁচবে। লিংক পেতে কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
     },
   };
 }

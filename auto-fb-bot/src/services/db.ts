@@ -51,10 +51,11 @@ export interface JobLogRecord {
 }
 
 export interface SlotConfig {
-  id: 'slot_1' | 'slot_2' | 'slot_3';
+  id: 'slot_1' | 'slot_2' | 'slot_3' | 'slot_reel' | string;
   name: string;
   nameBn: string;
   time: string; // HH:mm (24h format)
+  type?: 'POST' | 'REEL';
   category: string;
   categoryBn: string;
   enabled: boolean;
@@ -351,6 +352,7 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
       name: 'Morning Tech Boost',
       nameBn: 'সকালের এআই ও টেক টুলস',
       time: '09:30',
+      type: 'POST',
       category: 'Product Hunt Trending & AI Tools',
       categoryBn: 'প্রোডাক্ট হান্ট ও ট্রেন্ডিং এআই টুলস',
       enabled: true,
@@ -360,8 +362,19 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
       name: 'Mid-Day Cheat Sheet',
       nameBn: 'দুপুরের প্র্যাকটিক্যাল চিটশিট',
       time: '14:30',
+      type: 'POST',
       category: 'Step-by-Step AI Cheat Sheet & Workflow Hacks',
       categoryBn: 'স্টেপ-বাই-স্টেপ চিটশিট ও প্রম্পট হ্যাক্স',
+      enabled: true,
+    },
+    {
+      id: 'slot_reel',
+      name: 'Daily Prime Viral Facebook Reel',
+      nameBn: 'সন্ধ্যার ভাইরাল ফেসবুক রিল (ভিডিও)',
+      time: '18:30',
+      type: 'REEL',
+      category: 'Viral 30s Short-Form Video Guide & Tools',
+      categoryBn: '৩০ সেকেন্ডের ভাইরাল রিল ও এআই টিপস',
       enabled: true,
     },
     {
@@ -369,6 +382,7 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
       name: 'Prime Evening Viral Post',
       nameBn: 'রাতের ভাইরাল টেক ডিপ ডাইভ',
       time: '20:30',
+      type: 'POST',
       category: 'Viral AI Debates, Comparisons & Breaking Tech News',
       categoryBn: 'ভাইরাল এআই তুলনা ও ব্রেকিং টেক নিউজ',
       enabled: true,
