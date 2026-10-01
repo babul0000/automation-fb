@@ -98,18 +98,19 @@ export async function generateHumanBengaliVoiceover(
   }
   const cleanSpeech = filteredSentences.join(' ').replace(/\s+/g, ' ').trim();
 
-  // 3. PRIMARY ENGINE: Google Gemini 3.8 Flash Neural Voice (Pure 100% Human Intonation)
+  // 3. PRIMARY ENGINE: Google Gemini Neural Voice (Pure 100% Human Intonation)
   if (isConfiguredForGemini()) {
     try {
       const selectedVoice = ['Puck', 'Aoede', 'Kore', 'Fenrir'].includes(voice) ? voice : 'Puck';
-      console.log(`[Video Engine] 🎙️ Synthesizing 100% Human Voice with Google Gemini 3.8 Flash TTS (${selectedVoice})...`);
-      const ttsEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${env.GEMINI_API_KEY}`;
-      
+      console.log(`[Video Engine] 🎙️ Synthesizing 100% Human Voice with Google Gemini TTS (${selectedVoice})...`);
+      const ttsEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${env.GEMINI_API_KEY}`;
+
       const response = await axios.post(
         ttsEndpoint,
         {
-          contents: [{ role: 'user', parts: [{ text: cleanSpeech }] }],
+          contents: [{ role: 'user', parts: [{ text: `Read aloud the following text in natural, friendly Bangladeshi Bengali: ${cleanSpeech}` }] }],
           generationConfig: {
+            responseModalities: ['AUDIO'],
             speechConfig: {
               voiceConfig: {
                 prebuiltVoiceConfig: {
@@ -119,18 +120,36 @@ export async function generateHumanBengaliVoiceover(
             },
           },
         },
-        { timeout: 25000 }
+        { headers: { 'Content-Type': 'application/json' }, timeout: 25000 }
       );
 
       const part = response.data?.candidates?.[0]?.content?.parts?.[0];
       if (part?.inlineData?.data) {
         const audioBuffer = Buffer.from(part.inlineData.data, 'base64');
-        fs.writeFileSync(outputAudioPath, audioBuffer);
+        const tempPcmPath = path.join(path.dirname(outputAudioPath), `gemini_tts_${Date.now()}.pcm`);
+        fs.writeFileSync(tempPcmPath, audioBuffer);
+
+        // Convert PCM (L16, 24kHz, mono) to MP3 using fluent-ffmpeg
+        await new Promise<void>((resolve, reject) => {
+          ffmpeg(tempPcmPath)
+            .inputFormat('s16le')
+            .inputOptions(['-ar 24000', '-ac 1'])
+            .outputOptions(['-c:a libmp3lame', '-b:a 192k'])
+            .save(outputAudioPath)
+            .on('end', () => {
+              try { fs.unlinkSync(tempPcmPath); } catch {}
+              resolve();
+            })
+            .on('error', (err) => {
+              try { fs.unlinkSync(tempPcmPath); } catch {}
+              reject(err);
+            });
+        });
 
         if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
           const duration = await getAudioDuration(outputAudioPath);
-          console.log(`[Video Engine] ✨ Gemini 3.8 Flash Human Voice synthesized! Duration: ${duration.toFixed(1)}s`);
-          return { duration, model: `Google Gemini 3.8 Flash Neural (${selectedVoice} - 100% Human)` };
+          console.log(`[Video Engine] ✨ Google Gemini Human Voice synthesized! Duration: ${duration.toFixed(1)}s`);
+          return { duration, model: `Google Gemini Neural Voice (${selectedVoice} - 100% Human)` };
         }
       }
     } catch (geminiTtsErr: any) {

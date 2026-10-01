@@ -1,6 +1,15 @@
 {
   "topics": [
     {
+      "title": "ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান! Reddit-এ আলোড়ন তোলা এই ফ্রি AI টুলটি এখন সবার মুখে মুখে",
+      "titleHash": "13da532c5f0c569714f75eac81ec21f14bfc82257474ecb46504a2281f469592",
+      "category": "Reddit Viral AI",
+      "score": 96,
+      "status": "DISCOVERED",
+      "id": "topic_1790879818173_lno53",
+      "createdAt": "2026-10-01T18:36:58.173Z"
+    },
+    {
       "title": "দৈনন্দিন কাজের সময় বাঁচাতে সেরা ৫টি ফ্রি AI টুল যা প্রত্যেকের ব্যবহার করা উচিত",
       "titleHash": "5f3b6f52982e1d8f53d66a1fdfc12d32f37837b139e7ecb4c2f08aded352936f",
       "category": "AI Productivity",
@@ -101,6 +110,13 @@
     }
   ],
   "posts": [
+    {
+      "facebookPostId": "1124256236826855",
+      "caption": "একটাও এডিটিং না করে ৩০ সেকেন্ডে ভিডিও থেকে ভাইরাল শর্টস বানাবেন কীভাবে?\n\nরেডিটে আলোড়ন তোলা এই ফ্রি এআই টুলটি আপনার লম্বা ভিডিওর সেরা অংশ কেটে নিজে থেকেই বানিয়ে দেবে প্রফেশনাল শর্টস।\n\n👉 লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1790879870984_c1sb1",
+      "publishedAt": "2026-10-01T18:37:50.984Z"
+    },
     {
       "facebookPostId": "1071182305676574",
       "caption": "সহজ বাংলায় আজকের সেরা এআই আপডেট!\n\nএই টুলটি আজই ব্যবহার করে দেখুন আপনার সময় অনেক বাঁচবে।\n\n👉 লিংক পেতে কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
@@ -311,6 +327,27 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1790880416588",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"বড় ভিডিও কেটে ভাইরাল শর্টস বানানোর সেরা এআই টুল\", Score: 88/100, Revised: true, Feedback: The draft is clean and well-structured, but the hook can be punchier to immediately grab attention in a crowded Facebook feed. The Bengali flow is natural, and the bullet points clearly outline the benefits of AI short-form repurposing tools.",
+      "createdAt": "2026-10-01T18:46:56.588Z"
+    },
+    {
+      "id": "log_1790879870985",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 1124256236826855, Topic: ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান! Reddit-এ আলোড়ন তোলা এই ফ্রি AI টুলটি এখন সবার মুখে মুখে, Critic: 90/100, Duration: 15.912s",
+      "createdAt": "2026-10-01T18:37:50.985Z"
+    },
+    {
+      "id": "log_1790879823197",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান! Reddit-এ আলোড়ন তোলা এই ফ্রি AI টুলটি এখন সবার মুখে মুখে\", Score: 90/100, Revised: true, Feedback: The draft is already strong, highly engaging, and follows ByteBangla's conversational style well. Minor polishes were made to maximize the scroll-stopping hook and tighten the Bengali flow for better readability on mobile screens.",
+      "createdAt": "2026-10-01T18:37:03.197Z"
+    },
     {
       "id": "log_1790878651759",
       "jobName": "AUTONOMOUS_REEL_PUBLISHER",
