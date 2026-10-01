@@ -296,6 +296,27 @@
   ],
   "jobLogs": [
     {
+      "id": "log_1790877608333",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"টেস্ট টপিক\", Score: 10/100, Revised: true, Feedback: The provided draft is completely empty and lacks any meaningful content, hook, actionable tips, or structure required for ByteBangla standards.",
+      "createdAt": "2026-10-01T18:00:08.333Z"
+    },
+    {
+      "id": "log_1790877565211",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "FAILED",
+      "details": "Request failed with status code 404",
+      "createdAt": "2026-10-01T17:59:25.211Z"
+    },
+    {
+      "id": "log_1790877553523",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"বড় ভিডিও কেটে শর্টস বানানোর সেরা এআই টুল\", Score: 85/100, Revised: true, Feedback: The draft is strong and follows ByteBangla's style well. However, the hook can be punchier, and the tool name or specific context (like Opus Clip) could be implied more clearly to build anticipation. The CTA automation ('কমেন্টে AI লিখুন') is great for engagement, but the Bengali phrasing in the body can be made even more conversational and native.",
+      "createdAt": "2026-10-01T17:59:13.523Z"
+    },
+    {
       "id": "log_1790876326353",
       "jobName": "CRITIC_AUDIT",
       "status": "COMPLETED",

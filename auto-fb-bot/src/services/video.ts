@@ -5,6 +5,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import { EdgeTTS } from 'node-edge-tts';
+import { env, isConfiguredForGemini } from '../config/env';
 
 // Configure FFMPEG & FFPROBE binaries
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
@@ -12,12 +13,13 @@ ffmpeg.setFfprobePath(ffprobeInstaller.path);
 
 export interface ReelGenerationInput {
   topic: string;
+  headlineEn?: string;
   hookText: string;
   bodyText: string;
   ctaText: string;
   fullScript?: string;
   imagePrompts?: string[];
-  voice?: 'bn-BD-PradeepNeural' | 'bn-BD-NabanitaNeural';
+  voice?: string;
   rate?: string;
 }
 
@@ -51,14 +53,15 @@ export function getAudioDuration(audioPath: string): Promise<number> {
 }
 
 /**
- * Synthesizes ultra-realistic, fast-paced Bengali voiceover using Microsoft Edge Neural Voice
- * strictly using Microsoft Azure Deep Neural models (No robotic fallbacks).
+ * Synthesizes 100% natural, human-like Bengali voiceover.
+ * Primary: Google Gemini 3.8 Flash Neural Voice (authentic creator tone & natural breathing).
+ * Fallback: Microsoft Azure Neural Voice (bn-BD-NabanitaNeural at warm, natural speed).
  */
 export async function generateHumanBengaliVoiceover(
   fullSpeech: string,
   outputAudioPath: string,
-  voice: 'bn-BD-PradeepNeural' | 'bn-BD-NabanitaNeural' = 'bn-BD-PradeepNeural',
-  rate: string = '+20%'
+  voice: string = 'Puck',
+  rate: string = '+6%'
 ): Promise<{ duration: number; model: string }> {
   // 1. Aggressively sanitize speech text: remove bullet numbers, steps, URLs, emojis, and symbols
   let clean = fullSpeech
@@ -95,32 +98,52 @@ export async function generateHumanBengaliVoiceover(
   }
   const cleanSpeech = filteredSentences.join(' ').replace(/\s+/g, ' ').trim();
 
-  // Primary Engine: Microsoft Azure Neural Voice
-  try {
-    console.log(`[Video Engine] 🎙️ Synthesizing Microsoft Azure Neural Voice (${voice}, speed: ${rate})...`);
-    const tts = new EdgeTTS({
-      voice,
-      rate,
-      pitch: '+0Hz',
-    });
+  // 3. PRIMARY ENGINE: Google Gemini 3.8 Flash Neural Voice (Pure 100% Human Intonation)
+  if (isConfiguredForGemini()) {
+    try {
+      const selectedVoice = ['Puck', 'Aoede', 'Kore', 'Fenrir'].includes(voice) ? voice : 'Puck';
+      console.log(`[Video Engine] 🎙️ Synthesizing 100% Human Voice with Google Gemini 3.8 Flash TTS (${selectedVoice})...`);
+      const ttsEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${env.GEMINI_API_KEY}`;
+      
+      const response = await axios.post(
+        ttsEndpoint,
+        {
+          contents: [{ role: 'user', parts: [{ text: cleanSpeech }] }],
+          generationConfig: {
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: selectedVoice,
+                },
+              },
+            },
+          },
+        },
+        { timeout: 25000 }
+      );
 
-    await tts.ttsPromise(cleanSpeech, outputAudioPath);
+      const part = response.data?.candidates?.[0]?.content?.parts?.[0];
+      if (part?.inlineData?.data) {
+        const audioBuffer = Buffer.from(part.inlineData.data, 'base64');
+        fs.writeFileSync(outputAudioPath, audioBuffer);
 
-    if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
-      const duration = await getAudioDuration(outputAudioPath);
-      console.log(`[Video Engine] ✨ Azure Neural Voice synthesized successfully! Duration: ${duration.toFixed(1)}s`);
-      return { duration, model: `Microsoft Azure Neural (${voice})` };
+        if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
+          const duration = await getAudioDuration(outputAudioPath);
+          console.log(`[Video Engine] ✨ Gemini 3.8 Flash Human Voice synthesized! Duration: ${duration.toFixed(1)}s`);
+          return { duration, model: `Google Gemini 3.8 Flash Neural (${selectedVoice} - 100% Human)` };
+        }
+      }
+    } catch (geminiTtsErr: any) {
+      console.warn(`[Video Engine Notice] Gemini TTS unavailable (${geminiTtsErr.message}). Switching to Microsoft Edge Neural fallback...`);
     }
-  } catch (azureErr: any) {
-    console.warn(`[Video Engine Notice] Primary voice notice (${azureErr.message}). Switching to backup Neural voice...`);
   }
 
-  // Backup Engine: Microsoft Azure Alternative Neural Voice
+  // 4. SECONDARY ENGINE: Microsoft Azure Nabanita Neural (Female, smooth & natural tone)
   try {
-    const backupVoice = voice === 'bn-BD-PradeepNeural' ? 'bn-BD-NabanitaNeural' : 'bn-BD-PradeepNeural';
-    console.log(`[Video Engine] 🎙️ Synthesizing Alternative Azure Neural Voice (${backupVoice}, speed: ${rate})...`);
+    const edgeVoice = voice.includes('Neural') ? voice : 'bn-BD-NabanitaNeural';
+    console.log(`[Video Engine] 🎙️ Synthesizing Microsoft Azure Neural Voice (${edgeVoice}, speed: ${rate})...`);
     const tts = new EdgeTTS({
-      voice: backupVoice,
+      voice: edgeVoice,
       rate,
       pitch: '+0Hz',
     });
@@ -129,59 +152,122 @@ export async function generateHumanBengaliVoiceover(
 
     if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
       const duration = await getAudioDuration(outputAudioPath);
-      console.log(`[Video Engine] ✨ Azure Alternative Voice synthesized! Duration: ${duration.toFixed(1)}s`);
-      return { duration, model: `Microsoft Azure Neural (${backupVoice})` };
+      console.log(`[Video Engine] ✨ Azure Neural Voice synthesized! Duration: ${duration.toFixed(1)}s`);
+      return { duration, model: `Microsoft Azure Neural (${edgeVoice})` };
+    }
+  } catch (azureErr: any) {
+    console.warn(`[Video Engine Notice] Primary Azure voice notice (${azureErr.message}). Switching to alternative...`);
+  }
+
+  // 5. BACKUP ENGINE: Microsoft Azure Pradeep Neural
+  try {
+    console.log(`[Video Engine] 🎙️ Synthesizing Alternative Azure Neural Voice (bn-BD-PradeepNeural, speed: ${rate})...`);
+    const tts = new EdgeTTS({
+      voice: 'bn-BD-PradeepNeural',
+      rate,
+      pitch: '+0Hz',
+    });
+
+    await tts.ttsPromise(cleanSpeech, outputAudioPath);
+
+    if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
+      const duration = await getAudioDuration(outputAudioPath);
+      return { duration, model: 'Microsoft Azure Neural (bn-BD-PradeepNeural)' };
     }
   } catch (backupErr: any) {
-    throw new Error(`Azure Neural Voice synthesis failed: ${backupErr.message}`);
+    throw new Error(`Voice synthesis failed: ${backupErr.message}`);
   }
 
   throw new Error('Failed to generate neural audio.');
 }
 
-const CURATED_TECH_FRAMES = [
-  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1080&h=1920&fit=crop&q=85',
-  'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1080&h=1920&fit=crop&q=85',
-  'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1080&h=1920&fit=crop&q=85',
-  'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=1080&h=1920&fit=crop&q=85',
-  'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1080&h=1920&fit=crop&q=85',
-  'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1080&h=1920&fit=crop&q=85',
-];
+const CURATED_THEMES: Record<string, string[]> = {
+  video: [
+    'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1080&h=1920&fit=crop&q=85',
+  ],
+  code: [
+    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=1080&h=1920&fit=crop&q=85',
+  ],
+  design: [
+    'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1080&h=1920&fit=crop&q=85',
+  ],
+  default: [
+    'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1080&h=1920&fit=crop&q=85',
+  ],
+};
+
+function getThemeByTopic(topic: string): string[] {
+  const lower = topic.toLowerCase();
+  if (lower.includes('ভিডিও') || lower.includes('video') || lower.includes('short') || lower.includes('রিল') || lower.includes('reel') || lower.includes('edit')) {
+    return CURATED_THEMES.video;
+  }
+  if (lower.includes('code') || lower.includes('কোড') || lower.includes('প্রোগ্রামিং') || lower.includes('dev') || lower.includes('web')) {
+    return CURATED_THEMES.code;
+  }
+  if (lower.includes('ছবির') || lower.includes('image') || lower.includes('design') || lower.includes('আর্ট') || lower.includes('art')) {
+    return CURATED_THEMES.design;
+  }
+  return CURATED_THEMES.default;
+}
 
 /**
  * Downloads a high-converting, pristine 9:16 vertical tech frame
  */
-async function fetchVerticalFrame(prompt: string, seed: number, destPath: string, frameIndex: number = 0): Promise<void> {
+async function fetchVerticalFrame(prompt: string, seed: number, destPath: string, themeFrames: string[], frameIndex: number = 0): Promise<void> {
   const browserHeaders = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
   };
 
-  // Try Pollinations AI first
+  // 1. Try Pollinations AI first
   try {
     const encoded = encodeURIComponent(prompt);
     const url = `https://image.pollinations.ai/prompt/${encoded}?width=576&height=1024&nologo=true&seed=${seed}`;
     const res = await axios.get(url, {
       headers: browserHeaders,
       responseType: 'arraybuffer',
-      timeout: 10000,
+      timeout: 12000,
     });
     if (res.data && res.data.length > 1000) {
       fs.writeFileSync(destPath, Buffer.from(res.data));
       return;
     }
   } catch (e: any) {
-    // Switch to curated 4k frame
+    // Switch to curated theme frame
   }
 
-  // Curated 4K tech photography fallback
-  const curatedUrl = CURATED_TECH_FRAMES[frameIndex % CURATED_TECH_FRAMES.length];
-  const res = await axios.get(curatedUrl, {
-    headers: browserHeaders,
-    responseType: 'arraybuffer',
-    timeout: 20000,
-  });
-  fs.writeFileSync(destPath, Buffer.from(res.data));
+  // 2. Curated 4K theme photography fallback with resilient candidate loop
+  const candidates = [
+    themeFrames[frameIndex % themeFrames.length],
+    ...themeFrames,
+    ...CURATED_THEMES.default,
+  ];
+
+  for (const candidateUrl of candidates) {
+    try {
+      const res = await axios.get(candidateUrl, {
+        headers: browserHeaders,
+        responseType: 'arraybuffer',
+        timeout: 15000,
+      });
+      if (res.data && res.data.length > 1000) {
+        fs.writeFileSync(destPath, Buffer.from(res.data));
+        return;
+      }
+    } catch (candidateErr: any) {
+      // try next candidate
+    }
+  }
+
+  throw new Error('Failed to download any visual frame.');
 }
 
 /**
@@ -212,8 +298,8 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     speechText = `${input.hookText}। ${cleanBody}। ${input.ctaText}`;
   }
 
-  const voiceSelection = input.voice || 'bn-BD-PradeepNeural';
-  const voiceRate = input.rate || '+20%';
+  const voiceSelection = input.voice || 'Puck';
+  const voiceRate = input.rate || '+6%';
 
   const { duration: exactDuration, model: voiceModel } = await generateHumanBengaliVoiceover(
     speechText,
@@ -222,20 +308,36 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     voiceRate
   );
 
-  // 2. Prepare 3 Vertical Frames
+  // 2. Prepare 3 Vertical Frames with Narrative Structure
   const seed = Math.floor(Math.random() * 900000);
   const slide1Path = path.join(tempDir, 'slide1.jpg');
   const slide2Path = path.join(tempDir, 'slide2.jpg');
   const slide3Path = path.join(tempDir, 'slide3.jpg');
 
-  const prompt1 = input.imagePrompts?.[0] || 'Modern 3D futuristic cyber workstation with glowing holographic displays, vertical 9:16, dark studio lighting, no text, no watermark, 8k render';
-  const prompt2 = input.imagePrompts?.[1] || 'Translucent glowing 3D AI neural chip and smart data streams, vertical 9:16, dark obsidian, no text, 8k render';
-  const prompt3 = input.imagePrompts?.[2] || 'Ultra-modern 3D mobile tech interface with floating glassmorphic icons, vertical 9:16, no text, 8k render';
+  const themeFrames = getThemeByTopic(input.topic);
 
-  console.log(`[Video Engine] 🎨 Preparing 3 high-impact 9:16 visual frames...`);
-  await fetchVerticalFrame(prompt1, seed, slide1Path, 0);
-  await fetchVerticalFrame(prompt2, seed + 1, slide2Path, 1);
-  await fetchVerticalFrame(prompt3, seed + 2, slide3Path, 2);
+  // Derive topic-specific prompts if not explicitly passed
+  let p1 = input.imagePrompts?.[0];
+  let p2 = input.imagePrompts?.[1];
+  let p3 = input.imagePrompts?.[2];
+
+  if (!p1 || !p2 || !p3) {
+    const isVideoTopic = input.topic.includes('ভিডিও') || input.topic.includes('video') || input.topic.includes('রিল') || input.topic.includes('edit');
+    if (isVideoTopic) {
+      p1 = 'Content creator looking at video editing timeline on dual monitors, vertical 9:16, dark studio lighting, strictly no text, no watermark, 8k render';
+      p2 = 'Futuristic glowing AI video editing interface auto cutting highlights from timeline, vertical 9:16, neon cyan accents, strictly no text, 8k render';
+      p3 = 'Modern smartphone in hand playing viral vertical video short with high engagement hearts, vertical 9:16, strictly no text, 8k render';
+    } else {
+      p1 = `Modern professional person interacting with high-tech computer interface about ${input.topic}, vertical 9:16, dark studio lighting, strictly no text, 8k render`;
+      p2 = `Futuristic glowing AI neural interface and smart data analytics, vertical 9:16, cyan accents, strictly no text, 8k render`;
+      p3 = `Modern sleek smartphone displaying high tech viral AI app success, vertical 9:16, strictly no text, 8k render`;
+    }
+  }
+
+  console.log(`[Video Engine] 🎨 Preparing 3 narrative-driven 9:16 visual frames...`);
+  await fetchVerticalFrame(p1, seed, slide1Path, themeFrames, 0);
+  await fetchVerticalFrame(p2, seed + 1, slide2Path, themeFrames, 1);
+  await fetchVerticalFrame(p3, seed + 2, slide3Path, themeFrames, 2);
 
   // 3. Dynamic Pacing Breakdown (Hook 25%, Core Solution 50%, Action CTA 25%)
   const hookDur = Math.max(2, Math.round(exactDuration * 0.25 * 10) / 10);
@@ -258,7 +360,20 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   fs.writeFileSync(concatListPath, concatContent);
 
   // 4. Compile Cinematic 1080x1920 MP4 Video with FFMPEG
-  // Includes subtle dark top and bottom vignette overlays and volume boost
+  // Includes typography badges: Top Brand Pill, Upper Headline, Bottom CTA Banner
+  const rawHeadline = input.headlineEn || 'VIRAL AI TECH TIPS';
+  const cleanHeadline = rawHeadline.replace(/['":]/g, '').trim().toUpperCase();
+
+  const videoFilter = [
+    'scale=1080:1920:force_original_aspect_ratio=decrease',
+    'pad=1080:1920:(ow-iw)/2:(oh-ih)/2',
+    'drawbox=y=0:h=340:color=black@0.6:t=fill',
+    'drawbox=y=ih-260:h=260:color=black@0.65:t=fill',
+    "drawtext=fontfile='C\\:/Windows/Fonts/segoeui.ttf':text='BYTEBANGLA  •  AI TOOL':fontsize=32:fontcolor=0x22D3EE:box=1:boxcolor=black@0.7:boxborderw=10:x=(w-text_w)/2:y=120",
+    `drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='${cleanHeadline}':fontsize=52:fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=14:x=(w-text_w)/2:y=210`,
+    "drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='COMMENT \"AI\" FOR DIRECT LINK':fontsize=36:fontcolor=0xFACC15:box=1:boxcolor=black@0.75:boxborderw=12:x=(w-text_w)/2:y=h-180",
+  ].join(',');
+
   console.log(`[Video Engine] 🚀 Compiling polished 1080x1920 MP4 video Reel...`);
   await new Promise<void>((resolve, reject) => {
     ffmpeg()
@@ -271,9 +386,10 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
         '-r 30',
         '-c:a aac',
         '-b:a 192k',
-        '-af volume=1.4',
+        '-af volume=1.35',
         '-shortest',
-        '-vf scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,drawbox=y=0:h=220:color=black@0.4:t=fill,drawbox=y=ih-220:h=220:color=black@0.5:t=fill',
+        '-vf',
+        videoFilter,
       ])
       .save(outputPath)
       .on('end', () => {

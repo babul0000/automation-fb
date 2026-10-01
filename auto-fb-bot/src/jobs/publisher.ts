@@ -286,10 +286,12 @@ export async function triggerAutonomousReelPost(
     console.log(`[Reel Publisher] 🎥 Synthesizing 9:16 MP4 video Reel...`);
     const generatedReel = await generateReelVideo({
       topic: selectedTopicTitle,
+      headlineEn: bundle.reelsScript.headlineEn,
       hookText: bundle.reelsScript.hook,
       bodyText: bundle.reelsScript.body,
       ctaText: bundle.reelsScript.cta,
       fullScript: bundle.reelsScript.fullScript,
+      imagePrompts: bundle.reelsVisualPrompts,
     });
 
     if (dryRun) {

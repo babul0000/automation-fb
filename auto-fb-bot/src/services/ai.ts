@@ -2,6 +2,7 @@ import axios from 'axios';
 import { env, isConfiguredForGemini } from '../config/env';
 
 export interface ReelsScriptData {
+  headlineEn: string;
   hook: string;
   body: string;
   cta: string;
@@ -13,6 +14,7 @@ export interface BanglaPostBundle {
   firstComment: string;
   keywordTrigger: string;
   reelsScript?: ReelsScriptData;
+  reelsVisualPrompts?: string[];
 }
 
 /**
@@ -73,11 +75,17 @@ Return ONLY a valid JSON object without markdown code fences:
   "firstComment": "The text for the FIRST COMMENT containing: 🔗 আজকের পোস্টে উল্লেখিত টুলগুলোর অফিসিয়াল ওয়েবসাইট লিংকসমূহ (List the verified tool names and their real URLs like https://chatgpt.com, https://claude.ai, etc.) এবং পোস্টটি সেভ করার অনুরোধ",
   "keywordTrigger": "AI",
   "reelsScript": {
+    "headlineEn": "Catchy 3-5 word uppercase English headline for video badge (e.g. LONG VIDEO TO VIRAL SHORTS! or TOP 3 FREE AI TOOLS!)",
     "hook": "১ লাইনের কৌতূহলী হুক (কোনো নম্বর বা পয়েন্ট ছাড়া)",
     "body": "১-২ লাইনের সরাসরি আকর্ষণীয় সমাধান (কোনো নম্বর ও কোনো কমেন্ট/ফলো কথা ছাড়া)",
     "cta": "লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!",
     "fullScript": "সম্পূর্ণ ১২-১৫ সেকেন্ডের সাবলীল ক্রিয়েটর ডায়লগ (হুক + বডি + সিটএ মিলে মোট ২৫-৩৫ শব্দ, কোনো রিপিট ছাড়া)"
-  }
+  },
+  "reelsVisualPrompts": [
+    "Scene 1 Hook visual in English specifically illustrating the real-world problem or context of this topic, vertical 9:16, cinematic studio lighting, strictly no text, no watermark, 8k render",
+    "Scene 2 Solution visual in English specifically illustrating the AI software, interface, or technology in action for this topic, vertical 9:16, sleek glowing UI, strictly no text, no watermark, 8k render",
+    "Scene 3 Result visual in English specifically illustrating the smartphone output, viral engagement, or success screen for this topic, vertical 9:16, strictly no text, no watermark, 8k render"
+  ]
 }`;
 
   const modelsToTry = [
@@ -111,12 +119,16 @@ Return ONLY a valid JSON object without markdown code fences:
             caption: parsed.caption.trim(),
             firstComment: parsed.firstComment.trim(),
             keywordTrigger: parsed.keywordTrigger || 'AI',
-            reelsScript: parsed.reelsScript || {
-              hook: `সহজ উপায়ে আজকের সেরা এআই ট্রিকস মিস করবেন না!`,
-              body: `এই দারুণ টুলটি আপনার কাজের গতি বাড়িয়ে দেবে কয়েক গুণ।`,
-              cta: `লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
-              fullScript: `সহজ উপায়ে আজকের সেরা এআই ট্রিকস মিস করবেন না! এই দারুণ টুলটি আপনার কাজের গতি বাড়িয়ে দেবে কয়েক গুণ। লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
+            reelsScript: {
+              headlineEn: parsed.reelsScript?.headlineEn || 'VIRAL AI TECH TIPS',
+              hook: parsed.reelsScript?.hook || `সহজ উপায়ে আজকের সেরা এআই ট্রিকস মিস করবেন না!`,
+              body: parsed.reelsScript?.body || `এই দারুণ টুলটি আপনার কাজের গতি বাড়িয়ে দেবে কয়েক গুণ।`,
+              cta: parsed.reelsScript?.cta || `লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
+              fullScript: parsed.reelsScript?.fullScript || `সহজ উপায়ে আজকের সেরা এআই ট্রিকস মিস করবেন না! এই দারুণ টুলটি আপনার কাজের গতি বাড়িয়ে দেবে কয়েক গুণ। লিংক পেতে এখনই কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
             },
+            reelsVisualPrompts: Array.isArray(parsed.reelsVisualPrompts) && parsed.reelsVisualPrompts.length >= 3
+              ? parsed.reelsVisualPrompts
+              : undefined,
           };
         }
       }
@@ -132,6 +144,7 @@ Return ONLY a valid JSON object without markdown code fences:
     firstComment: `🔗 আজকের পোস্টে উল্লেখিত টুলগুলোর অফিশিয়াল ওয়েবসাইট ও দরকারি রিসোর্স লিংক পেতে বাইট বাংলার সাথেই থাকুন! যেকোনো সমস্যায় কমেন্টে জানান। 💡`,
     keywordTrigger: 'AI',
     reelsScript: {
+      headlineEn: 'VIRAL AI TECH TIPS',
       hook: `সহজ বাংলায় আজকের সেরা এআই আপডেট!`,
       body: `এই টুলটি আজই ব্যবহার করে দেখুন আপনার সময় অনেক বাঁচবে।`,
       cta: `লিংক পেতে কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!`,
