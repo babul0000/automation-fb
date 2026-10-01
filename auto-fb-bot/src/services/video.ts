@@ -346,54 +346,107 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
 
   console.log(`[Video Engine] 🎞️ Pacing breakdown: Hook (${hookDur}s) | Solution (${bodyDur}s) | CTA (${ctaDur}s) [Total: ${exactDuration.toFixed(1)}s]`);
 
-  // Concat demuxer script
-  const concatListPath = path.join(tempDir, 'slides.txt');
-  const concatContent = [
-    `file '${slide1Path.replace(/\\/g, '/')}'`,
-    `duration ${hookDur}`,
-    `file '${slide2Path.replace(/\\/g, '/')}'`,
-    `duration ${bodyDur}`,
-    `file '${slide3Path.replace(/\\/g, '/')}'`,
-    `duration ${ctaDur}`,
-    `file '${slide3Path.replace(/\\/g, '/')}'`,
-  ].join('\n');
-  fs.writeFileSync(concatListPath, concatContent);
+  // Helper to render Ken Burns dynamic camera motion for each scene
+  const renderMotionScene = (imgPath: string, durationSec: number, outPath: string, zoomIn: boolean) => {
+    const frames = Math.round(durationSec * 30);
+    const zoomFilter = zoomIn
+      ? `zoompan=z='min(zoom+0.0012,1.18)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`
+      : `zoompan=z='max(1.18-0.0012*on,1.0)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`;
 
-  // 4. Compile Cinematic 1080x1920 MP4 Video with FFMPEG
-  // Includes typography badges: Top Brand Pill, Upper Headline, Bottom CTA Banner
+    return new Promise<string>((resolve, reject) => {
+      ffmpeg(imgPath)
+        .loop(durationSec)
+        .videoFilters([
+          'scale=1080:1920:force_original_aspect_ratio=increase',
+          'crop=1080:1920',
+          zoomFilter,
+        ])
+        .outputOptions([
+          `-t ${durationSec}`,
+          '-pix_fmt yuv420p',
+          '-c:v libx264',
+          '-r 30',
+        ])
+        .save(outPath)
+        .on('end', () => resolve(outPath))
+        .on('error', (err: any) => reject(err));
+    });
+  };
+
+  console.log(`[Video Engine] 🎥 Rendering dynamic Ken Burns motion for 3 scenes...`);
+  const v1 = path.join(tempDir, 'scene1.mp4');
+  const v2 = path.join(tempDir, 'scene2.mp4');
+  const v3 = path.join(tempDir, 'scene3.mp4');
+
+  await renderMotionScene(slide1Path, hookDur, v1, true);
+  await renderMotionScene(slide2Path, bodyDur, v2, false);
+  await renderMotionScene(slide3Path, ctaDur, v3, true);
+
+  const concatListPath = path.join(tempDir, 'motion_concat.txt');
+  fs.writeFileSync(
+    concatListPath,
+    [
+      `file '${v1.replace(/\\/g, '/')}'`,
+      `file '${v2.replace(/\\/g, '/')}'`,
+      `file '${v3.replace(/\\/g, '/')}'`,
+    ].join('\n')
+  );
+
+  // 4. Compile Cinematic 1080x1920 MP4 Video with Modern Typography (NO ugly solid black boxes!)
   const rawHeadline = input.headlineEn || 'VIRAL AI TECH TIPS';
   const cleanHeadline = rawHeadline.replace(/['":]/g, '').trim().toUpperCase();
 
   const videoFilter = [
-    'scale=1080:1920:force_original_aspect_ratio=decrease',
-    'pad=1080:1920:(ow-iw)/2:(oh-ih)/2',
-    'drawbox=y=0:h=340:color=black@0.6:t=fill',
-    'drawbox=y=ih-260:h=260:color=black@0.65:t=fill',
-    "drawtext=fontfile='C\\:/Windows/Fonts/segoeui.ttf':text='BYTEBANGLA  •  AI TOOL':fontsize=32:fontcolor=0x22D3EE:box=1:boxcolor=black@0.7:boxborderw=10:x=(w-text_w)/2:y=120",
-    `drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='${cleanHeadline}':fontsize=52:fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=14:x=(w-text_w)/2:y=210`,
-    "drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='COMMENT \"AI\" FOR DIRECT LINK':fontsize=36:fontcolor=0xFACC15:box=1:boxcolor=black@0.75:boxborderw=12:x=(w-text_w)/2:y=h-180",
+    // Top floating pill badge (semi-transparent rounded box just around text, clean ASCII bullet)
+    "drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='BYTEBANGLA  •  AI TOOL':fontsize=32:fontcolor=0x22D3EE:box=1:boxcolor=black@0.65:boxborderw=12:x=(w-text_w)/2:y=140",
+    // Bold modern headline with strong drop-shadow (readable anywhere without obscuring background video)
+    `drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='${cleanHeadline}':fontsize=54:fontcolor=white:shadowcolor=black@0.85:shadowx=4:shadowy=4:x=(w-text_w)/2:y=240`,
+    // Modern floating CTA badge at the lower third
+    "drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='COMMENT \"AI\" FOR DIRECT LINK':fontsize=36:fontcolor=0xFACC15:box=1:boxcolor=black@0.7:boxborderw=14:x=(w-text_w)/2:y=h-240",
   ].join(',');
 
-  console.log(`[Video Engine] 🚀 Compiling polished 1080x1920 MP4 video Reel...`);
+  const bgMusicPath = path.resolve(process.cwd(), 'assets', 'audio', 'ambient_tech_bg.mp3');
+  const hasBgMusic = fs.existsSync(bgMusicPath);
+
+  console.log(`[Video Engine] 🚀 Compiling polished 1080x1920 MP4 with Voiceover${hasBgMusic ? ' + Ambient Tech Music' : ''}...`);
+
   await new Promise<void>((resolve, reject) => {
-    ffmpeg()
+    let command = ffmpeg()
       .input(concatListPath)
       .inputOptions(['-f concat', '-safe 0'])
-      .input(audioPath)
-      .outputOptions([
-        '-c:v libx264',
-        '-pix_fmt yuv420p',
-        '-r 30',
-        '-c:a aac',
-        '-b:a 192k',
-        '-af volume=1.35',
-        '-shortest',
-        '-vf',
-        videoFilter,
-      ])
+      .input(audioPath);
+
+    if (hasBgMusic) {
+      command = command.input(bgMusicPath).complexFilter([
+        `[0:v]${videoFilter}[vout]`,
+        `[1:a]volume=1.35[voice]`,
+        `[2:a]volume=0.08[bg]`,
+        `[voice][bg]amix=inputs=2:duration=first:dropout_transition=2[aout]`,
+      ]);
+    } else {
+      command = command
+        .videoFilters(videoFilter)
+        .audioFilters('volume=1.35');
+    }
+
+    const outputOpts = [
+      '-c:v libx264',
+      '-pix_fmt yuv420p',
+      '-r 30',
+      '-c:a aac',
+      '-b:a 192k',
+      '-shortest',
+    ];
+
+    if (hasBgMusic) {
+      outputOpts.unshift('-map [vout]', '-map [aout]');
+    }
+
+    command
+      .outputOptions(outputOpts)
       .save(outputPath)
       .on('end', () => {
-        console.log(`[Video Engine] ✅ 10/10 MP4 Reel compiled: ${outputPath}`);
+        console.log(`[Video Engine] ✅ 10/10 Cinematic Motion Reel compiled: ${outputPath}`);
         resolve();
       })
       .on('error', (err: any) => {

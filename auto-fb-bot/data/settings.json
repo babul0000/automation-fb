@@ -35,10 +35,10 @@
       "category": "Viral 30s Short-Form Video Guide & Tools",
       "categoryBn": "৩০ সেকেন্ডের ভাইরাল রিল ও এআই টিপস",
       "enabled": true,
-      "lastRun": "2026-10-01T17:59:25.208Z",
-      "lastStatus": "FAILED",
-      "lastPostId": "1450514027017602",
-      "lastTopic": "বড় ভিডিও কেটে শর্টস বানানোর সেরা এআই টুল"
+      "lastRun": "2026-10-01T18:17:31.758Z",
+      "lastStatus": "SUCCESS",
+      "lastPostId": "1071182305676574",
+      "lastTopic": "দৈনন্দিন কাজের সময় বাঁচাতে সেরা ৫টি ফ্রি AI টুল যা প্রত্যেকের ব্যবহার করা উচিত"
     },
     {
       "id": "slot_3",
@@ -51,5 +51,5 @@
       "enabled": true
     }
   ],
-  "updatedAt": "2026-10-01T17:59:25.208Z"
+  "updatedAt": "2026-10-01T18:17:31.758Z"
 }

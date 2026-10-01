@@ -1,6 +1,15 @@
 {
   "topics": [
     {
+      "title": "দৈনন্দিন কাজের সময় বাঁচাতে সেরা ৫টি ফ্রি AI টুল যা প্রত্যেকের ব্যবহার করা উচিত",
+      "titleHash": "5f3b6f52982e1d8f53d66a1fdfc12d32f37837b139e7ecb4c2f08aded352936f",
+      "category": "AI Productivity",
+      "score": 88,
+      "status": "DISCOVERED",
+      "id": "topic_1790878610459_1iw8b",
+      "createdAt": "2026-10-01T18:16:50.459Z"
+    },
+    {
       "title": "লং-ভিডিও থেকে সেরা অংশ কেটে অটোমেটিক ভাইরাল শর্টস বানিয়ে দিচ্ছে ওপেন-সোর্সের এই ট্রেন্ডিং AI টুলটি! 🔥",
       "titleHash": "f0f5f2aca8c1318efacc959df4be397f2405ac4e4486caf5f0a34f9603164b6f",
       "category": "Hugging Face / OpenSource AI",
@@ -92,6 +101,13 @@
     }
   ],
   "posts": [
+    {
+      "facebookPostId": "1071182305676574",
+      "caption": "সহজ বাংলায় আজকের সেরা এআই আপডেট!\n\nএই টুলটি আজই ব্যবহার করে দেখুন আপনার সময় অনেক বাঁচবে।\n\n👉 লিংক পেতে কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1790878651756_wjivk",
+      "publishedAt": "2026-10-01T18:17:31.756Z"
+    },
     {
       "facebookPostId": "1450514027017602",
       "caption": "বড় ভিডিও কেটে শর্টস বানানোর ঝামেলা থেকে মুক্তি চান?\n\nওপেন-সোর্সের এই ট্রেন্ডিং এআই টুলটি লং-ভিডিওর সেরা অংশগুলো নিজে থেকেই খুঁজে বের করে এক ক্লিকেই বানিয়ে দিচ্ছে ভাইরাল শর্টস!\n\n👉 ডিরেক্ট লিংকের জন্য কমেন্টে AI লিখুন আর ফলো করুন বাইট বাংলা!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
@@ -295,6 +311,20 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1790878651759",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 1071182305676574, Topic: দৈনন্দিন কাজের সময় বাঁচাতে সেরা ৫টি ফ্রি AI টুল যা প্রত্যেকের ব্যবহার করা উচিত, Critic: 95/100, Duration: 10.704s",
+      "createdAt": "2026-10-01T18:17:31.759Z"
+    },
+    {
+      "id": "log_1790878622741",
+      "jobName": "CRITIC_AUDIT",
+      "status": "COMPLETED",
+      "details": "Topic: \"দৈনন্দিন কাজের সময় বাঁচাতে সেরা ৫টি ফ্রি AI টুল যা প্রত্যেকের ব্যবহার করা উচিত\", Score: 95/100, Revised: true, Feedback: The draft is strong, well-structured, and accurate. However, minor tweaks in Bengali phrasing (like replacing 'transparent' with 'স্বচ্ছ') and tightening the hook will maximize Facebook engagement and maintain ByteBangla's native tone.",
+      "createdAt": "2026-10-01T18:17:02.741Z"
+    },
     {
       "id": "log_1790877608333",
       "jobName": "CRITIC_AUDIT",
