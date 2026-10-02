@@ -1741,9 +1741,9 @@ app.post('/api/trigger-slot/:slotId', async (req: Request, res: Response) => {
       return;
     }
 
-    console.log(`[Manual Slot Trigger] Firing [${slot.nameBn} - ${slot.id}] immediately...`);
+    console.log(`[Manual Slot Trigger] Firing [${slot.nameBn} - ${slot.id}] immediately (Bypass Cooldown)...`);
     if (slot.type === 'REEL' || slot.id === 'slot_reel') {
-      const result = await triggerAutonomousReelPost(undefined, false, slot.id, slot.category);
+      const result = await triggerAutonomousReelPost(undefined, false, slot.id, slot.category, true);
       res.status(result.success ? 200 : 500).json({
         success: result.success,
         data: result,
@@ -1752,7 +1752,7 @@ app.post('/api/trigger-slot/:slotId', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await triggerManualPost(undefined, false, slot.id, slot.category);
+    const result = await triggerManualPost(undefined, false, slot.id, slot.category, true);
 
     res.status(result.success ? 200 : 500).json({
       success: result.success,

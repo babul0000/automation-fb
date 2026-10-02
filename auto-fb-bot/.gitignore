@@ -27,13 +27,16 @@ Thumbs.db
 # Temporary and generated media
 data/temp_reels/
 data/temp_reels_test/
+data/posts/
 data/reels/*.mp4
 data/reels/*.mp3
 data/*.wav
 data/*.jpg
+data/*.png
 data/*.pcm
 *.mp4
 *.mp3
 *.wav
 *.pcm
 !assets/audio/**
+

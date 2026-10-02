@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import axios from 'axios';
 import { env, isConfiguredForFacebook } from '../config/env';
 
@@ -54,8 +56,56 @@ export async function publishToFacebookPage(message: string): Promise<FacebookPu
 }
 
 /**
+ * Uploads a single photo to Meta Graph API, supporting both remote HTTP URLs and local image file paths
+ */
+async function uploadSinglePhoto(
+  imagePathOrUrl: string,
+  caption?: string,
+  published: boolean = true
+): Promise<{ id: string; post_id?: string }> {
+  const endpoint = `https://graph.facebook.com/v21.0/${env.PAGE_ID}/photos`;
+
+  if (imagePathOrUrl.startsWith('http://') || imagePathOrUrl.startsWith('https://')) {
+    const res = await axios.post<{ id: string; post_id?: string }>(
+      endpoint,
+      {
+        url: imagePathOrUrl,
+        caption: caption ? caption.trim() : undefined,
+        published,
+      },
+      {
+        params: { access_token: env.PAGE_ACCESS_TOKEN },
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 45000,
+      }
+    );
+    return res.data;
+  }
+
+  // Handle local file upload via binary multipart
+  if (fs.existsSync(imagePathOrUrl)) {
+    const fileBuffer = fs.readFileSync(imagePathOrUrl);
+    const form = new FormData();
+    form.append('source', new Blob([fileBuffer], { type: 'image/png' }), path.basename(imagePathOrUrl));
+    if (caption) {
+      form.append('caption', caption.trim());
+    }
+    form.append('published', published ? 'true' : 'false');
+    form.append('access_token', env.PAGE_ACCESS_TOKEN);
+
+    const res = await axios.post<{ id: string; post_id?: string }>(endpoint, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    });
+    return res.data;
+  }
+
+  throw new Error(`Invalid image path or URL: ${imagePathOrUrl}`);
+}
+
+/**
  * Publishes a photo post with caption to the Facebook Page using Meta Graph API v21.0.
- * Falls back to standard feed post if photo upload encounters an issue.
+ * Supports both local files and remote URLs.
  */
 export async function publishPhotoToFacebookPage(
   imageUrl: string,
@@ -65,27 +115,15 @@ export async function publishPhotoToFacebookPage(
     throw new Error('Facebook credentials are missing. Update your .env file.');
   }
 
-  const endpoint = `https://graph.facebook.com/v21.0/${env.PAGE_ID}/photos`;
   console.log(`[Facebook Service] 📸 Publishing photo post to Page ID (${env.PAGE_ID})...`);
 
   try {
-    const response = await axios.post<{ id: string; post_id?: string }>(
-      endpoint,
-      {
-        url: imageUrl,
-        caption: caption.trim(),
-      },
-      {
-        params: { access_token: env.PAGE_ACCESS_TOKEN },
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 45000,
-      }
-    );
+    const resData = await uploadSinglePhoto(imageUrl, caption, true);
 
-    if (response.data && response.data.id) {
-      const effectivePostId = response.data.post_id || `${env.PAGE_ID}_${response.data.id}`;
-      console.log(`[Facebook Service] ✅ Photo published successfully! Photo ID: ${response.data.id}, Post ID: ${effectivePostId}`);
-      return { id: response.data.id, post_id: effectivePostId };
+    if (resData && resData.id) {
+      const effectivePostId = resData.post_id || `${env.PAGE_ID}_${resData.id}`;
+      console.log(`[Facebook Service] ✅ Photo published successfully! Photo ID: ${resData.id}, Post ID: ${effectivePostId}`);
+      return { id: resData.id, post_id: effectivePostId };
     }
 
     throw new Error('Meta Graph API photo response did not return a valid ID.');
@@ -122,20 +160,9 @@ export async function publishMultiPhotoPost(
 
     // Step 1: Upload each image with published: false to get media IDs
     for (const imgUrl of imageUrls) {
-      const uploadRes = await axios.post<{ id: string }>(
-        `https://graph.facebook.com/v21.0/${env.PAGE_ID}/photos`,
-        {
-          url: imgUrl,
-          published: false,
-        },
-        {
-          params: { access_token: env.PAGE_ACCESS_TOKEN },
-          timeout: 40000,
-        }
-      );
-
-      if (uploadRes.data?.id) {
-        attachedMedia.push({ media_fbid: uploadRes.data.id });
+      const uploadRes = await uploadSinglePhoto(imgUrl, undefined, false);
+      if (uploadRes?.id) {
+        attachedMedia.push({ media_fbid: uploadRes.id });
       }
     }
 

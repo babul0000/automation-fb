@@ -2,12 +2,35 @@ import cron, { ScheduledTask } from 'node-cron';
 import { env } from '../config/env';
 import { discoverTopTrendingTopic, DiscoveredTopic } from '../services/trends';
 import { generateBanglaPostBundle, BanglaPostBundle, ReelsScriptData } from '../services/ai';
-import { auditAndReflectPost, CriticAuditResult } from '../services/critic';
+import { auditAndReflectPost, auditReelsScript, CriticAuditResult } from '../services/critic';
 import { generateCarouselSlides } from '../services/media';
 import { generateReelVideo } from '../services/video';
 import { publishMultiPhotoPost, publishReelToFacebookPage, addCommentToPost } from '../services/facebook';
-import { savePost, saveJobLog, saveComment, saveReply, getAutomationSettings, updateSlotExecution } from '../services/db';
+import { savePost, saveJobLog, saveComment, saveReply, getAutomationSettings, updateSlotExecution, getRecentPosts } from '../services/db';
 import { collectAllRecentMetrics } from '../services/analytics';
+
+/**
+ * Enforces minimum 6-hour cooldown between automated publishing runs
+ * to protect Facebook page algorithmic health from spam penalties.
+ */
+export async function isCooldownActive(minHours: number = 6): Promise<{ active: boolean; remainingMinutes: number }> {
+  try {
+    const recent = await getRecentPosts(1);
+    if (!recent || recent.length === 0) return { active: false, remainingMinutes: 0 };
+    const lastPost = recent[0];
+    const lastTime = new Date(lastPost.publishedAt).getTime();
+    if (isNaN(lastTime)) return { active: false, remainingMinutes: 0 };
+
+    const diffHours = (Date.now() - lastTime) / (1000 * 60 * 60);
+    if (diffHours < minHours) {
+      const remainingMinutes = Math.round((minHours - diffHours) * 60);
+      return { active: true, remainingMinutes };
+    }
+  } catch {
+    // fallback gracefully
+  }
+  return { active: false, remainingMinutes: 0 };
+}
 
 export interface AutonomousPostResult {
   success: boolean;
@@ -66,7 +89,8 @@ export async function triggerManualPost(
   customTopic?: string,
   dryRun: boolean = false,
   slotId?: string,
-  slotCategory?: string
+  slotCategory?: string,
+  bypassCooldown: boolean = true
 ): Promise<AutonomousPostResult> {
   const timestamp = new Date().toISOString();
   let selectedTopicTitle = '';
@@ -75,9 +99,25 @@ export async function triggerManualPost(
   let topicScore = 90;
 
   console.log(`\n======================================================`);
-  console.log(`[Autonomous Publisher] 🚀 Starting Facebook Pipeline ${slotId ? `for [${slotId}]` : ''} at ${timestamp}`);
+  console.log(`[Autonomous Publisher] 🚀 Starting Facebook Pipeline ${slotId ? `for [${slotId}]` : ''} at ${timestamp} (Manual/Bypass: ${bypassCooldown})`);
 
   try {
+    // Enforce 6-hour Anti-Spam Rate Limit Cooldown ONLY for background scheduled automated runs
+    if (!bypassCooldown && slotId && !dryRun && !customTopic) {
+      const cooldown = await isCooldownActive(6);
+      if (cooldown.active) {
+        console.log(`[Autonomous Publisher] ⏳ Anti-Spam Rate Limit Active! Last post was less than 6 hours ago (${cooldown.remainingMinutes}m remaining). Skipping scheduled background run to protect Facebook Page algorithm.`);
+        return {
+          success: false,
+          topic: 'Skipped: 6-Hour Anti-Spam Cooldown Active',
+          content: '',
+          slotId,
+          error: `Cooldown active: ${cooldown.remainingMinutes} minutes remaining.`,
+          timestamp,
+        };
+      }
+    }
+
     // 1. Topic Discovery with Self-Learning Feedback Loop & Multi-Source Intelligence
     if (customTopic && customTopic.trim().length > 0) {
       selectedTopicTitle = customTopic.trim();
@@ -249,16 +289,32 @@ export async function triggerAutonomousReelPost(
   customTopic?: string,
   dryRun: boolean = false,
   slotId: string = 'slot_reel',
-  slotCategory?: string
+  slotCategory?: string,
+  bypassCooldown: boolean = true
 ): Promise<AutonomousReelResult> {
   const timestamp = new Date().toISOString();
   let selectedTopicTitle = '';
   let topicCategory = slotCategory || 'Viral 30s Short-Form Video Guide & Tools';
 
   console.log(`\n======================================================`);
-  console.log(`[Reel Publisher] 🎬 Starting Facebook Reel Pipeline for [${slotId}] at ${timestamp}`);
+  console.log(`[Reel Publisher] 🎬 Starting Facebook Reel Pipeline for [${slotId}] at ${timestamp} (Manual/Bypass: ${bypassCooldown})`);
 
   try {
+    // Enforce 6-hour Anti-Spam Rate Limit Cooldown ONLY for background scheduled automated runs
+    if (!bypassCooldown && slotId && !dryRun && !customTopic) {
+      const cooldown = await isCooldownActive(6);
+      if (cooldown.active) {
+        console.log(`[Reel Publisher] ⏳ Anti-Spam Rate Limit Active! Last post was less than 6 hours ago (${cooldown.remainingMinutes}m remaining). Skipping scheduled background run to protect Facebook Page algorithm.`);
+        return {
+          success: false,
+          topic: 'Skipped: 6-Hour Anti-Spam Cooldown Active',
+          slotId,
+          error: `Cooldown active: ${cooldown.remainingMinutes} minutes remaining.`,
+          timestamp,
+        };
+      }
+    }
+
     // 1. Topic discovery tailored for viral short video
     if (customTopic && customTopic.trim().length > 0) {
       selectedTopicTitle = customTopic.trim();
@@ -272,26 +328,80 @@ export async function triggerAutonomousReelPost(
 
     // 2. Generate Bengali Post Bundle with Reels Script
     console.log(`[Reel Publisher] ✍️ Generating Bengali 30s Reel script & voiceover lines...`);
-    const bundle: BanglaPostBundle = await generateBanglaPostBundle(selectedTopicTitle);
+    let bundle: BanglaPostBundle = await generateBanglaPostBundle(selectedTopicTitle);
 
     if (!bundle.reelsScript) {
       throw new Error('AI did not return reelsScript for Reel generation.');
     }
 
-    // 3. Critic Audit
-    const audit: CriticAuditResult = await auditAndReflectPost(bundle.caption, selectedTopicTitle);
+    // 3. Strict Critic Audit for Concrete Reels Script
+    console.log(`[Reel Publisher] 🧐 Auditing Reel script with strict concrete specificity validation...`);
+    let audit: CriticAuditResult = await auditReelsScript(bundle.reelsScript, selectedTopicTitle);
     console.log(`[Reel Publisher] 🏆 Critic Evaluation: ${audit.overallScore}/100`);
+
+    // If script is generic (Score 0), force re-generation with a concrete trending topic
+    if (audit.overallScore === 0) {
+      console.warn(`[Reel Publisher] ❌ Critic rejected generic script with Score 0!`);
+      console.warn(`[Reel Publisher] 🚫 Reason: ${audit.feedback}`);
+      console.log(`[Reel Publisher] 🔄 Forcing re-generation with a concrete trending topic...`);
+
+      const concreteCategories: string[] = ['ai_tools', 'web_dev', 'automation'];
+      let regenerationSucceeded = false;
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const retryCategory = concreteCategories[attempt % concreteCategories.length];
+        console.log(`[Reel Publisher] 🔍 Discovering fresh concrete topic (Attempt ${attempt}/3, Category: ${retryCategory})...`);
+        const freshTopic = await discoverTopTrendingTopic(retryCategory);
+        selectedTopicTitle = freshTopic.title;
+        topicCategory = freshTopic.category;
+
+        console.log(`[Reel Publisher] ✍️ Re-generating bundle for concrete topic: "${selectedTopicTitle}"...`);
+        bundle = await generateBanglaPostBundle(selectedTopicTitle);
+
+        if (bundle.reelsScript) {
+          audit = await auditReelsScript(bundle.reelsScript, selectedTopicTitle);
+          console.log(`[Reel Publisher] 🏆 Critic Evaluation on attempt ${attempt}: ${audit.overallScore}/100`);
+          if (audit.overallScore > 0) {
+            regenerationSucceeded = true;
+            console.log(`[Reel Publisher] ✅ Concrete script successfully approved by Critic!`);
+            break;
+          }
+        }
+      }
+
+      if (!regenerationSucceeded || audit.overallScore === 0) {
+        throw new Error(`Reel generation aborted: Script remained generic and failed Critic validation (Score: 0).`);
+      }
+    }
+
+    if (!bundle.reelsScript) {
+      throw new Error('AI did not return reelsScript for Reel generation.');
+    }
+    const finalReelsScript = bundle.reelsScript;
+
+    // If critic approved an improved version of the script, use it
+    if (audit.approvedPost && audit.wasRevised) {
+      finalReelsScript.fullScript = audit.approvedPost;
+    }
 
     // 4. Generate MP4 Video with Voiceover & Vertical Visual Frames
     console.log(`[Reel Publisher] 🎥 Synthesizing 9:16 MP4 video Reel...`);
     const generatedReel = await generateReelVideo({
       topic: selectedTopicTitle,
-      headlineEn: bundle.reelsScript.headlineEn,
-      hookText: bundle.reelsScript.hook,
-      bodyText: bundle.reelsScript.body,
-      ctaText: bundle.reelsScript.cta,
-      fullScript: bundle.reelsScript.fullScript,
+      headlineEn: finalReelsScript.headlineEn,
+      hookText: finalReelsScript.hook,
+      bodyText: finalReelsScript.body,
+      ctaText: finalReelsScript.cta,
+      fullScript: finalReelsScript.fullScript,
       imagePrompts: bundle.reelsVisualPrompts,
+      phase1Hook: finalReelsScript.phase1Hook || finalReelsScript.hook,
+      phase2Solution: finalReelsScript.phase2Solution,
+      phase3Steps: finalReelsScript.phase3Steps,
+      phase4Cta: finalReelsScript.phase4Cta || finalReelsScript.cta,
+      toolBrand: bundle.toolBrand,
+      practicalSnippet: bundle.practicalSnippet,
+      snippetType: bundle.snippetType,
+      targetAudience: bundle.targetAudience || finalReelsScript.targetAudience,
     });
 
     if (dryRun) {
@@ -300,7 +410,7 @@ export async function triggerAutonomousReelPost(
         success: true,
         topic: selectedTopicTitle,
         category: topicCategory,
-        reelScript: bundle.reelsScript,
+        reelScript: finalReelsScript,
         criticScore: audit.overallScore,
         slotId,
         videoPath: generatedReel.videoPath,
@@ -310,7 +420,7 @@ export async function triggerAutonomousReelPost(
 
     // 5. Upload & Publish Reel to Meta Graph API
     console.log(`[Reel Publisher] 🚀 Uploading Reel to Facebook Page via Meta Graph API...`);
-    const caption = `${bundle.reelsScript.hook}\n\n${bundle.reelsScript.body}\n\n👉 ${bundle.reelsScript.cta}\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels`;
+    const caption = `${finalReelsScript.hook}\n\n${finalReelsScript.body}\n\n👉 ${finalReelsScript.cta}\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels`;
     const reelRes = await publishReelToFacebookPage(generatedReel.videoBuffer, caption);
 
     // Clean up temporary files
@@ -418,10 +528,10 @@ export function rescheduleAllJobs(): { scheduledCount: number; autoPilot: boolea
 
           if (slotRef.type === 'REEL' || slotRef.id === 'slot_reel') {
             console.log(`\n[Scheduler Trigger] 🎬 100% Autonomous REEL for [${slotRef.nameBn} - ${slotRef.time} BST] executing at ${new Date().toISOString()}...`);
-            await triggerAutonomousReelPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category);
+            await triggerAutonomousReelPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category, false);
           } else {
             console.log(`\n[Scheduler Trigger] ⏰ 100% Autonomous POST for [${slotRef.nameBn} - ${slotRef.time} BST] executing at ${new Date().toISOString()}...`);
-            await triggerManualPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category);
+            await triggerManualPost(undefined, false, slotRef.id, targetSlot?.category || slotRef.category, false);
           }
         },
         {

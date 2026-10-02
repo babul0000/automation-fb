@@ -6,6 +6,7 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import { EdgeTTS } from 'node-edge-tts';
 import { env, isConfiguredForGemini } from '../config/env';
+import { renderDynamicReelScenes, DynamicReelSceneData } from './media';
 
 // Configure FFMPEG & FFPROBE binaries
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
@@ -21,6 +22,15 @@ export interface ReelGenerationInput {
   imagePrompts?: string[];
   voice?: string;
   rate?: string;
+  phase1Hook?: string;
+  phase2Solution?: string;
+  phase3Steps?: string;
+  phase4Cta?: string;
+  toolBrand?: string;
+  practicalSnippet?: string;
+  snippetType?: 'CODE' | 'FORMULA' | 'PROMPT' | 'SHORTCUT';
+  targetAudience?: 'OFFICE' | 'STUDENTS' | 'FREELANCERS';
+  toolName?: string;
 }
 
 export interface GeneratedReel {
@@ -54,8 +64,8 @@ export function getAudioDuration(audioPath: string): Promise<number> {
 
 /**
  * Synthesizes 100% natural, human-like Bengali voiceover.
- * Primary: Google Gemini 3.8 Flash Neural Voice (authentic creator tone & natural breathing).
- * Fallback: Microsoft Azure Neural Voice (bn-BD-NabanitaNeural at warm, natural speed).
+ * Primary: Google Gemini 3.8/2.5 Flash Neural Voice.
+ * Fallback: Microsoft Azure Neural Voice (bn-BD-NabanitaNeural).
  */
 export async function generateHumanBengaliVoiceover(
   fullSpeech: string,
@@ -63,46 +73,38 @@ export async function generateHumanBengaliVoiceover(
   voice: string = 'Puck',
   rate: string = '+6%'
 ): Promise<{ duration: number; model: string }> {
-  // 1. Aggressively sanitize speech text: remove bullet numbers, steps, URLs, emojis, and symbols
+  // 1. Aggressively sanitize speech text
   let clean = fullSpeech
-    // Remove numbered lists like "১.", "২.", "1.", "1)", "১)", "১/", "2/"
     .replace(/(?:[১-৯0-9]+[\.\)\/]\s*)/g, ' ')
-    // Remove "ধাপ ১:", "স্টেপ ১:", "টিপ ১:", "পয়েন্ট ১:"
     .replace(/(?:ধাপ|স্টেপ|টিপস?|পয়েন্ট|step)\s*[১-৯0-9]+[:\s-]*/gi, ' ')
-    // Remove "প্রথমত,", "দ্বিতীয়ত,", "তৃতীয়ত,"
     .replace(/(?:প্রথমত|দ্বিতীয়ত|তৃতীয়ত)[,:\s-]*/g, ' ')
-    // Remove URLs
     .replace(/https?:\/\/\S+/gi, '')
-    // Remove markdown / code artifacts
     .replace(/[#*~_`\[\]\(\)\{\}]/g, ' ')
-    // Remove all emojis and symbols
     .replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}👉👇🔥✨🚀💡🤯🎥🤖📢💥🎯👑🌟]/gu, '')
-    // Standardize punctuation marks
     .replace(/!+/g, '!')
     .replace(/\?+/g, '?')
     .replace(/।+/g, '।')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // 2. Sentence deduplication: Prevent CTA repetition (e.g. if CTA words appear in middle and end)
+  // Deduplicate CTA
   const sentenceList = clean.split(/(?<=[।?!])/).map((s) => s.trim()).filter(Boolean);
   const filteredSentences: string[] = [];
   for (let i = 0; i < sentenceList.length; i++) {
     const s = sentenceList[i];
     const isLast = i === sentenceList.length - 1;
-    // If not the last sentence, check if it contains end-of-video CTA keywords
     if (!isLast && (s.includes('কমেন্টে AI') || s.includes('কমেন্টে ai') || (s.includes('ফলো করুন') && s.includes('বাইট বাংলা')))) {
-      continue; // Skip CTA if repeated before the end
+      continue;
     }
     filteredSentences.push(s);
   }
   const cleanSpeech = filteredSentences.join(' ').replace(/\s+/g, ' ').trim();
 
-  // 3. PRIMARY ENGINE: Google Gemini Neural Voice (Pure 100% Human Intonation)
+  // Primary: Google Gemini Neural Voice
   if (isConfiguredForGemini()) {
     try {
       const selectedVoice = ['Puck', 'Aoede', 'Kore', 'Fenrir'].includes(voice) ? voice : 'Puck';
-      console.log(`[Video Engine] 🎙️ Synthesizing 100% Human Voice with Google Gemini TTS (${selectedVoice})...`);
+      console.log(`[Video Engine] 🎙️ Synthesizing Human Voice with Google Gemini TTS (${selectedVoice})...`);
       const ttsEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${env.GEMINI_API_KEY}`;
 
       const response = await axios.post(
@@ -129,7 +131,6 @@ export async function generateHumanBengaliVoiceover(
         const tempPcmPath = path.join(path.dirname(outputAudioPath), `gemini_tts_${Date.now()}.pcm`);
         fs.writeFileSync(tempPcmPath, audioBuffer);
 
-        // Convert PCM (L16, 24kHz, mono) to MP3 using fluent-ffmpeg
         await new Promise<void>((resolve, reject) => {
           ffmpeg(tempPcmPath)
             .inputFormat('s16le')
@@ -148,16 +149,16 @@ export async function generateHumanBengaliVoiceover(
 
         if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
           const duration = await getAudioDuration(outputAudioPath);
-          console.log(`[Video Engine] ✨ Google Gemini Human Voice synthesized! Duration: ${duration.toFixed(1)}s`);
-          return { duration, model: `Google Gemini Neural Voice (${selectedVoice} - 100% Human)` };
+          console.log(`[Video Engine] ✨ Google Gemini Voice synthesized! Duration: ${duration.toFixed(1)}s`);
+          return { duration, model: `Google Gemini Neural Voice (${selectedVoice})` };
         }
       }
     } catch (geminiTtsErr: any) {
-      console.warn(`[Video Engine Notice] Gemini TTS unavailable (${geminiTtsErr.message}). Switching to Microsoft Edge Neural fallback...`);
+      console.warn(`[Video Engine Notice] Gemini TTS fallback to Edge Neural: ${geminiTtsErr.message}`);
     }
   }
 
-  // 4. SECONDARY ENGINE: Microsoft Azure Nabanita Neural (Female, smooth & natural tone)
+  // Fallback: Microsoft Edge Neural Voice
   try {
     const edgeVoice = voice.includes('Neural') ? voice : 'bn-BD-NabanitaNeural';
     console.log(`[Video Engine] 🎙️ Synthesizing Microsoft Azure Neural Voice (${edgeVoice}, speed: ${rate})...`);
@@ -171,24 +172,16 @@ export async function generateHumanBengaliVoiceover(
 
     if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
       const duration = await getAudioDuration(outputAudioPath);
-      console.log(`[Video Engine] ✨ Azure Neural Voice synthesized! Duration: ${duration.toFixed(1)}s`);
       return { duration, model: `Microsoft Azure Neural (${edgeVoice})` };
     }
   } catch (azureErr: any) {
-    console.warn(`[Video Engine Notice] Primary Azure voice notice (${azureErr.message}). Switching to alternative...`);
+    console.warn(`[Video Engine Notice] Primary Azure voice error: ${azureErr.message}`);
   }
 
-  // 5. BACKUP ENGINE: Microsoft Azure Pradeep Neural
+  // Backup fallback
   try {
-    console.log(`[Video Engine] 🎙️ Synthesizing Alternative Azure Neural Voice (bn-BD-PradeepNeural, speed: ${rate})...`);
-    const tts = new EdgeTTS({
-      voice: 'bn-BD-PradeepNeural',
-      rate,
-      pitch: '+0Hz',
-    });
-
+    const tts = new EdgeTTS({ voice: 'bn-BD-PradeepNeural', rate, pitch: '+0Hz' });
     await tts.ttsPromise(cleanSpeech, outputAudioPath);
-
     if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
       const duration = await getAudioDuration(outputAudioPath);
       return { duration, model: 'Microsoft Azure Neural (bn-BD-PradeepNeural)' };
@@ -200,98 +193,50 @@ export async function generateHumanBengaliVoiceover(
   throw new Error('Failed to generate neural audio.');
 }
 
-const CURATED_THEMES: Record<string, string[]> = {
-  video: [
-    'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1080&h=1920&fit=crop&q=85',
-  ],
-  code: [
-    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=1080&h=1920&fit=crop&q=85',
-  ],
-  design: [
-    'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1080&h=1920&fit=crop&q=85',
-  ],
-  default: [
-    'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1080&h=1920&fit=crop&q=85',
-    'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1080&h=1920&fit=crop&q=85',
-  ],
-};
-
-function getThemeByTopic(topic: string): string[] {
-  const lower = topic.toLowerCase();
-  if (lower.includes('ভিডিও') || lower.includes('video') || lower.includes('short') || lower.includes('রিল') || lower.includes('reel') || lower.includes('edit')) {
-    return CURATED_THEMES.video;
-  }
-  if (lower.includes('code') || lower.includes('কোড') || lower.includes('প্রোগ্রামিং') || lower.includes('dev') || lower.includes('web')) {
-    return CURATED_THEMES.code;
-  }
-  if (lower.includes('ছবির') || lower.includes('image') || lower.includes('design') || lower.includes('আর্ট') || lower.includes('art')) {
-    return CURATED_THEMES.design;
-  }
-  return CURATED_THEMES.default;
-}
-
 /**
- * Downloads a high-converting, pristine 9:16 vertical tech frame
+ * Renders subtle, cinematic camera motion (Ken Burns zoom/pan) on a 1080x1920 frame.
  */
-async function fetchVerticalFrame(prompt: string, seed: number, destPath: string, themeFrames: string[], frameIndex: number = 0): Promise<void> {
-  const browserHeaders = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-  };
-
-  // 1. Try Pollinations AI first
-  try {
-    const encoded = encodeURIComponent(prompt);
-    const url = `https://image.pollinations.ai/prompt/${encoded}?width=576&height=1024&nologo=true&seed=${seed}`;
-    const res = await axios.get(url, {
-      headers: browserHeaders,
-      responseType: 'arraybuffer',
-      timeout: 12000,
-    });
-    if (res.data && res.data.length > 1000) {
-      fs.writeFileSync(destPath, Buffer.from(res.data));
-      return;
-    }
-  } catch (e: any) {
-    // Switch to curated theme frame
+function renderMotionScene(
+  imgPath: string,
+  durationSec: number,
+  outPath: string,
+  motionType: 'zoomIn' | 'zoomOut' | 'focusIn'
+): Promise<string> {
+  const frames = Math.round(durationSec * 30);
+  let zoomFilter = `zoompan=z='min(zoom+0.0006,1.05)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`;
+  if (motionType === 'zoomOut') {
+    zoomFilter = `zoompan=z='max(1.05-0.0006*on,1.0)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`;
+  } else if (motionType === 'focusIn') {
+    zoomFilter = `zoompan=z='min(zoom+0.0004,1.03)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`;
   }
 
-  // 2. Curated 4K theme photography fallback with resilient candidate loop
-  const candidates = [
-    themeFrames[frameIndex % themeFrames.length],
-    ...themeFrames,
-    ...CURATED_THEMES.default,
-  ];
-
-  for (const candidateUrl of candidates) {
-    try {
-      const res = await axios.get(candidateUrl, {
-        headers: browserHeaders,
-        responseType: 'arraybuffer',
-        timeout: 15000,
-      });
-      if (res.data && res.data.length > 1000) {
-        fs.writeFileSync(destPath, Buffer.from(res.data));
-        return;
-      }
-    } catch (candidateErr: any) {
-      // try next candidate
-    }
-  }
-
-  throw new Error('Failed to download any visual frame.');
+  return new Promise<string>((resolve, reject) => {
+    ffmpeg(imgPath)
+      .loop(durationSec)
+      .videoFilters([
+        'scale=1120:1990:force_original_aspect_ratio=increase',
+        'crop=1080:1920',
+        zoomFilter,
+      ])
+      .outputOptions([
+        `-t ${durationSec}`,
+        '-pix_fmt yuv420p',
+        '-c:v libx264',
+        '-r 30',
+      ])
+      .save(outPath)
+      .on('end', () => resolve(outPath))
+      .on('error', (err: any) => reject(err));
+  });
 }
 
 /**
  * Generates a polished, high-converting 9:16 vertical Facebook Reel (MP4)
- * with fast-paced Microsoft Azure human voiceover and cinematic layout.
+ * Powered by 4-Scene Dynamic State-Driven Video Template synced with audio phases:
+ * 1. Scene 1: The Problem State (0s – 5s)
+ * 2. Scene 2: The Tool Reveal (5s – 12s)
+ * 3. Scene 3: The Live Solution & Shortcut (12s – 22s)
+ * 4. Scene 4: Viral Save & CTA State (22s – 30s)
  */
 export async function generateReelVideo(input: ReelGenerationInput): Promise<GeneratedReel> {
   const tempDir = path.resolve(process.cwd(), 'data', 'temp_reels', `reel_${Date.now()}`);
@@ -300,21 +245,18 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   const audioPath = path.join(tempDir, 'voiceover.mp3');
   const outputPath = path.join(tempDir, 'output_reel.mp4');
 
-  console.log(`[Video Engine] 🎬 Initiating 10/10 Polished Reel Pipeline for: "${input.topic}"...`);
+  console.log(`[Video Engine] 🎬 Initiating 100% Synced 4-Scene Bengali Reel for: "${input.topic}"...`);
 
   // 1. Synthesize Human Neural Voiceover
   let speechText = '';
   if (input.fullScript && input.fullScript.trim().length > 25 && !input.fullScript.includes('...')) {
     speechText = input.fullScript.trim();
   } else {
-    // If body contains CTA words, strip them so CTA is not repeated twice
-    let cleanBody = (input.bodyText || '').trim();
-    if (input.ctaText) {
-      cleanBody = cleanBody.replace(input.ctaText, '').trim();
-      cleanBody = cleanBody.replace(/কমেন্টে\s*AI\s*লিখুন.*$/gi, '').trim();
-      cleanBody = cleanBody.replace(/ফলো\s*করুন\s*বাইট\s*বাংলা.*$/gi, '').trim();
-    }
-    speechText = `${input.hookText}। ${cleanBody}। ${input.ctaText}`;
+    const p1 = input.phase1Hook || input.hookText || '';
+    const p2 = input.phase2Solution || '';
+    const p3 = input.phase3Steps || '';
+    const p4 = input.phase4Cta || input.ctaText || '';
+    speechText = [p1, p2, p3, p4].filter(Boolean).join('। ').replace(/।+/g, '।');
   }
 
   const voiceSelection = input.voice || 'Puck';
@@ -327,79 +269,53 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     voiceRate
   );
 
-  // 2. Prepare 3 Vertical Frames with Narrative Structure
-  const seed = Math.floor(Math.random() * 900000);
-  const slide1Path = path.join(tempDir, 'slide1.jpg');
-  const slide2Path = path.join(tempDir, 'slide2.jpg');
-  const slide3Path = path.join(tempDir, 'slide3.jpg');
+  // 2. Dynamic 4-Scene Pacing Breakdown Synchronized to Voice Duration
+  // Scene 1 Problem: ~17% (~4.5s – 5.5s)
+  // Scene 2 Tool Reveal: ~23% (~6.5s – 7.5s)
+  // Scene 3 Live Solution: ~33% (~9.5s – 11.0s)
+  // Scene 4 Viral Save & CTA: Remainder (~7.5s – 9.0s)
+  const D = exactDuration;
+  const dur1 = Math.max(3.5, Math.round(D * 0.17 * 10) / 10);
+  const dur2 = Math.max(4.5, Math.round(D * 0.23 * 10) / 10);
+  const dur3 = Math.max(7.0, Math.round(D * 0.33 * 10) / 10);
+  const dur4 = Number((D - dur1 - dur2 - dur3).toFixed(2));
 
-  const themeFrames = getThemeByTopic(input.topic);
+  console.log(
+    `[Video Engine] 🎞️ 4-Scene Synced Pacing: Scene 1 Problem (${dur1}s) | Scene 2 Tool Reveal (${dur2}s) | Scene 3 Live Solution (${dur3}s) | Scene 4 Save/CTA (${dur4}s) [Total: ${exactDuration.toFixed(1)}s]`
+  );
 
-  // Derive topic-specific prompts if not explicitly passed
-  let p1 = input.imagePrompts?.[0];
-  let p2 = input.imagePrompts?.[1];
-  let p3 = input.imagePrompts?.[2];
+  // 3. Render 4 Distinct Full-Screen 1080x1920 State Frames with Puppeteer
+  const sceneFrames = await renderDynamicReelScenes(
+    {
+      topic: input.topic,
+      toolBrand: input.toolBrand,
+      toolName: input.toolName,
+      practicalSnippet: input.practicalSnippet,
+      snippetType: input.snippetType,
+      targetAudience: input.targetAudience,
+      phase1Hook: input.phase1Hook || input.hookText,
+      phase2Solution:
+        input.phase2Solution ||
+        (input.bodyText ? input.bodyText.slice(0, 65) : 'এই স্মার্ট অফিশিয়াল টুলটি আজই ব্যবহার করুন'),
+      phase3Steps:
+        input.phase3Steps ||
+        (input.bodyText ? input.bodyText.slice(65, 150) : 'সহজ শর্টকাট প্রেস করলেই ১ সেকেন্ডে সমাধান পেয়ে যাবেন'),
+      phase4Cta: input.phase4Cta || input.ctaText || 'ভিডিওটি সেভ করে রাখুন এবং লিঙ্ক পেতে কমেন্টে AI লিখুন!',
+    },
+    tempDir
+  );
 
-  if (!p1 || !p2 || !p3) {
-    const isVideoTopic = input.topic.includes('ভিডিও') || input.topic.includes('video') || input.topic.includes('রিল') || input.topic.includes('edit');
-    if (isVideoTopic) {
-      p1 = 'Content creator looking at video editing timeline on dual monitors, vertical 9:16, dark studio lighting, strictly no text, no watermark, 8k render';
-      p2 = 'Futuristic glowing AI video editing interface auto cutting highlights from timeline, vertical 9:16, neon cyan accents, strictly no text, 8k render';
-      p3 = 'Modern smartphone in hand playing viral vertical video short with high engagement hearts, vertical 9:16, strictly no text, 8k render';
-    } else {
-      p1 = `Modern professional person interacting with high-tech computer interface about ${input.topic}, vertical 9:16, dark studio lighting, strictly no text, 8k render`;
-      p2 = `Futuristic glowing AI neural interface and smart data analytics, vertical 9:16, cyan accents, strictly no text, 8k render`;
-      p3 = `Modern sleek smartphone displaying high tech viral AI app success, vertical 9:16, strictly no text, 8k render`;
-    }
-  }
-
-  console.log(`[Video Engine] 🎨 Preparing 3 narrative-driven 9:16 visual frames...`);
-  await fetchVerticalFrame(p1, seed, slide1Path, themeFrames, 0);
-  await fetchVerticalFrame(p2, seed + 1, slide2Path, themeFrames, 1);
-  await fetchVerticalFrame(p3, seed + 2, slide3Path, themeFrames, 2);
-
-  // 3. Dynamic Pacing Breakdown (Hook 25%, Core Solution 50%, Action CTA 25%)
-  const hookDur = Math.max(2, Math.round(exactDuration * 0.25 * 10) / 10);
-  const bodyDur = Math.max(3, Math.round(exactDuration * 0.50 * 10) / 10);
-  const ctaDur = Math.max(2, Math.round((exactDuration - hookDur - bodyDur) * 10) / 10);
-
-  console.log(`[Video Engine] 🎞️ Pacing breakdown: Hook (${hookDur}s) | Solution (${bodyDur}s) | CTA (${ctaDur}s) [Total: ${exactDuration.toFixed(1)}s]`);
-
-  // Helper to render Ken Burns dynamic camera motion for each scene
-  const renderMotionScene = (imgPath: string, durationSec: number, outPath: string, zoomIn: boolean) => {
-    const frames = Math.round(durationSec * 30);
-    const zoomFilter = zoomIn
-      ? `zoompan=z='min(zoom+0.0012,1.18)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`
-      : `zoompan=z='max(1.18-0.0012*on,1.0)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`;
-
-    return new Promise<string>((resolve, reject) => {
-      ffmpeg(imgPath)
-        .loop(durationSec)
-        .videoFilters([
-          'scale=1080:1920:force_original_aspect_ratio=increase',
-          'crop=1080:1920',
-          zoomFilter,
-        ])
-        .outputOptions([
-          `-t ${durationSec}`,
-          '-pix_fmt yuv420p',
-          '-c:v libx264',
-          '-r 30',
-        ])
-        .save(outPath)
-        .on('end', () => resolve(outPath))
-        .on('error', (err: any) => reject(err));
-    });
-  };
-
-  console.log(`[Video Engine] 🎥 Rendering dynamic Ken Burns motion for 3 scenes...`);
+  // 4. Render 4 Dynamic Motion Video Clips (1080x1920 at 30fps)
+  console.log(`[Video Engine] 🎥 Rendering smooth camera motion for all 4 synced scenes...`);
   const v1 = path.join(tempDir, 'scene1.mp4');
   const v2 = path.join(tempDir, 'scene2.mp4');
   const v3 = path.join(tempDir, 'scene3.mp4');
+  const v4 = path.join(tempDir, 'scene4.mp4');
 
-  await renderMotionScene(slide1Path, hookDur, v1, true);
-  await renderMotionScene(slide2Path, bodyDur, v2, false);
-  await renderMotionScene(slide3Path, ctaDur, v3, true);
+  await renderMotionScene(sceneFrames.scene1Path, dur1, v1, 'zoomIn');
+  await renderMotionScene(sceneFrames.scene2Path, dur2, v2, 'zoomOut');
+  await renderMotionScene(sceneFrames.scene3Path, dur3, v3, 'zoomIn');
+  await renderMotionScene(sceneFrames.scene4Path, dur4, v4, 'focusIn');
 
   const concatListPath = path.join(tempDir, 'motion_concat.txt');
   fs.writeFileSync(
@@ -408,26 +324,15 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
       `file '${v1.replace(/\\/g, '/')}'`,
       `file '${v2.replace(/\\/g, '/')}'`,
       `file '${v3.replace(/\\/g, '/')}'`,
+      `file '${v4.replace(/\\/g, '/')}'`,
     ].join('\n')
   );
 
-  // 4. Compile Cinematic 1080x1920 MP4 Video with Modern Typography (NO ugly solid black boxes!)
-  const rawHeadline = input.headlineEn || 'VIRAL AI TECH TIPS';
-  const cleanHeadline = rawHeadline.replace(/['":]/g, '').trim().toUpperCase();
-
-  const videoFilter = [
-    // Top floating pill badge (semi-transparent rounded box just around text, clean ASCII bullet)
-    "drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='BYTEBANGLA  •  AI TOOL':fontsize=32:fontcolor=0x22D3EE:box=1:boxcolor=black@0.65:boxborderw=12:x=(w-text_w)/2:y=140",
-    // Bold modern headline with strong drop-shadow (readable anywhere without obscuring background video)
-    `drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='${cleanHeadline}':fontsize=54:fontcolor=white:shadowcolor=black@0.85:shadowx=4:shadowy=4:x=(w-text_w)/2:y=240`,
-    // Modern floating CTA badge at the lower third
-    "drawtext=fontfile='C\\:/Windows/Fonts/segoeuib.ttf':text='COMMENT \"AI\" FOR DIRECT LINK':fontsize=36:fontcolor=0xFACC15:box=1:boxcolor=black@0.7:boxborderw=14:x=(w-text_w)/2:y=h-240",
-  ].join(',');
-
+  // 5. Multiplex 4-Scene Motion Video with Voiceover and Ambient Tech Music
   const bgMusicPath = path.resolve(process.cwd(), 'assets', 'audio', 'ambient_tech_bg.mp3');
   const hasBgMusic = fs.existsSync(bgMusicPath);
 
-  console.log(`[Video Engine] 🚀 Compiling polished 1080x1920 MP4 with Voiceover${hasBgMusic ? ' + Ambient Tech Music' : ''}...`);
+  console.log(`[Video Engine] 🚀 Compiling 1080x1920 MP4 Video with 4-Scene Transitions & Audio Mix...`);
 
   await new Promise<void>((resolve, reject) => {
     let command = ffmpeg()
@@ -436,72 +341,57 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
       .input(audioPath);
 
     if (hasBgMusic) {
-      command = command.input(bgMusicPath).complexFilter([
-        `[0:v]${videoFilter}[vout]`,
-        `[1:a]volume=1.35[voice]`,
-        `[2:a]volume=0.08[bg]`,
-        `[voice][bg]amix=inputs=2:duration=first:dropout_transition=2[aout]`,
-      ]);
-    } else {
       command = command
-        .videoFilters(videoFilter)
-        .audioFilters('volume=1.35');
-    }
-
-    const outputOpts = [
-      '-c:v libx264',
-      '-pix_fmt yuv420p',
-      '-r 30',
-      '-c:a aac',
-      '-b:a 192k',
-      '-shortest',
-    ];
-
-    if (hasBgMusic) {
-      outputOpts.unshift('-map [vout]', '-map [aout]');
+        .input(bgMusicPath)
+        .complexFilter(
+          [
+            `[0:v]null[vout]`,
+            `[1:a]volume=1.35[voice]`,
+            `[2:a]volume=0.08[bg]`,
+            `[voice][bg]amix=inputs=2:duration=first:dropout_transition=2[aout]`,
+          ],
+          ['vout', 'aout']
+        );
+    } else {
+      command = command.complexFilter(
+        [
+          `[0:v]null[vout]`,
+          `[1:a]volume=1.35[aout]`,
+        ],
+        ['vout', 'aout']
+      );
     }
 
     command
-      .outputOptions(outputOpts)
+      .outputOptions([
+        '-c:v libx264',
+        '-pix_fmt yuv420p',
+        '-r 30',
+        '-preset fast',
+        '-c:a aac',
+        '-b:a 192k',
+        `-t ${exactDuration}`,
+      ])
       .save(outputPath)
-      .on('end', () => {
-        console.log(`[Video Engine] ✅ 10/10 Cinematic Motion Reel compiled: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err: any) => {
-        console.error(`[Video Engine Error] FFMPEG failed:`, err.message);
-        reject(err);
-      });
+      .on('end', () => resolve())
+      .on('error', (err: any) => reject(err));
   });
 
   const videoBuffer = fs.readFileSync(outputPath);
-
-  // 5. Save a persistent copy for Dashboard preview & immediate playback
-  const previewDir = path.resolve(process.cwd(), 'data', 'reels');
-  ensureDir(previewDir);
-  const previewVideoPath = path.join(previewDir, 'latest_reel.mp4');
-  const previewAudioPath = path.join(previewDir, 'latest_audio.mp3');
-  try {
-    fs.copyFileSync(outputPath, previewVideoPath);
-    fs.copyFileSync(audioPath, previewAudioPath);
-    console.log(`[Video Engine] 💾 Saved persistent preview to ${previewVideoPath}`);
-  } catch (copyErr: any) {
-    console.warn(`[Video Engine Warning] Could not save preview copy: ${copyErr.message}`);
-  }
+  console.log(
+    `[Video Engine] ✅ 1080x1920 4-Scene Synced Reel synthesized successfully! (${(videoBuffer.length / (1024 * 1024)).toFixed(2)} MB)`
+  );
 
   const cleanup = () => {
     try {
       if (fs.existsSync(tempDir)) {
         fs.rmSync(tempDir, { recursive: true, force: true });
-        console.log(`[Video Engine] 🧹 Cleaned temporary reel files.`);
       }
-    } catch (e: any) {
-      // ignore
-    }
+    } catch {}
   };
 
   return {
-    videoPath: fs.existsSync(previewVideoPath) ? previewVideoPath : outputPath,
+    videoPath: outputPath,
     videoBuffer,
     durationSeconds: exactDuration,
     voiceModel,

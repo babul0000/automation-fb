@@ -26,3 +26,20 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Temporary and generated media
+auto-fb-bot/data/temp_reels/
+auto-fb-bot/data/temp_reels_test/
+auto-fb-bot/data/posts/
+auto-fb-bot/data/reels/*.mp4
+auto-fb-bot/data/reels/*.mp3
+auto-fb-bot/data/*.wav
+auto-fb-bot/data/*.jpg
+auto-fb-bot/data/*.png
+auto-fb-bot/data/*.pcm
+*.mp4
+*.mp3
+*.wav
+*.pcm
+!auto-fb-bot/assets/audio/**
+
