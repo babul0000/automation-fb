@@ -2,34 +2,47 @@ import axios from 'axios';
 import { env, isConfiguredForGemini } from '../config/env';
 import {
   BYTEBANGLA_SYSTEM_PROMPT,
+  MANDATORY_CTA_FORMULA,
   validateScriptSpecificity,
   BANNED_ABSTRACT_PHRASES,
-  RECOGNIZED_SOFTWARE_TOOLS,
+  BANNED_DEVELOPER_JARGON,
 } from './prompts';
 
 export interface ReelsScriptData {
   headlineEn: string;
-  hook: string; // Phase 1: Target Audience + Software name + exact frustration (0-5s)
-  body: string; // Phase 2 + Phase 3: Tool/shortcut/formula + step-by-step (5-22s)
-  cta: string;  // Phase 4: Save Trigger + Benefit/CTA + Signature Ending (22-35s)
-  fullScript: string; // Complete 30-40s spoken dialogue (Phase 1 + 2 + 3 + 4, 75-88 words)
+  hookStyle: string;
+  pillarCategory: string;
+  hook: string;
+  body: string;
+  cta: string;
+  fullScript: string;
   phase1Hook?: string;
   phase2Solution?: string;
   phase3Steps?: string;
   phase4Cta?: string;
-  targetAudience?: 'OFFICE' | 'STUDENTS' | 'FREELANCERS';
+  targetAudience?: string;
+  actionKeycap?: string;
+  actionLabel?: string;
+  twoWordHook?: string;
 }
 
 export interface BanglaPostBundle {
   caption: string;
   firstComment: string;
   keywordTrigger: string;
-  toolBrand?: string; // 'chatgpt' | 'vscode' | 'github' | 'sheets' | 'notion' | 'python' | 'gemini' | 'claude'
-  practicalSnippet?: string; // Real copy-pasteable formula, prompt, or code
-  snippetType?: 'CODE' | 'FORMULA' | 'PROMPT' | 'SHORTCUT';
-  targetAudience?: 'OFFICE' | 'STUDENTS' | 'FREELANCERS';
+  pillarCategory: string;
+  pillarBadge?: string;
+  twoWordHook?: string;
+  actionKeycap?: string;
+  actionLabel?: string;
   reelsScript?: ReelsScriptData;
   reelsVisualPrompts?: string[];
+  // Legacy optional properties for backwards compatibility
+  toolBrand?: string;
+  toolName?: string;
+  practicalSnippet?: string;
+  snippetType?: 'CODE' | 'FORMULA' | 'PROMPT' | 'SHORTCUT';
+  targetAudience?: 'OFFICE' | 'STUDENTS' | 'FREELANCERS';
 }
 
 interface GeminiResponse {
@@ -41,51 +54,59 @@ interface GeminiResponse {
 }
 
 /**
- * Sanitizes a script string by removing prohibited abstract placeholder phrases.
+ * Sanitizes a script string by stripping any prohibited abstract placeholder phrases or jargon.
  */
 function sanitizeAbstractPlaceholders(text: string): string {
   let cleaned = text;
   for (const banned of BANNED_ABSTRACT_PHRASES) {
     if (cleaned.includes(banned)) {
       if (banned === 'এই কাজটা') {
-        cleaned = cleaned.replace(/এই কাজটা/g, 'এই ম্যানুয়ালি ডেটা গোছানোর কাজ');
+        cleaned = cleaned.replace(/এই কাজটা/g, 'এই প্রয়োজনীয় বিষয়টি');
       } else if (banned === 'এই দারুণ টেকনিকটি' || banned === 'এই টেকনিকটি') {
-        cleaned = cleaned.replace(/এই দারুণ টেকনিকটি/g, 'এই শর্টকাট মেথড');
+        cleaned = cleaned.replace(/এই দারুণ টেকনিকটি/g, 'এই দরকারি নিয়মটি');
       } else if (banned === 'এই টুলটি') {
-        cleaned = cleaned.replace(/এই টুলটি/g, 'সফটওয়্যারটির এই ফিচার');
+        cleaned = cleaned.replace(/এই টুলটি/g, 'এই ফিচারটি');
       } else if (banned === 'একটা দারুণ উপায়' || banned === 'এই দারুণ উপায়') {
-        cleaned = cleaned.replace(/একটি? দারুণ উপায়/g, 'সরাসরি এই ফর্মুলা');
+        cleaned = cleaned.replace(/একটি? দারুণ উপায়/g, 'সরাসরি এই কার্যকর পদ্ধতি');
       } else if (banned === 'এই সেটিংসটি') {
-        cleaned = cleaned.replace(/এই সেটিংসটি/g, 'এই কনফিগ সেটিংস');
+        cleaned = cleaned.replace(/এই সেটিংসটি/g, 'ফোনের এই সিকিউরিটি অপশন');
       } else {
         cleaned = cleaned.split(banned).join('এই পদ্ধতি');
       }
     }
   }
-  return cleaned;
+
+  // Strip developer jargon if accidentally generated
+  for (const jargon of BANNED_DEVELOPER_JARGON) {
+    if (cleaned.toLowerCase().includes(jargon)) {
+      const reg = new RegExp(jargon, 'gi');
+      cleaned = cleaned.replace(reg, '');
+    }
+  }
+
+  return cleaned.trim();
 }
 
 /**
- * Ensures Phase 4 contains the mandatory Save trigger and signature human ending.
+ * Ensures Phase 4 contains the mandatory Save & Share trigger and signature human ending.
  */
 function enforceSaveAndSignature(ctaText: string): string {
   let result = ctaText;
   if (!result.includes('Save') && !result.includes('সেভ')) {
-    result = `পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! ` + result;
+    result = `📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! ` + result;
   }
   if (!result.includes('বাইট বাংলা') && !result.includes('ByteBangla')) {
-    result = result.replace(/!$/, '') + ` আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!`;
+    result = result.replace(/[!।]$/, '') + ` আর এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!`;
   }
   return result;
 }
 
 /**
- * Generates an engaging Bengali Facebook post along with a First Comment link bundle,
- * copy-pasteable formula/prompt snippet, and a viral 30-40 second Facebook Reel voiceover script.
- * Incorporates 3 psychological growth hooks:
- * 1. Target Relatable Audiences (Office Workers / Students / Tech Freelancers)
- * 2. High-Value "Save" CTA (Algorithm Multiplier)
- * 3. Signature Human Identity ("এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!")
+ * Generates an ultra-viral, mass-market Bengali Facebook post bundle:
+ * 1. Targeted at general Bangladeshi population aged 15-50 (students, job seekers, homemakers, professionals, elders).
+ * 2. 5 Rotating Hook formulas (Curiosity, Story Suspense, Reality Warning, Direct Value, Psychological Insight).
+ * 3. 25-35s (~65-85 words) spoken Reels script with high retention arc.
+ * 4. Mandatory Save & Share CTA formula.
  */
 export async function generateBanglaPostBundle(topicPrompt: string): Promise<BanglaPostBundle> {
   if (!isConfiguredForGemini()) {
@@ -94,65 +115,55 @@ export async function generateBanglaPostBundle(topicPrompt: string): Promise<Ban
 
   const prompt = `${BYTEBANGLA_SYSTEM_PROMPT}
 
-Create a viral, high-value, 100% human-toned post bundle for ByteBangla about:
+Create a viral, mass-market, 100% human-toned post bundle for ByteBangla about:
 Topic: "${topicPrompt}"
 
-CRITICAL MANDATORY PSYCHOLOGICAL GROWTH RULES:
-1. TARGET RELATABLE AUDIENCES IN HOOKS:
-   The video hook (Phase 1, 0–5s) MUST target one of three groups in spoken Bengali:
-   - 🏢 Office Workers: (e.g., "অফিসে বসের কাজ ঘণ্টার পর ঘণ্টা ম্যানুয়ালি না করে, গুগল শিটসে এই ফর্মুলা ব্যবহার করুন...")
-   - 🎓 Students/Learners: (e.g., "অ্যাসাইনমেন্ট বা প্রজেক্ট তৈরি করতে গিয়ে কি ক্যানভা বা শিটসে আটকে যাচ্ছেন?")
-   - 💻 Tech/Freelancers: (e.g., "কোডিং বা ক্লায়েন্টের কাজ অর্ধেক সময়ে শেষ করার সেরা উপায়...")
+STRICT MASS-MARKET VIRAL RULES:
+1. TARGET AUDIENCE:
+   General Bangladeshi population aged 15 to 50 (students, job seekers, homemakers, professionals, and elders).
+   Language: Natural, conversational Dhaka Bengali (কথ্য বাংলা), like a wise, helpful elder brother or life-mentor.
 
-2. HIGH-VALUE "SAVE" CTA (ALGORITHM MULTIPLIER):
-   Before the final CTA, ALWAYS add the 3-second save trigger:
-   - Reel script: "পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন!"
-   - Post caption: "কাজটি পরে করার সময় ভুলে যেতে পারেন, তাই পোস্টটি এখনই সেভ করে রাখুন এবং বন্ধুদের সাথে শেয়ার করুন!"
+2. ZERO PROGRAMMING JARGON:
+   ❌ STRICTLY BAN: "TypeScript", "Regex", "VS Code", "Terminal", "API", "Syntax", "npm", "git", "function", "const", "let".
+   Focus on everyday life, mobile utilities, scam safety, inspiring stories, human psychology, or mysteries.
 
-3. SIGNATURE HUMAN IDENTITY (Dhaka Senior Developer Tone):
-   Every script and post MUST end with our warm creator signature:
-   - "এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!"
+3. 25-35 SECONDS REEL SCRIPT FORMULA (~65-85 spoken words):
+   - Phase 1 Hook (0–4s): Open with a powerful curiosity question, story suspense, reality warning, direct value, or psychological insight.
+   - Phase 2 Relatable Scenario (4–10s): Paint a vivid daily life situation everyone in Bangladesh experiences.
+   - Phase 3 Actionable Secret / Moral (10–22s): Crisp, clear, practical solution, settings instruction, or inspiring moral.
+   - Phase 4 Mandatory CTA (22–30s): Must end with:
+     "📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!"
 
-4. ZERO ABSTRACT PLACEHOLDERS:
-   - ❌ BANNED: "এই কাজটা", "এই দারুণ টেকনিকটি", "এই টুলটি", "একটা দারুণ উপায়", "এই সেটিংসটি"।
-   - Must explicitly name the real software (e.g. Google Sheets, VS Code, ChatGPT, Excel, Windows, Chrome, GitHub, Notion, Canva) AND the exact pain point in the FIRST sentence!
-
-5. 30-40 SECONDS REEL SCRIPT FORMULA (75-88 words, Phase 1 ➔ 2 ➔ 3 ➔ 4):
-   - Phase 1 (0–5s): Target Audience + Software Name + Frustration.
-     Example: "অফিসে বসের কাজ ঘণ্টার পর ঘণ্টা ম্যানুয়ালি না করে, গুগল শিটসের এই ট্রিকটি ব্যবহার করুন! হাজার নামের তালিকা থেকে ফোন নাম্বার আলাদা করতে গিয়ে কি আপনারও সময় নষ্ট হচ্ছে?"
-   - Phase 2 (5–12s): Exact Tool/Feature/Formula Name.
-     Example: "আর ম্যানুয়ালি কপি করা লাগবে না, ব্যবহার করুন গুগল শিটসের এই ফর্মুলা: REGEXEXTRACT!"
-   - Phase 3 (12–22s): Step-by-Step Instructions (Step 1, Step 2).
-     Example: "১ নম্বরে পাশের সেলে লিখুন এই ফর্মুলা, আর ২ নম্বরে শুধু ডাবল ক্লিক করে দিন—সব নাম্বার আলাদা কলামে চলে আসবে নিমেষেই!"
-   - Phase 4 (22–35s): Save Trigger + Comment CTA + Signature Ending.
-     Example: "পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! পুরো ফর্মুলা ও চিটশিটের লিংক পেতে কমেন্টে লিখুন 'AI', আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!"
+4. VISUAL BADGE & 3D PILL DATA:
+   - "twoWordHook": 2-3 words punchy Bengali hook for Scene 1 (e.g. "ফোন মেমোরি ফুল?", "বিকাশ প্রতারণা সাবধান!", "অসম্ভব ঘুরে দাঁড়ানো", "মিথ্যা চেনার উপায়")
+   - "actionKeycap": 2-3 words practical takeaway for Scene 3 (e.g. "ক্যাশ মেমোরি ক্লিয়ার", "2-Step Verification", "২ মিনিটের রুল", "পানাম নগর রহস্য")
+   - "actionLabel": Short 2-4 words caption for Scene 3 (e.g. "১-ক্লিকে সমাধান", "জীবন বদলে দেওয়া শিক্ষা", "গোপন মনস্তাত্ত্বিক ট্রিক")
 
 Return ONLY a valid JSON object without markdown code fences:
 {
-  "caption": "The complete Bengali Facebook post adhering to the 5-part structure (Targeted Audience Hook with software name ➔ 3 Actionable Steps with concrete shortcuts ➔ Result ➔ Save Trigger & CTA to comment 'AI' ➔ Signature Ending, NO external URLs)",
-  "firstComment": "The text for the FIRST COMMENT with verified tool URLs (like https://chatgpt.com, https://github.com, etc.) and a request to save the post",
-  "keywordTrigger": "AI",
-  "toolBrand": "chatgpt" or "vscode" or "github" or "sheets" or "notion" or "python" or "claude" or "gemini",
-  "snippetType": "PROMPT" or "CODE" or "FORMULA" or "SHORTCUT",
-  "practicalSnippet": "A concrete 1-2 line real copy-pasteable prompt, formula, or shortcut (e.g. '=REGEXEXTRACT(A2, \"[0-9]+\")' or 'Ctrl + Shift + P > Sort Lines')",
-  "targetAudience": "OFFICE" or "STUDENTS" or "FREELANCERS",
+  "caption": "Complete Bengali Facebook post (Hook ➔ Relatable Story/Problem ➔ 3 Actionable Points/Lessons ➔ Mandatory Save & Share CTA ➔ Hashtags, NO external URLs)",
+  "firstComment": "The text for the FIRST COMMENT with helpful practical tips, advice, and a friendly request to save the post",
+  "keywordTrigger": "TIPS",
+  "pillarCategory": "Smart Mobile & Life Hacks" or "Scam Alert & Digital Security" or "Inspiring True Stories & Figures" or "Human Psychology & Practical Wisdom" or "Curiosity, History & Hidden Wonders",
+  "twoWordHook": "২-৩ শব্দের আকর্ষণীয় হুক",
+  "actionKeycap": "২-৩ শব্দের অ্যাকশন টেকঅ্যাওয়ে বা কী-ক্যাপ",
+  "actionLabel": "ছোট অ্যাকশন লেবেল",
   "reelsScript": {
-    "headlineEn": "Catchy 3-5 word uppercase English headline for video badge (e.g. GOOGLE SHEETS HACK, CHATGPT FORMULA TRICK)",
-    "targetAudience": "OFFICE" or "STUDENTS" or "FREELANCERS",
-    "phase1Hook": "Phase 1 (0-5s): টার্গেট অডিয়েন্স (অফিস কর্মী/শিক্ষার্থী/ফ্রিল্যান্সার) + সফটওয়্যারের নাম + বিরক্তির বাস্তব সমস্যা",
-    "phase2Solution": "Phase 2 (5-12s): আসল টুল/ফিচার/ফর্মুলা বা শর্টকাটের নাম (যেমন: আর ম্যানুয়ালি কপি করা লাগবে না, ব্যবহার করুন গুগল শিটসের এই ফর্মুলা: REGEXEXTRACT!)",
-    "phase3Steps": "Phase 3 (12-22s): সরাসরি ১ ও ২ নম্বর স্টেপ-বাই-স্টেপ প্র্যাকটিক্যাল নির্দেশ",
-    "phase4Cta": "Phase 4 (22-35s): সেভ ট্রিগার ('পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন!') + কমেন্ট CTA ('কমেন্টে লিখুন AI') + সিগনেচার এন্ডিং ('এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!')",
-    "hook": "Phase 1 এর পুরো টেক্সট",
-    "body": "Phase 2 এবং Phase 3 এর পুরো টেক্সট একসাথে",
-    "cta": "Phase 4 এর পুরো টেক্সট",
-    "fullScript": "সম্পূর্ণ ৩০-৪০ সেকেন্ডের সাবলীল ভয়েসওভার স্ক্রিপ্ট (Phase 1 + Phase 2 + Phase 3 + Phase 4 মিলিয়ে ৭৫-৮৮ শব্দের ফ্লুয়েন্ট টেক বাংলা, ০% রোবটিক শব্দ)"
-  },
-  "reelsVisualPrompts": [
-    "Scene 1 Hook: Professional developer looking frustrated at computer screen with software UI, dark modern studio lighting, 9:16 vertical, no text, no watermark, 8k render",
-    "Scene 2 Solution: Glowing futuristic software UI solving the task instantly with animated dataflow, 9:16 vertical, cyan accents, no text, 8k render",
-    "Scene 3 Result: Modern smartphone displaying productivity success screen, 9:16 vertical, no text, 8k render"
-  ]
+    "headlineEn": "3-5 word uppercase English headline for video badge (e.g. SMART PHONE HACK, DIGITAL SAFETY ALERT, INSPIRING STORY, PSYCHOLOGY TRICK)",
+    "hookStyle": "Curiosity Question" or "Story Suspense" or "Reality Warning" or "Direct Value" or "Psychological Insight",
+    "pillarCategory": "Selected pillar name",
+    "phase1Hook": "Phase 1 (0-4s): প্রথম ৩ সেকেন্ডেই দর্শককে ধরে রাখার শক্তিশালী হুক",
+    "phase2Solution": "Phase 2 (4-10s): বাস্তব জীবনের পরিচিত সমস্যা বা পটভূমি",
+    "phase3Steps": "Phase 3 (10-22s): সরাসরি সমাধান, সেটিংস নিয়ম বা অনুপ্রেরণাদায়ী শিক্ষা",
+    "phase4Cta": "Phase 4 (22-30s): 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!",
+    "hook": "Phase 1 text",
+    "body": "Phase 2 and Phase 3 combined text",
+    "cta": "Phase 4 text",
+    "fullScript": "সম্পূর্ণ ২৫-৩৫ সেকেন্ডের সাবলীল ডায়লগ (৬৫-৮৫ শব্দের ফ্লুয়েন্ট বাংলা, Phase 1 + Phase 2 + Phase 3 + Phase 4 মিলিয়ে)",
+    "twoWordHook": "২-৩ শব্দের হুক",
+    "actionKeycap": "কী-ক্যাপ টেক্সট",
+    "actionLabel": "অ্যাকশন লেবেল"
+  }
 }`;
 
   const modelsToTry = [
@@ -166,7 +177,7 @@ Return ONLY a valid JSON object without markdown code fences:
   for (const model of modelsToTry) {
     try {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
-      console.log(`[AI Service] 📦 Generating Concrete Post Bundle with model "${model}"...`);
+      console.log(`[AI Service] 📦 Generating Mass-Market Post Bundle with model "${model}"...`);
 
       const response = await axios.post<GeminiResponse>(
         endpoint,
@@ -182,63 +193,72 @@ Return ONLY a valid JSON object without markdown code fences:
         const cleaned = raw.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
         const parsed = JSON.parse(cleaned);
 
-        if (parsed.caption && parsed.firstComment) {
-          // Extract Phase 1-4 with strict concrete fallbacks
+        if (parsed.caption && parsed.reelsScript) {
           const phase1 = sanitizeAbstractPlaceholders(
             parsed.reelsScript?.phase1Hook ||
             parsed.reelsScript?.hook ||
-            'অফিসে বসের কাজ ঘণ্টার পর ঘণ্টা ম্যানুয়ালি না করে, গুগল শিটসের এই ট্রিকটি ব্যবহার করুন! হাজার নামের তালিকা থেকে ফোন নাম্বার আলাদা করতে গিয়ে কি আপনারও সময় নষ্ট হচ্ছে?'
+            'আপনার ফোনে কি এই দরকারি সেটিংসটি অন করা আছে? প্রতিদিন অজান্তেই আমরা এই ভুলটি করে বিপদে পড়ি।'
           );
           const phase2 = sanitizeAbstractPlaceholders(
             parsed.reelsScript?.phase2Solution ||
-            'আর ম্যানুয়ালি কপি করা লাগবে না, ব্যবহার করুন গুগল শিটসের এই ফর্মুলা: REGEXEXTRACT!'
+            'ফোনের স্টোরেজ ফুল হয়ে যাওয়া বা প্রতারণার মেসেজ পাওয়া আমাদের নিত্যদিনের বড় সমস্যা।'
           );
           const phase3 = sanitizeAbstractPlaceholders(
             parsed.reelsScript?.phase3Steps ||
-            '১ নম্বরে পাশের সেলে লিখুন এই ফর্মুলা, আর ২ নম্বরে শুধু ডাবল ক্লিক করে দিন—সব নাম্বার আলাদা কলামে চলে আসবে নিমেষেই!'
+            'সহজ এই কাজটি করুন—ফোনের সিকিউরিটি সেটিংস অন করে ক্যাশ মেমোরি ক্লিয়ার করে দিন।'
           );
-          const rawPhase4 = parsed.reelsScript?.phase4Cta || parsed.reelsScript?.cta || '';
           const phase4 = enforceSaveAndSignature(
-            sanitizeAbstractPlaceholders(rawPhase4) ||
-            "পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! পুরো ফর্মুলা ও চিটশিটের লিংক পেতে কমেন্টে লিখুন 'AI', আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!"
+            sanitizeAbstractPlaceholders(parsed.reelsScript?.phase4Cta || parsed.reelsScript?.cta || '') ||
+            MANDATORY_CTA_FORMULA
           );
 
           let fullScript = parsed.reelsScript?.fullScript?.trim()
             ? sanitizeAbstractPlaceholders(parsed.reelsScript.fullScript.trim())
             : `${phase1} ${phase2} ${phase3} ${phase4}`;
 
-          // Ensure fullScript incorporates save trigger and signature ending
+          // Ensure mandatory CTA is incorporated
           if (!fullScript.includes('Save') && !fullScript.includes('সেভ')) {
-            fullScript = fullScript.replace(phase4, '') + ` ${phase4}`;
+            fullScript = fullScript.replace(phase4, '').trim() + ` ${phase4}`;
           }
           if (!fullScript.includes('বাইট বাংলা') && !fullScript.includes('ByteBangla')) {
-            fullScript += ` এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!`;
+            fullScript += ` এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!`;
           }
 
-          // If fullScript somehow omitted phases or is too short, enforce complete 4-phase assembly
-          if (fullScript.split(/\s+/).length < 30) {
+          // If word count is outside range, guarantee balanced 4-phase assembly
+          const words = fullScript.split(/\s+/);
+          if (words.length < 50 || words.length > 100) {
             fullScript = `${phase1} ${phase2} ${phase3} ${phase4}`;
           }
 
           let finalCaption = sanitizeAbstractPlaceholders(parsed.caption.trim());
           if (!finalCaption.includes('সেভ') && !finalCaption.includes('Save')) {
-            finalCaption += `\n\n📌 কাজটি পরে করার সময় ভুলে যেতে পারেন, তাই পোস্টটি এখনই সেভ করে রাখুন এবং বন্ধুদের সাথে শেয়ার করুন!`;
+            finalCaption += `\n\n📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন!`;
           }
           if (!finalCaption.includes('বাইট বাংলা')) {
-            finalCaption += `\n\n💡 এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!`;
+            finalCaption += `\n\n💡 এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!`;
           }
 
-          console.log(`[AI Service] ✅ Generated viral post bundle (${finalCaption.length} chars caption, ${fullScript.split(/\s+/).length} words script).`);
+          const twoWordHook = parsed.twoWordHook || parsed.reelsScript?.twoWordHook || 'দরকারি তথ্য';
+          const actionKeycap = parsed.actionKeycap || parsed.reelsScript?.actionKeycap || 'গোপন ট্রিক';
+          const actionLabel = parsed.actionLabel || parsed.reelsScript?.actionLabel || '১-ক্লিকে সমাধান';
+          const pillarCategory = parsed.pillarCategory || 'Smart Mobile & Life Hacks';
+
+          console.log(`[AI Service] ✅ Generated mass-market bundle (${finalCaption.length} chars caption, ${fullScript.split(/\s+/).length} words script).`);
+
           return {
             caption: finalCaption,
-            firstComment: parsed.firstComment.trim(),
-            keywordTrigger: parsed.keywordTrigger || 'AI',
-            toolBrand: parsed.toolBrand || 'sheets',
-            snippetType: parsed.snippetType || 'FORMULA',
-            practicalSnippet: parsed.practicalSnippet || '=REGEXEXTRACT(A2, "[0-9]+")',
-            targetAudience: parsed.targetAudience || 'OFFICE',
+            firstComment: parsed.firstComment?.trim() || '📌 দরকারি সব ট্রিকস ও টিপস বন্ধুদের সাথে শেয়ার করুন এবং পেজে লাইক দিয়ে পাশে থাকুন!',
+            keywordTrigger: parsed.keywordTrigger || 'TIPS',
+            pillarCategory,
+            twoWordHook,
+            actionKeycap,
+            actionLabel,
+            practicalSnippet: actionKeycap,
+            snippetType: 'SHORTCUT',
             reelsScript: {
-              headlineEn: parsed.reelsScript?.headlineEn || 'VIRAL AI TECH TIPS',
+              headlineEn: parsed.reelsScript?.headlineEn || 'VIRAL LIFE HACK',
+              hookStyle: parsed.reelsScript?.hookStyle || 'Curiosity Question',
+              pillarCategory,
               hook: phase1,
               body: `${phase2} ${phase3}`,
               cta: phase4,
@@ -246,101 +266,18 @@ Return ONLY a valid JSON object without markdown code fences:
               phase2Solution: phase2,
               phase3Steps: phase3,
               phase4Cta: phase4,
-              targetAudience: parsed.reelsScript?.targetAudience || 'OFFICE',
               fullScript,
+              twoWordHook,
+              actionKeycap,
+              actionLabel,
             },
-            reelsVisualPrompts: Array.isArray(parsed.reelsVisualPrompts) && parsed.reelsVisualPrompts.length >= 3
-              ? parsed.reelsVisualPrompts
-              : undefined,
           };
         }
       }
     } catch (err: any) {
-      console.warn(`[AI Service Warning] Bundle generation on ${model} failed: ${err.message}. Trying next...`);
+      console.warn(`[AI Service Warning] Model "${model}" failed: ${err.message}. Trying next model...`);
     }
   }
 
-  // Fallback generation if JSON parse failed - 100% Concrete, 3 Psychological Hooks
-  let plainCaption = '';
-  try {
-    plainCaption = await generateBanglaPost(topicPrompt);
-  } catch {
-    plainCaption = `অফিসে বসের কাজ ঘণ্টার পর ঘণ্টা ম্যানুয়ালি না করে, গুগল শিটসের এই ফর্মুলা ব্যবহার করুন!\n\nহাজার হাজার নামের তালিকা থেকে ফোন নাম্বার আলাদা করতে গিয়ে যাদের প্রতিদিন মাথা নষ্ট হয়, তাদের জন্য আজকের এই হ্যাক!\n\n১ নম্বরে পাশের সেলে লিখুন =REGEXEXTRACT(A2, "[0-9]+")\n২ নম্বরে ডাবল ক্লিক করে দিন—সব নাম্বার আলাদা কলামে চলে আসবে নিমেষেই!\n৩ নম্বরে ম্যানুয়াল ডেটা এন্ট্রিকে বিদায় জানান।\n\n📌 আপনার কাজের গতি ২-৩ গুণ বেড়ে যাবে!`;
-  }
-  const concreteHook = 'অফিসে বসের কাজ ঘণ্টার পর ঘণ্টা ম্যানুয়ালি না করে, গুগল শিটসের এই ফর্মুলাটি ব্যবহার করুন! হাজার হাজার নামের তালিকা থেকে ফোন নাম্বার আলাদা করতে গিয়ে কি আপনারও ঘণ্টার পর ঘণ্টা নষ্ট হচ্ছে?';
-  const concreteBody = 'আর ম্যানুয়ালি কপি করা লাগবে না, ব্যবহার করুন গুগল শিটসের এই ফর্মুলা: REGEXEXTRACT! ১ নম্বরে পাশের সেলে লিখুন এই ফর্মুলা, আর ২ নম্বরে শুধু ডাবল ক্লিক করে দিন—সব নাম্বার আলাদা কলামে চলে আসবে নিমেষেই!';
-  const concreteCta = "পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! পুরো ফর্মুলা ও চিটশিটের লিংক পেতে কমেন্টে লিখুন 'AI', আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!";
-  const concreteFull = `${concreteHook} ${concreteBody} ${concreteCta}`;
-
-  return {
-    caption: `${plainCaption}\n\n📌 কাজটি পরে করার সময় ভুলে যেতে পারেন, তাই পোস্টটি এখনই সেভ করে রাখুন এবং বন্ধুদের সাথে শেয়ার করুন!\n💡 এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!`,
-    firstComment: `🔗 আজকের পোস্টে উল্লেখিত দরকারি টুল ও চিটশিট রিসোর্স লিঙ্ক পেতে কমেন্টে "AI" লিখুন! বাইট বাংলার সাথেই থাকুন। 💡`,
-    keywordTrigger: 'AI',
-    toolBrand: 'sheets',
-    snippetType: 'FORMULA',
-    practicalSnippet: '=REGEXEXTRACT(A2, "[0-9]+")',
-    targetAudience: 'OFFICE',
-    reelsScript: {
-      headlineEn: 'GOOGLE SHEETS HACK',
-      hook: concreteHook,
-      body: concreteBody,
-      cta: concreteCta,
-      phase1Hook: concreteHook,
-      phase2Solution: 'আর ম্যানুয়ালি কপি করা লাগবে না, ব্যবহার করুন গুগল শিটসের এই ফর্মুলা: REGEXEXTRACT!',
-      phase3Steps: '১ নম্বরে পাশের সেলে লিখুন এই ফর্মুলা, আর ২ নম্বরে শুধু ডাবল ক্লিক করে দিন—সব নাম্বার আলাদা কলামে চলে আসবে নিমেষেই!',
-      phase4Cta: concreteCta,
-      targetAudience: 'OFFICE',
-      fullScript: concreteFull,
-    },
-  };
-}
-
-/**
- * Standard single string generator for backwards compatibility
- * Enforces concrete software name, target audience hook, save trigger, and signature ending.
- */
-export async function generateBanglaPost(topicPrompt: string): Promise<string> {
-  const modelsToTry = [
-    process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-    'gemini-3.5-flash-lite',
-    'gemini-flash-lite-latest',
-    'gemini-3.1-flash-lite',
-    'gemini-3.5-flash',
-  ];
-
-  const userQuery = `Write a high-value, thoroughly human-toned Facebook post in Bengali for ByteBangla about:
-Topic: "${topicPrompt}"
-Rules:
-- Target one of 3 audiences in the opening hook: Office Workers, Students, or Tech Freelancers.
-- STRICTLY BAN abstract placeholders: "এই কাজটা", "এই দারুণ টেকনিকটি", "এই টুলটি", "একটা দারুণ উপায়", "এই সেটিংসটি"।
-- The very first line MUST name the exact software/tool and the exact pain point problem.
-- Strictly ban robotic cliches ("চলুন জেনে নেওয়া যাক", "যুগান্তকারী", "অতএব", "ভূমিকা পালন করে").
-- Give 3 concrete practical takeaways with actionable shortcuts/prompts/formulas.
-- Include the High-Value Save trigger: "কাজটি পরে করার সময় ভুলে যেতে পারেন, তাই পোস্টটি এখনই সেভ করে রাখুন এবং বন্ধুদের সাথে শেয়ার করুন!"
-- Include the Signature Ending: "এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!"
-- Do NOT include external web links in the caption.`;
-
-  for (const model of modelsToTry) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
-      const response = await axios.post<GeminiResponse>(
-        endpoint,
-        {
-          contents: [{ role: 'user', parts: [{ text: `${BYTEBANGLA_SYSTEM_PROMPT}\n\n${userQuery}` }] }],
-          generationConfig: { temperature: 0.6, maxOutputTokens: 1400 },
-        },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 25000 }
-      );
-
-      const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) {
-        return sanitizeAbstractPlaceholders(text.replace(/^```(markdown|text)?\n/i, '').replace(/\n```$/i, '').trim());
-      }
-    } catch (err: any) {
-      // Continue to next model
-    }
-  }
-
-  // Graceful fallback post text if offline
-  return `অফিসে বসের কাজ ঘণ্টার পর ঘণ্টা ম্যানুয়ালি না করে, গুগল শিটসের এই ফর্মুলা ব্যবহার করুন!\n\nহাজার হাজার নামের তালিকা থেকে ফোন নাম্বার আলাদা করতে গিয়ে যাদের প্রতিদিন মাথা নষ্ট হয়, তাদের জন্য আজকের এই হ্যাক!\n\n১ নম্বরে পাশের সেলে লিখুন =REGEXEXTRACT(A2, "[0-9]+")\n২ নম্বরে ডাবল ক্লিক করে দিন—সব নাম্বার আলাদা কলামে চলে আসবে নিমেষেই!\n৩ নম্বরে ম্যানুয়াল কপি-পেস্ট বন্ধ করে স্মার্টলি সময় বাঁচান।\n\n📌 আপনার কাজের গতি ২-৩ গুণ বেড়ে যাবে!\n\n📌 কাজটি পরে করার সময় ভুলে যেতে পারেন, তাই পোস্টটি এখনই সেভ করে রাখুন এবং বন্ধুদের সাথে শেয়ার করুন!\n💡 এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!`;
+  throw new Error('All AI generation models failed to generate content bundle.');
 }

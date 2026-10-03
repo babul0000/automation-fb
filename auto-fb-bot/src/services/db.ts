@@ -221,6 +221,30 @@ export async function getAllPosts(): Promise<PostRecord[]> {
   return [...memoryStore.posts];
 }
 
+/**
+ * Returns all post captions and topic titles from the last 30 days
+ * to enforce strict 30-day de-duplication and anti-repetition.
+ */
+export async function getRecentHistory30Days(): Promise<{ titles: string[]; captions: string[] }> {
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  const allPosts = await getAllPosts();
+  const recentPosts = allPosts.filter((p) => {
+    const pubTime = new Date(p.publishedAt).getTime();
+    return !isNaN(pubTime) && pubTime >= thirtyDaysAgo;
+  });
+
+  const recentTopics = memoryStore.topics.filter((t) => {
+    const time = new Date(t.createdAt).getTime();
+    return !isNaN(time) && time >= thirtyDaysAgo;
+  });
+
+  return {
+    titles: recentTopics.map((t) => t.title),
+    captions: recentPosts.map((p) => p.caption),
+  };
+}
+
 export async function findPostByFacebookId(facebookPostId: string): Promise<PostRecord | null> {
   const cleanId = facebookPostId.trim();
   const directMatch = memoryStore.posts.find(
@@ -349,12 +373,12 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
   slots: [
     {
       id: 'slot_feed',
-      name: 'Daily Mid-Day Infographic Cheat Sheet',
-      nameBn: 'দুপুরের ইনফোগ্রাফিক চিটশিট',
+      name: 'Daily Mid-Day Visual Life Hack',
+      nameBn: 'দুপুরের দরকারি লাইফ হ্যাক ও তথ্য',
       time: '13:00',
       type: 'POST',
-      category: 'AI Tools & Productivity',
-      categoryBn: 'এআই টুলস ও প্রোডাক্টিভিটি',
+      category: 'Smart Mobile & Life Hacks',
+      categoryBn: 'দরকারি মোবাইল ও লাইফ হ্যাক',
       enabled: true,
     },
     {
@@ -363,8 +387,8 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
       nameBn: 'সন্ধ্যার ভাইরাল ফেসবুক রিল (ভিডিও)',
       time: '19:30',
       type: 'REEL',
-      category: 'Viral 30s Short-Form Video Guide & Tools',
-      categoryBn: '৩০ সেকেন্ডের ভাইরাল রিল ও এআই টিপস',
+      category: 'Smart Mobile & Life Hacks',
+      categoryBn: 'দরকারি মোবাইল ও জীবন বদলে দেওয়া রিল',
       enabled: true,
     },
   ],

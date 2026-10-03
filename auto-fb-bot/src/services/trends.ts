@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { env, isConfiguredForGemini } from '../config/env';
 import { isTopicDuplicate, markTopicAsPosted, generateTopicHash, normalizeTitle } from '../utils/hash';
-import { saveTopic, getAllPosts } from './db';
+import { saveTopic, getAllPosts, getRecentHistory30Days } from './db';
 import { getLearningFeedbackPrompt } from './learning';
 
 export interface DiscoveredTopic {
   title: string;
   category: string;
+  pillarId?: string;
   source?: string;
   utilityScore: number;
   recencyScore: number;
@@ -15,64 +16,109 @@ export interface DiscoveredTopic {
   hash: string;
 }
 
+export interface ContentPillar {
+  id: string;
+  nameEn: string;
+  nameBn: string;
+  badge: string;
+  accentColor: string;
+  glowColor: string;
+  hookStyle: string;
+  niche: string;
+}
+
 /**
- * 4 Required Content Pillars for ByteBangla
+ * 5 Universally Engaging Mass-Market Content Pillars for ByteBangla (Ages 15-50)
+ * Completely eliminates developer/IDE jargon and targets mass Bangladeshi audiences.
  */
-export const CONTENT_PILLARS = [
+export const CONTENT_PILLARS: ContentPillar[] = [
   {
-    id: 'ai_tools',
-    nameEn: 'AI Tools & Productivity',
-    nameBn: 'এআই টুলস ও প্রোডাক্টিভিটি',
-    niche: 'Practical daily AI tools, ChatGPT prompt hacks, Claude tricks, time-saving free web utilities',
+    id: 'smart_life_hacks',
+    nameEn: 'Smart Mobile & Life Hacks',
+    nameBn: 'দরকারি মোবাইল ও লাইফ হ্যাক',
+    badge: '💡 দরকারি লাইফ হ্যাক',
+    accentColor: '#06B6D4', // Cyan
+    glowColor: '#0891B2',
+    hookStyle: 'Direct Value / Curiosity Question',
+    niche: 'ফোনের স্টোরেজ খালি করার উপায়, অচেনা নাম্বারের নাম-ছবি বের করা, ক্যামেরা দিয়ে যেকোনো লেখা বাংলায় অনুবাদ, ট্রেনের টিকিট কাটার নিয়ম, ওয়াইফাই স্পিড বাড়ানো, অপ্রয়োজনীয় নোটিফিকেশন বন্ধ করার গোপন সেটিংস',
   },
   {
-    id: 'web_dev',
-    nameEn: 'Web Development / Coding Hacks',
-    nameBn: 'ওয়েব ডেভেলপমেন্ট ও কোডিং হ্যাক্স',
-    niche: 'Dev tools, GitHub trending open-source repos, VS Code extensions, AI coding assistants',
+    id: 'scam_alert_security',
+    nameEn: 'Scam Alert & Digital Security',
+    nameBn: 'অনলাইন সুরক্ষা ও প্রতারণা সতর্কতা',
+    badge: '🛡️ অনলাইন সুরক্ষা ও সতর্কতা',
+    accentColor: '#10B981', // Emerald
+    glowColor: '#059669',
+    hookStyle: 'Reality Warning / Suspense',
+    niche: 'বিকাশ/নগদ/এটিএম কার্ড প্রতারণা ঠেকানো, ফেসবুক বা হোয়াটসঅ্যাপ হ্যাক হওয়া থেকে বাঁচার সহজ টু-স্টেপ ভেরিফিকেশন, অচেনা লিংকে ক্লিক না করার নিয়ম, ওটিপি জালিয়াতি, ভুয়া লটারি বা চাকরির মেসেজ চেনার উপায়',
   },
   {
-    id: 'automation',
-    nameEn: 'Google Sheets & Tech Automation',
-    nameBn: 'গুগল শিটস ও টেক অটোমেশন',
-    niche: 'Google Sheets & Excel AI formulas, Make.com, Zapier workflows, automated spreadsheet data entry',
+    id: 'inspiring_stories',
+    nameEn: 'Inspiring True Stories & Figures',
+    nameBn: 'জীবন বদলে দেওয়া অনুপ্রেরণার গল্প',
+    badge: '📖 জীবন বদলে দেওয়া গল্প',
+    accentColor: '#F59E0B', // Gold
+    glowColor: '#D97706',
+    hookStyle: 'Story Suspense / Emotional Hook',
+    niche: 'চরম প্রতিকূলতা থেকে ঘুরে দাঁড়ানো বিশ্বখ্যাত বা বাস্তব জীবনের ১ মিনিটের গল্প (এ পি জে আব্দুল কালাম, কাজী নজরুল ইসলাম, স্টিভ জবস, কর্নেল স্যান্ডার্স, মেরি কম, জ্যাক মা)',
   },
   {
-    id: 'career',
-    nameEn: 'Career & Freelancing Tips',
-    nameBn: 'ক্যারিয়ার ও ফ্রিল্যান্সিং টিপস',
-    niche: 'Remote freelancing productivity, Upwork/Fiverr workflows, tech portfolio optimization, digital skills',
+    id: 'psychology_wisdom',
+    nameEn: 'Human Psychology & Practical Wisdom',
+    nameBn: 'মনস্তত্ত্ব ও জীবনজ্ঞান',
+    badge: '🧠 মনস্তত্ত্ব ও জীবনজ্ঞান',
+    accentColor: '#A855F7', // Purple
+    glowColor: '#9333EA',
+    hookStyle: 'Psychological Insight / Curiosity',
+    niche: 'মানুষের বডি ল্যাঙ্গুয়েজ ও মিথ্যা বোঝার মনস্তাত্ত্বিক কৌশল, অতিরিক্ত রাগ বা দুশ্চিন্তা কমানোর ২ মিনিটের নিয়ম, অপচয় বন্ধ করে টাকা ধরে রাখার গোপন অভ্যাস, মানুষের সাথে সুন্দর করে কথা বলার কৌশল',
+  },
+  {
+    id: 'curiosity_history_wonders',
+    nameEn: 'Curiosity, History & Hidden Wonders',
+    nameBn: 'অজানা রহস্য ও পৃথিবীর তথ্য',
+    badge: '🌍 অজানা রহস্য ও তথ্য',
+    accentColor: '#EC4899', // Rose/Pink
+    glowColor: '#DB2777',
+    hookStyle: 'Curiosity Question / Wonder',
+    niche: 'বাংলাদেশের অজানা রোমাঞ্চকর ইতিহাস (পানাম নগর, লালবাগ কেল্লার রহস্য), রহস্যময় ঐতিহাসিক স্থান, পৃথিবীর অবিশ্বাস্য বৈজ্ঞানিক ও ভৌগোলিক তথ্য, আশ্চর্য সব আবিষ্কার ও তথ্য',
   },
 ];
 
 export const FALLBACK_CURATED_TOPICS_BY_CATEGORY: Record<string, string[]> = {
-  'AI Tools & Productivity': [
-    'দৈনন্দিন কাজের সময় বাঁচাতে সেরা ৫টি ফ্রি AI টুল যা প্রত্যেকের ব্যবহার করা উচিত',
-    'ChatGPT-র এমন ৩টি সুপার প্রম্পট যা আপনার ফ্রিল্যান্সিং ও ইমেইল রাইটিং গতি ৩ গুণ বাড়াবে',
-    'বড় সাইজের যেকোনো পিডিএফ (PDF) ও বই AI দিয়ে বাংলায় সামারি করার সহজ উপায়',
-    'Perplexity AI কীভাবে প্রথাগত গুগল সার্চের চেয়ে দ্রুত ও সঠিক রিসার্চ তথ্য এনে দেয়',
-    'Canva AI এবং Gamma App দিয়ে মাত্র ৩ মিনিটে প্রফেশনাল প্রেজেন্টেশন স্লাইড বানানোর সহজ উপায়',
+  'Smart Mobile & Life Hacks': [
+    'কোনো ছবি বা ফাইল না ডিলিট করেই ফোনের স্টোরেজ খালি করার ৩টি সহজ উপায়',
+    'অচেনা নম্বর থেকে কল আসলে এক সেকেন্ডে তার আসল নাম ও পরিচয় জানার উপায়',
+    'ক্যামেরা দিয়ে যেকোনো ইংরেজি বা বিদেশি লেখা এক নিমিষে বাংলায় অনুবাদ করার ট্রিক',
+    'ঘরে বসে মাত্র ২ মিনিটে মোবাইলেই ট্রেনের টিকিট কাটার সবচেয়ে সহজ ও সঠিক নিয়ম',
+    'সারাদিন ইন্টারনেট চালালেও ফোনের ব্যাটারি ব্যাকআপ দ্বিগুণ করার দরকারি সেটিংস',
   ],
-  'Web Development / Coding Hacks': [
-    'VS Code-এর সেরা ৫টি এক্সটেনশন যা কোডারদের প্রোডাক্টিভিটি দ্বিগুণ করে দেয়',
-    'Claude 3.5 Sonnet দিয়ে ফুল-স্ট্যাক অ্যাপ তৈরি করার স্টেপ-বাই-স্টেপ গাইডলাইন',
-    'গিটহাবের (GitHub) টপ ৩টি ট্রেন্ডিং ওপেন-সোর্স এআই রিপো যা এখনই ট্রাই করা উচিত',
-    'প্রোগ্রামিং শেখার জন্য সেরা ৩টি ইন্টারঅ্যাক্টিভ ফ্রি ওয়েবসাইট ও প্ল্যাটফর্ম',
-    'কোনো জটিল কোড ছাড়াই মাত্র ১০ মিনিটে চমৎকার পোর্টফোলিও ওয়েবসাইট লাইভ করার উপায়',
+  'Scam Alert & Digital Security': [
+    'বিকাশ ও নগদে ফোন করে পিন চাওয়ার নতুন প্রতারণা থেকে বাঁচার ৩টি জরুরি নিয়ম',
+    'ফেসবুক আইডি কখনোই হ্যাক হবে না—মোবাইলের এই ২টি সিকিউরিটি সেটিংস আজই অন করুন',
+    'হোয়াটসঅ্যাপে আসা অচেনা লিংকে ক্লিক করলেই কি অ্যাকাউন্ট হ্যাক হয়? যেভাবে সুরক্ষিত থাকবেন',
+    'এটিএম বুথ ও ক্রেডিট কার্ড ব্যবহারে যে সাধারণ ভুলে লাখ টাকা খোয়া যেতে পারে',
+    'ফোনে আসা লটারি বা চাকরির ভুয়া মেসেজ চেনার সহজ উপায় ও তাৎক্ষণিক করণীয়',
   ],
-  'Google Sheets & Tech Automation': [
-    'গুগল শিটসে (Google Sheets) AI ফর্মুলা দিয়ে ডাটা এন্ট্রির জটিল কাজ অটোমেশন করার টেকনিক',
-    'এক্সেল ও শিটসের সেরা ৩টি ম্যাজিক ফর্মুলা যা ঘণ্টার কাজ ১০ মিনিটে শেষ করে দেয়',
-    'Make.com বা Zapier দিয়ে কোনো কোডিং ছাড়াই দৈনন্দিন সোশ্যাল মিডিয়া পোস্ট অটোমেট করার পদ্ধতি',
-    'গুগল ড্রাইভ ও জিমেইলের স্মার্ট অটোমেশন ফিল্টার যা আপনার ইনবক্স রাখবে ১০০% পরিপাটি',
-    'গুগল অ্যাপস স্ক্রিপ্ট (Apps Script) দিয়ে অটোমেটিক ইমেইল ও ডাটা রিপোর্ট পাঠানোর উপায়',
+  'Inspiring True Stories & Figures': [
+    'পত্রিকা বিলি করা এক সাধারণ ছেলে যেভাবে ভারতের রাষ্ট্রপতি ও মিসাইল ম্যান হলেন—এ পি জে কালামের গল্প',
+    'চরম দারিদ্র্য আর রুটির দোকানে কাজ করে যেভাবে বিশ্বজয়ী কবি হলেন আমাদের কাজী নজরুল ইসলাম',
+    'নিজের তৈরি কোম্পানি থেকেই বরখাস্ত হয়ে যেভাবে বিশ্বসেরা প্রতিষ্ঠান গড়েছিলেন স্টিভ জবস',
+    '৬৫ বছর বয়সে ১০০৯ বার প্রত্যাখ্যাত হয়েও যেভাবে বিশ্বখ্যাত কেএফসি গড়ে তুলেছিলেন কর্নেল স্যান্ডার্স',
+    'প্রতিকূলতার সাথে লড়াই করে বিশ্ব জয় করা এক সাধারণ মেয়ের অনুপ্রেরণাদায়ী জীবন গল্প',
   ],
-  'Career & Freelancing Tips': [
-    'ফাইভার ও আপওয়ার্কে ক্লায়েন্ট পাওয়ার জন্য ৫টি আধুনিক প্রফেশনাল টেকনিক',
-    'রিমোট জবের জন্য এআই দিয়ে নিখুঁত এটিএস-ফ্রেন্ডলি (ATS) রিজিউমি তৈরি করার গাইড',
-    'ফ্রিল্যান্সারদের সময় ম্যানেজমেন্টের জন্য সেরা ৩টি ডিজিটাল টুল ও ক্যালেন্ডার সিস্টেম',
-    'আন্তর্জাতিক ক্লায়েন্টদের সাথে স্মার্টলি কমিউনিকেট করতে সেরা এআই রাইটিং প্রম্পটস',
-    'নিজের স্কিল আপগ্রেড করে টেক ইন্ডাস্ট্রিতে হাই-পেইং ক্যারিয়ার গড়ার কমপ্লিট রোডম্যাপ',
+  'Human Psychology & Practical Wisdom': [
+    'কথা বলার সময় মানুষের বডি ল্যাঙ্গুয়েজ ও চোখের চাহনি দেখে মিথ্যা ধরার ৪টি মনস্তাত্ত্বিক লক্ষণ',
+    'অতিরিক্ত রাগ ও মানসিক দুশ্চিন্তা নিমেষেই দূর করার জাপানি ২ মিনিটের নিয়ম',
+    'প্রতি মাসে উপার্জনের টাকা ধরে রাখার জন্য ধনীদের অনুসরণ করা ৩টি গোপন আর্থিক অভ্যাস',
+    'যেকোনো আড্ডায় বা মানুষের সাথে কথা বলে সবার প্রিয়পাত্র হওয়ার সহজ মনস্তাত্ত্বিক কৌশল',
+    'নেতিবাচক চিন্তা থেকে মনকে মুক্ত রেখে কাজে ১০০% মনোযোগ দেওয়ার বৈজ্ঞানিক উপায়',
+  ],
+  'Curiosity, History & Hidden Wonders': [
+    'সোনারগাঁয়ের পানাম নগরী কেন হঠাৎ এক রাতের মধ্যে জনমানবহীন ভুতুড়ে শহরে রূপ নিয়েছিল?',
+    'লালবাগ কেল্লার রহস্যময় মাটির নিচের সুড়ঙ্গ নিয়ে যে অজানা সত্য আজও মানুষকে অবাক করে',
+    'পৃথিবীর সবচেয়ে গভীর সমুদ্রের তলদেশে বিজ্ঞানীদের দেখা পাওয়া অবিশ্বাস্য সব প্রাণী ও দৃশ্য',
+    'মহাকাশের এমন ৩টি অবিশ্বাস্য বিস্ময় যা দেখলে সাধারণ মানুষের চোখ কপালে উঠবে',
+    'প্রাচীন বাংলার এমন কিছু বিস্ময়কর স্থাপত্য যা তৎকালীন ইঞ্জিনিয়ারিংয়ের অনন্য নিদর্শন',
   ],
 };
 
@@ -87,8 +133,8 @@ export function calculateTopicScore(utility: number, recency: number, shareabili
 }
 
 /**
- * Automatically determines the next category in the round-robin rotation
- * by inspecting past posts in the local database.
+ * Automatically determines the next category in strict 5-pillar rotation
+ * by inspecting past posts from local store.
  */
 export async function getNextRotatedCategory(): Promise<string> {
   const allPosts = await getAllPosts();
@@ -101,52 +147,96 @@ export async function getNextRotatedCategory(): Promise<string> {
   const lastCaption = (lastPost.caption || '').toLowerCase();
 
   let matchedIndex = 0;
-  if (lastCaption.includes('কোড') || lastCaption.includes('github') || lastCaption.includes('programming') || lastCaption.includes('dev')) {
-    matchedIndex = 1;
-  } else if (lastCaption.includes('শিট') || lastCaption.includes('sheet') || lastCaption.includes('excel') || lastCaption.includes('অটোমেশন')) {
-    matchedIndex = 2;
-  } else if (lastCaption.includes('ক্যারিয়ার') || lastCaption.includes('ফ্রিল্যান্সিং') || lastCaption.includes('আপওয়ার্ক') || lastCaption.includes('রিমোট')) {
-    matchedIndex = 3;
+  if (
+    lastCaption.includes('বিকাশ') ||
+    lastCaption.includes('নগদ') ||
+    lastCaption.includes('হ্যাক') ||
+    lastCaption.includes('প্রতারণা') ||
+    lastCaption.includes('সিকিউরিটি') ||
+    lastCaption.includes('সুরক্ষা')
+  ) {
+    matchedIndex = 1; // scam_alert_security
+  } else if (
+    lastCaption.includes('গল্প') ||
+    lastCaption.includes('কালাম') ||
+    lastCaption.includes('নজরুল') ||
+    lastCaption.includes('স্টিভ জবস') ||
+    lastCaption.includes('অনুপ্রেরণা') ||
+    lastCaption.includes('জীবন বদলে')
+  ) {
+    matchedIndex = 2; // inspiring_stories
+  } else if (
+    lastCaption.includes('বডি ল্যাঙ্গুয়েজ') ||
+    lastCaption.includes('মিথ্যা') ||
+    lastCaption.includes('মনস্তত্ত্ব') ||
+    lastCaption.includes('রাগ') ||
+    lastCaption.includes('দুশ্চিন্তা') ||
+    lastCaption.includes('অভ্যাস')
+  ) {
+    matchedIndex = 3; // psychology_wisdom
+  } else if (
+    lastCaption.includes('ইতিহাস') ||
+    lastCaption.includes('রহস্য') ||
+    lastCaption.includes('পানাম') ||
+    lastCaption.includes('লালবাগ') ||
+    lastCaption.includes('বিস্ময়') ||
+    lastCaption.includes('সমুদ্র')
+  ) {
+    matchedIndex = 4; // curiosity_history_wonders
+  } else {
+    matchedIndex = 0; // smart_life_hacks
   }
 
   const nextIndex = (matchedIndex + 1) % CONTENT_PILLARS.length;
   const nextCategory = CONTENT_PILLARS[nextIndex].nameEn;
-  console.log(`[Trend Engine] 🔄 Category Rotation: [${CONTENT_PILLARS[matchedIndex].nameEn}] ➔ [${nextCategory}]`);
+  console.log(`[Trend Engine] 🔄 5-Pillar Rotation: [${CONTENT_PILLARS[matchedIndex].nameEn}] ➔ [${nextCategory}]`);
   return nextCategory;
 }
 
 /**
- * Checks if a candidate topic shares significant keyword overlap (> 40%)
- * with ANY post published in the last 14 days.
+ * Checks if a candidate topic shares >20% keyword/concept overlap
+ * with ANY post or topic generated in the last 30 days.
+ * Guarantees zero repetition of topics, apps, hacks, or figures within a 30-day window.
  */
-export async function isDuplicateInLast14Days(candidateTitle: string): Promise<boolean> {
-  const allPosts = await getAllPosts();
-  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+export async function isDuplicateInLast30Days(
+  candidateTitle: string,
+  customHistory?: string[]
+): Promise<boolean> {
+  let allTexts: string[] = [];
+  if (customHistory && Array.isArray(customHistory)) {
+    allTexts = customHistory;
+  } else {
+    const history = await getRecentHistory30Days();
+    allTexts = [...history.titles, ...history.captions];
+  }
 
-  const recentPosts = allPosts.filter((p) => {
-    const pubTime = new Date(p.publishedAt).getTime();
-    return !isNaN(pubTime) && pubTime >= fourteenDaysAgo;
-  });
+  if (allTexts.length === 0) return false;
 
   const extractTokens = (text: string): Set<string> => {
     const clean = normalizeTitle(text);
-    const stopWords = new Set(['এই', 'টি', 'কিভাবে', 'করুন', 'উপায়', 'সেরা', 'দিয়ে', 'মাত্র', 'নতুন', 'হ্যাক্স', 'টুল', 'টিপস']);
+    const stopWords = new Set([
+      'এই', 'টি', 'কিভাবে', 'করুন', 'উপায়', 'সেরা', 'দিয়ে', 'মাত্র', 'নতুন',
+      'টিপস', 'নিয়ম', 'জানুন', 'হলে', 'হবে', 'থেকে', 'করে', 'জন্য', 'আছে',
+      'যদি', 'কেন', 'কি', 'সব', 'আর', 'না', 'এক', 'একটি', 'বা', 'যে', 'তা',
+      'ভিডিও', 'পোস্ট', 'সহজ', 'দরকারী', 'গোপন', 'আসুন', 'দেখে', 'নিন'
+    ]);
     return new Set(clean.split(' ').filter((w) => w.length > 2 && !stopWords.has(w)));
   };
 
   const candTokens = extractTokens(candidateTitle);
   if (candTokens.size === 0) return false;
 
-  for (const post of recentPosts) {
-    const postTokens = extractTokens(post.caption.slice(0, 100));
+  for (const text of allTexts) {
+    const pastTokens = extractTokens(text.slice(0, 160));
     let intersection = 0;
     candTokens.forEach((token) => {
-      if (postTokens.has(token)) intersection++;
+      if (pastTokens.has(token)) intersection++;
     });
 
+    // Check overlap relative to candidate token count (Strict > 20% overlap threshold)
     const overlap = intersection / candTokens.size;
-    if (overlap >= 0.40) {
-      console.log(`[Trend Engine] 🚫 14-Day De-duplication triggered (${Math.round(overlap * 100)}% overlap with recent post): "${candidateTitle.slice(0, 45)}..."`);
+    if (overlap >= 0.20) {
+      console.log(`[Trend Engine] 🚫 30-Day De-duplication triggered (${Math.round(overlap * 100)}% overlap with recent post): "${candidateTitle.slice(0, 45)}..."`);
       return true;
     }
   }
@@ -155,37 +245,42 @@ export async function isDuplicateInLast14Days(candidateTitle: string): Promise<b
 }
 
 /**
- * Discovers and ranks trending topics adhering to:
- * 1. Category rotation across the 4 core pillars
- * 2. 14-day history check from store.json to prevent duplicate themes
+ * Discovers and ranks trending mass-market topics adhering to:
+ * 1. Strict 5-pillar rotation across universal categories
+ * 2. Strict 30-day de-duplication check (<20% keyword overlap)
+ * 3. 100% elimination of programming/IDE jargon
  */
 export async function discoverTopTrendingTopic(requestedCategory?: string): Promise<DiscoveredTopic> {
   const categoryToUse = requestedCategory || (await getNextRotatedCategory());
+  const pillar = CONTENT_PILLARS.find((p) => p.nameEn === categoryToUse) || CONTENT_PILLARS[0];
 
-  console.log(`[Trend Engine] 🔍 Researching fresh topic for Category: "${categoryToUse}"...`);
+  console.log(`[Trend Engine] 🔍 Researching fresh topic for Pillar: "${pillar.nameEn}" (${pillar.nameBn})...`);
 
   if (isConfiguredForGemini()) {
     const learningMemory = await getLearningFeedbackPrompt();
 
-    const prompt = `You are the lead tech intelligence researcher for "ByteBangla".
+    const prompt = `You are the Lead Content Strategist and Viral Growth Specialist for "ByteBangla".
 ${learningMemory}
 
-MANDATORY EDITORIAL NICHE FOR THIS POST:
-Category: "${categoryToUse}"
+MANDATORY CONTENT PILLAR FOR THIS POST:
+Pillar: "${pillar.nameEn}" (${pillar.nameBn})
+Focus Niche: ${pillar.niche}
+Hook Style to target: ${pillar.hookStyle}
 
-Task: Find 5 fresh, high-utility, and practical topics in Bengali exclusively within "${categoryToUse}".
-Target audience: Bengali students, freelancers, software developers, and working professionals.
-STRICT RULES:
-- The topics MUST be distinctly different from one another.
-- Do NOT repeat generic "video editing shorts" topics!
-- Give concrete, actionable tool names, tricks, or step-by-step guides.
+Target audience: General population of Bangladesh aged 15 to 50 (students, job seekers, homemakers, professionals, and elders).
+
+STRICT MASS-MARKET RULES:
+- ❌ STRICTLY BAN all software developer, coding, and IDE jargon: NO "TypeScript", NO "Regex", NO "VS Code", NO "Terminal", NO "API", NO "Syntax", NO "npm", NO "git".
+- Focus 100% on everyday human life, smartphone utilities, digital security, inspiring real stories, human psychology, and exciting mysteries.
+- Provide 5 fresh, high-retention, curiosity-driven topics in Bengali.
+- Topics MUST be universally relatable to ordinary people in Dhaka and across Bangladesh.
 
 Return ONLY a valid JSON array of 5 objects without markdown backticks:
 [
   {
     "title": "বাংলায় আকর্ষণীয় ও সুনির্দিষ্ট টপিকের নাম",
-    "category": "${categoryToUse}",
-    "source": "Product Hunt" or "Reddit" or "GitHub" or "Tech News",
+    "category": "${pillar.nameEn}",
+    "source": "Viral Web Trend" or "Real Life Hacks" or "History Archive",
     "utilityScore": 85 to 100,
     "recencyScore": 85 to 100,
     "shareabilityScore": 85 to 100
@@ -226,8 +321,9 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
               );
               return {
                 title: item.title,
-                category: categoryToUse,
-                source: item.source || 'Curated Web Intelligence',
+                category: pillar.nameEn,
+                pillarId: pillar.id,
+                source: item.source || 'Viral Web Trend',
                 utilityScore: item.utilityScore || 85,
                 recencyScore: item.recencyScore || 90,
                 shareabilityScore: item.shareabilityScore || 85,
@@ -238,9 +334,9 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
 
             candidates.sort((a, b) => b.finalScore - a.finalScore);
 
-            // Check against both hash store AND 14-day history in store.json
+            // Check against both hash store AND 30-day history
             for (const cand of candidates) {
-              const isRecentDuplicate = await isDuplicateInLast14Days(cand.title);
+              const isRecentDuplicate = await isDuplicateInLast30Days(cand.title);
               const isHashDup = isTopicDuplicate(cand.title);
 
               if (!isRecentDuplicate && !isHashDup) {
@@ -265,22 +361,23 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
     }
   }
 
-  // Fallback to curated topics within the rotated category
-  const fallbackList = FALLBACK_CURATED_TOPICS_BY_CATEGORY[categoryToUse] || FALLBACK_CURATED_TOPICS_BY_CATEGORY['AI Tools & Productivity'];
-  console.log(`[Trend Engine] 💡 Selecting evergreen fallback from category: "${categoryToUse}"...`);
+  // Fallback to curated topics within the rotated pillar
+  const fallbackList = FALLBACK_CURATED_TOPICS_BY_CATEGORY[pillar.nameEn] || FALLBACK_CURATED_TOPICS_BY_CATEGORY['Smart Mobile & Life Hacks'];
+  console.log(`[Trend Engine] 💡 Selecting evergreen fallback from pillar: "${pillar.nameEn}"...`);
 
   for (const topic of fallbackList) {
-    const isRecentDuplicate = await isDuplicateInLast14Days(topic);
+    const isRecentDuplicate = await isDuplicateInLast30Days(topic);
     if (!isTopicDuplicate(topic) && !isRecentDuplicate) {
       const hash = markTopicAsPosted(topic);
       const fallbackTopic: DiscoveredTopic = {
         title: topic,
-        category: categoryToUse,
-        source: 'Curated Pillar Evergreen',
-        utilityScore: 92,
-        recencyScore: 88,
-        shareabilityScore: 90,
-        finalScore: 90,
+        category: pillar.nameEn,
+        pillarId: pillar.id,
+        source: 'Curated 5-Pillar Evergreen',
+        utilityScore: 94,
+        recencyScore: 90,
+        shareabilityScore: 95,
+        finalScore: 93,
         hash,
       };
       await saveTopic({
@@ -298,12 +395,13 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
   const chosen = fallbackList[Math.floor(Math.random() * fallbackList.length)];
   return {
     title: chosen,
-    category: categoryToUse,
-    source: 'Curated Evergreen',
-    utilityScore: 85,
-    recencyScore: 80,
-    shareabilityScore: 85,
-    finalScore: 83,
+    category: pillar.nameEn,
+    pillarId: pillar.id,
+    source: 'Curated 5-Pillar Evergreen',
+    utilityScore: 90,
+    recencyScore: 85,
+    shareabilityScore: 90,
+    finalScore: 88,
     hash: generateTopicHash(chosen),
   };
 }

@@ -94,8 +94,8 @@ export async function triggerManualPost(
 ): Promise<AutonomousPostResult> {
   const timestamp = new Date().toISOString();
   let selectedTopicTitle = '';
-  let topicCategory = slotCategory || 'AI Tools & Productivity';
-  let topicSource = 'Product Hunt & Web';
+  let topicCategory = slotCategory || 'Smart Mobile & Life Hacks';
+  let topicSource = 'Trend Intelligence & Web';
   let topicScore = 90;
 
   console.log(`\n======================================================`);
@@ -276,6 +276,106 @@ export interface AutonomousReelResult {
 }
 
 /**
+ * Strictly detects toolBrand and toolName from script, topic, hook, and body
+ * to prevent topic mismatch (e.g. talking about CapCut/Canva but displaying VS Code/ChatGPT).
+ */
+export function detectStrictToolBrand(
+  topic: string,
+  hook: string,
+  body: string,
+  bundleToolBrand?: string
+): { toolBrand: string; toolName: string } {
+  const combined = `${topic} ${hook} ${body} ${bundleToolBrand || ''}`.toLowerCase();
+
+  // 1. Check for the 5 Universal Mass-Market Pillars
+  if (
+    combined.includes('scam_alert_security') ||
+    combined.includes('scam') ||
+    combined.includes('প্রতারণা') ||
+    combined.includes('বিকাশ') ||
+    combined.includes('নগদ') ||
+    combined.includes('এটিএম') ||
+    combined.includes('হ্যাক') ||
+    combined.includes('পাসওয়ার্ড') ||
+    combined.includes('ফিশিং') ||
+    combined.includes('নিরাপত্তা')
+  ) {
+    return { toolBrand: 'scam_alert_security', toolName: 'ডিজিটাল নিরাপত্তা ও স্ক্যাম অ্যালার্ট' };
+  }
+
+  if (
+    combined.includes('inspiring_stories') ||
+    combined.includes('কালাম') ||
+    combined.includes('নজরুল') ||
+    combined.includes('স্টিভ জবস') ||
+    combined.includes('অনুপ্রেরণা') ||
+    combined.includes('গল্প') ||
+    combined.includes('ঘুরে দাঁড়ানো') ||
+    combined.includes('সাফল্য')
+  ) {
+    return { toolBrand: 'inspiring_stories', toolName: 'জীবন বদলে দেওয়া বাস্তব গল্প' };
+  }
+
+  if (
+    combined.includes('psychology_wisdom') ||
+    combined.includes('মনস্তত্ত্ব') ||
+    combined.includes('সাইকোলজি') ||
+    combined.includes('বডি ল্যাঙ্গুয়েজ') ||
+    combined.includes('মিথ্যা') ||
+    combined.includes('রাগ') ||
+    combined.includes('দুশ্চিন্তা') ||
+    combined.includes('টাকা') ||
+    combined.includes('অভ্যাস')
+  ) {
+    return { toolBrand: 'psychology_wisdom', toolName: 'হিউম্যান সাইকোলজি ও মানসিক শক্তি' };
+  }
+
+  if (
+    combined.includes('curiosity_history_wonders') ||
+    combined.includes('ইতিহাস') ||
+    combined.includes('রহস্য') ||
+    combined.includes('বাংলাদেশ') ||
+    combined.includes('পিরামিড') ||
+    combined.includes('মহাকাশ') ||
+    combined.includes('ভৌগোলিক') ||
+    combined.includes('বিজ্ঞান')
+  ) {
+    return { toolBrand: 'curiosity_history_wonders', toolName: 'অজানা ইতিহাস ও রোমাঞ্চকর তথ্য' };
+  }
+
+  if (
+    combined.includes('smart_life_hacks') ||
+    combined.includes('মেমোরি') ||
+    combined.includes('স্টোরেজ') ||
+    combined.includes('ক্যামেরা') ||
+    combined.includes('অনুবাদ') ||
+    combined.includes('ট্রেন') ||
+    combined.includes('টিকিট') ||
+    combined.includes('মোবাইল') ||
+    combined.includes('ব্যাটারি')
+  ) {
+    return { toolBrand: 'smart_life_hacks', toolName: 'স্মার্ট মোবাইল ও লাইফ হ্যাকস' };
+  }
+
+  // 2. Check for Popular Everyday Consumer Tools
+  if (combined.includes('capcut') || combined.includes('ক্যাপকাট')) {
+    return { toolBrand: 'capcut', toolName: 'CapCut Video Editor' };
+  }
+  if (combined.includes('canva') || combined.includes('ক্যানভা')) {
+    return { toolBrand: 'canva', toolName: 'Canva Design & Magic Studio' };
+  }
+  if (combined.includes('excel') || combined.includes('এক্সেল') || combined.includes('স্প্রেডশিট')) {
+    return { toolBrand: 'excel', toolName: 'Microsoft Excel 365' };
+  }
+  if (combined.includes('photoshop') || combined.includes('ফটোশপ')) {
+    return { toolBrand: 'photoshop', toolName: 'Adobe Photoshop' };
+  }
+
+  const brand = (bundleToolBrand || 'smart_life_hacks').toLowerCase();
+  return { toolBrand: brand, toolName: 'স্মার্ট লাইফ হ্যাকস ও টিপস' };
+}
+
+/**
  * Executes the complete autonomous Facebook Reel publishing pipeline:
  * 1. Topic discovery tailored for viral short video (trends.ts)
  * 2. Fact-checked Bengali caption, 30s Reels Script & Voiceover (ai.ts)
@@ -294,7 +394,7 @@ export async function triggerAutonomousReelPost(
 ): Promise<AutonomousReelResult> {
   const timestamp = new Date().toISOString();
   let selectedTopicTitle = '';
-  let topicCategory = slotCategory || 'Viral 30s Short-Form Video Guide & Tools';
+  let topicCategory = slotCategory || 'Smart Mobile & Life Hacks';
 
   console.log(`\n======================================================`);
   console.log(`[Reel Publisher] 🎬 Starting Facebook Reel Pipeline for [${slotId}] at ${timestamp} (Manual/Bypass: ${bypassCooldown})`);
@@ -345,12 +445,18 @@ export async function triggerAutonomousReelPost(
       console.warn(`[Reel Publisher] 🚫 Reason: ${audit.feedback}`);
       console.log(`[Reel Publisher] 🔄 Forcing re-generation with a concrete trending topic...`);
 
-      const concreteCategories: string[] = ['ai_tools', 'web_dev', 'automation'];
+      const concreteCategories: string[] = [
+        'smart_life_hacks',
+        'scam_alert_security',
+        'inspiring_stories',
+        'psychology_wisdom',
+        'curiosity_history_wonders',
+      ];
       let regenerationSucceeded = false;
 
       for (let attempt = 1; attempt <= 3; attempt++) {
         const retryCategory = concreteCategories[attempt % concreteCategories.length];
-        console.log(`[Reel Publisher] 🔍 Discovering fresh concrete topic (Attempt ${attempt}/3, Category: ${retryCategory})...`);
+        console.log(`[Reel Publisher] 🔍 Discovering fresh concrete topic across 5 pillars (Attempt ${attempt}/3, Category: ${retryCategory})...`);
         const freshTopic = await discoverTopTrendingTopic(retryCategory);
         selectedTopicTitle = freshTopic.title;
         topicCategory = freshTopic.category;
@@ -384,6 +490,15 @@ export async function triggerAutonomousReelPost(
       finalReelsScript.fullScript = audit.approvedPost;
     }
 
+    // Strict tool brand detection to guarantee topic-visual consistency
+    const strictBrand = detectStrictToolBrand(
+      selectedTopicTitle,
+      finalReelsScript.hook,
+      finalReelsScript.body,
+      bundle.toolBrand
+    );
+    console.log(`[Reel Publisher] 🎯 Strict Tool Brand Resolved: "${strictBrand.toolBrand}" (${strictBrand.toolName})`);
+
     // 4. Generate MP4 Video with Voiceover & Vertical Visual Frames
     console.log(`[Reel Publisher] 🎥 Synthesizing 9:16 MP4 video Reel...`);
     const generatedReel = await generateReelVideo({
@@ -398,10 +513,16 @@ export async function triggerAutonomousReelPost(
       phase2Solution: finalReelsScript.phase2Solution,
       phase3Steps: finalReelsScript.phase3Steps,
       phase4Cta: finalReelsScript.phase4Cta || finalReelsScript.cta,
-      toolBrand: bundle.toolBrand,
+      toolBrand: strictBrand.toolBrand,
+      toolName: strictBrand.toolName,
       practicalSnippet: bundle.practicalSnippet,
       snippetType: bundle.snippetType,
       targetAudience: bundle.targetAudience || finalReelsScript.targetAudience,
+      pillarCategory: finalReelsScript.pillarCategory || bundle.pillarCategory,
+      twoWordHook: finalReelsScript.twoWordHook || bundle.twoWordHook,
+      actionKeycap: finalReelsScript.actionKeycap || bundle.actionKeycap,
+      actionLabel: finalReelsScript.actionLabel || bundle.actionLabel,
+      voice: 'bn-BD-PradeepNeural',
     });
 
     if (dryRun) {
@@ -420,7 +541,7 @@ export async function triggerAutonomousReelPost(
 
     // 5. Upload & Publish Reel to Meta Graph API
     console.log(`[Reel Publisher] 🚀 Uploading Reel to Facebook Page via Meta Graph API...`);
-    const caption = `${finalReelsScript.hook}\n\n${finalReelsScript.body}\n\n👉 ${finalReelsScript.cta}\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels`;
+    const caption = `${finalReelsScript.hook}\n\n${finalReelsScript.body}\n\n👉 ${finalReelsScript.cta}\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD`;
     const reelRes = await publishReelToFacebookPage(generatedReel.videoBuffer, caption);
 
     // Clean up temporary files

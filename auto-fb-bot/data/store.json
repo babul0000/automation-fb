@@ -1,6 +1,69 @@
 {
   "topics": [
     {
+      "title": "অনলাইনে ট্রেনের টিকিট কাটার সময় আর সার্ভার ডাউন পাবে না! দ্রুত টিকিট পাওয়ার অব্যর্থ ট্রিকস",
+      "titleHash": "707325e4427e5e9bf7783d1521e84a405d3ecdc8ef268c80698dcaf18212ea1d",
+      "category": "Smart Mobile & Life Hacks",
+      "score": 97,
+      "status": "DISCOVERED",
+      "id": "topic_1791015134000_8feoa",
+      "createdAt": "2026-10-03T08:12:14.000Z"
+    },
+    {
+      "title": "ফোনে কি এক ফোঁটাও স্টোরেজ খালি নেই? ছবি-ভিডিও ডিলিট না করেই ফোন সুপার ফাস্ট করার ৪টি গোপন সেটিংস!",
+      "titleHash": "d8dfff3f92199d163b9230ff93c8fb1075626ea1635b677353433c9e3fed9684",
+      "category": "Smart Mobile & Life Hacks",
+      "score": 95,
+      "status": "DISCOVERED",
+      "id": "topic_1791014547199_ky65j",
+      "createdAt": "2026-10-03T08:02:27.199Z"
+    },
+    {
+      "title": "ElevenLabs ভয়েস ক্লোনিং ও Canva ব্যবহার করে মুখ না দেখিয়েFaceless শর্টস ভিডিও বানানোর কমপ্লিট ব্লুপ্রিন্ট।",
+      "titleHash": "24cfbaf57553d5b431a89f72db527875813032b88fff39d17a5ae33b51cfb741",
+      "category": "Viral 30s Short-Form Video Guide & Tools",
+      "score": 97,
+      "status": "DISCOVERED",
+      "id": "topic_1791012428944_55oq6",
+      "createdAt": "2026-10-03T07:27:08.944Z"
+    },
+    {
+      "title": "এইচটিএমএল-সিএসএস (HTML-CSS) কোডিং না জেনেই আধুনিক ল্যান্ডিং পেজ ডিজাইন! নতুন এআই (AI) টুল যা ফ্রিল্যান্সারদের সময় বাঁচাবে",
+      "titleHash": "b1c17744487e1ccf56a692fe30af168ac1690b49080881a8dc8bc043b807a63d",
+      "category": "web_dev",
+      "score": 97,
+      "status": "DISCOVERED",
+      "id": "topic_1791011191953_6ug84",
+      "createdAt": "2026-10-03T07:06:31.953Z"
+    },
+    {
+      "title": "Submagic এআই দিয়ে ভিডিওতে ডায়নামিক ইমোজি ও রঙিন সাবটাইটেল বসিয়ে রিটেনশন দ্বিগুণ করার উপায়",
+      "titleHash": "6675922775562a919ffe5c77c1ce8d48a203d7c1715c298ba68e705c00d21a09",
+      "category": "Viral 30s Short-Form Video Guide & Tools",
+      "score": 96,
+      "status": "DISCOVERED",
+      "id": "topic_1791011179467_3ekyk",
+      "createdAt": "2026-10-03T07:06:19.467Z"
+    },
+    {
+      "title": "এইচটিএমএল-সিএসএস কোড লিখে ক্লান্ত? ছবি বা স্ক্রিনশট দিলেই স্বয়ংক্রিয় কোড বানিয়ে দেবে এই এআই!",
+      "titleHash": "069ec6e5c47e2d28a267edaf99eac5b5b85f9bf282bee1c9fa1c7b9742ae910a",
+      "category": "web_dev",
+      "score": 97,
+      "status": "DISCOVERED",
+      "id": "topic_1791009678331_crk73",
+      "createdAt": "2026-10-03T06:41:18.331Z"
+    },
+    {
+      "title": "Opus Clip দিয়ে পডকাস্ট বা লম্বা টিউটোরিয়াল ভিডিও থেকে এক ক্লিকে সেরা ১০টি ভাইরাল শর্টস ক্লিপ বানানোর সিক্রেট পদ্ধতি",
+      "titleHash": "1b7d88cad5f2360ea5ddfbd0f7da06987d96e7e72626363f8bc72b93d37d77f8",
+      "category": "Viral 30s Short-Form Video Guide & Tools",
+      "score": 94,
+      "status": "DISCOVERED",
+      "id": "topic_1791009667604_a6nkp",
+      "createdAt": "2026-10-03T06:41:07.604Z"
+    },
+    {
       "title": "CapCut ওয়েব ভার্সন ব্যবহার করে কোনো এডিটিং স্কিল ছাড়াই ট্রেন্ডিং টেমপ্লেটে শর্টস ভাইরাল করার সূত্র",
       "titleHash": "1198b9b210e8502c91c55486403fdfd19a48cb84fc3210e94246ae8f96482e90",
       "category": "Viral 30s Short-Form Video Guide & Tools",
@@ -164,6 +227,34 @@
     }
   ],
   "posts": [
+    {
+      "facebookPostId": "1414732700781921",
+      "caption": "অনলাইনে ট্রেনের টিকিট কাটার সময় সার্ভার ডাউন পেয়ে কি বারবার মেজাজ খারাপ হয়?\n\nঠিক যখন পেমেন্ট করতে যান, তখন স্ক্রিন আটকে যায় আর চোখের সামনে সব টিকিট শেষ হয়ে যায়। কম্পিউটারের গুগল ক্রোম ব্রাউজারের ইনকগনিটো উইন্ডো ব্যবহার করুন এবং মোবাইল ফিন্যান্সিয়াল সার্ভিস দিয়ে দ্রুত পেমেন্ট সম্পন্ন করুন।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1791015273583_ovwrr",
+      "publishedAt": "2026-10-03T08:14:33.583Z"
+    },
+    {
+      "facebookPostId": "2304988623375270",
+      "caption": "ভিডিও বা ফ্রিল্যান্সিংয়ে ভিডিও বানাতে গিয়ে ক্যামেরা বা নিজের ভয়েস দিতে গিয়ে কি প্রতিদিন আটকে যাচ্ছেন?\n\nআর ক্যামেরার সামনে দাঁড়িয়ে সময় নষ্ট করা লাগবে না, ব্যবহার করুন Canva ও ElevenLabs এর এই চমৎকার কম্বিনেশন! ১ নম্বরে ElevenLabs থেকে এআই ভয়েস জেনারেট করুন, আর ২ নম্বরে Canva-র টাইমলাইনে ব্যাকগ্রাউন্ড ভিডিওর সাথে অডিও বসিয়ে এক্সপোর্ট করে নিন!\n\n👉 পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! পুরো প্রসেসের লিংক পেতে কমেন্টে লিখুন 'AI', আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1791012592193_ls4em",
+      "publishedAt": "2026-10-03T07:29:52.193Z"
+    },
+    {
+      "facebookPostId": "3329620547225655",
+      "caption": "কোডিং বা ক্লায়েন্টের কাজ অর্ধেক সময়ে শেষ করার সেরা উপায় খুঁজছেন? এইচটিএমএল-সিএসএস কোডিং না জেনেই আধুনিক ল্যান্ডিং পেজ ডিজাইন করতে গিয়ে কি আপনারও সময় নষ্ট হচ্ছে?\n\nআর স্ক্র্যাচ থেকে কোড লেখা লাগবে না, ব্যবহার করুন জেনারেটিভ এআই টুল v0.dev! ১ নম্বরে ওয়েবসাইটে গিয়ে আপনার ল্যান্ডিং পেজের রিকোয়ারমেন্ট লিখে প্রম্পট দিন, আর ২ নম্বরে এআই কোড জেনারেট করলে তা কপি করে ভিএস কোডে বসিয়ে দিন—পুরো কাজ শেষ নিমেষেই!\n\n👉 পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! পুরো প্রম্পট ও টুলসের লিংক পেতে কমেন্টে লিখুন 'AI', আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1791011369625_wwskl",
+      "publishedAt": "2026-10-03T07:09:29.626Z"
+    },
+    {
+      "facebookPostId": "1405827507727128",
+      "caption": "কোডিং বা ক্লায়েন্টের কাজ অর্ধেক সময়ে শেষ করার সেরা উপায়! ভিএস কোডে ঘণ্টার পর ঘণ্টা এইচটিএমএল-সিএসএস কোড লিখে কি আপনারও হাত ব্যথা হয়ে যাচ্ছে?\n\nআর ম্যানুয়ালি লেআউট কোড করা লাগবে না, ব্যবহার করুন V0 by Vercel বা ChatGPT Plus! ১ নম্বরে ওয়েবসাইটের ডিজাইনের একটা স্ক্রিনশট এআই চ্যাটে আপলোড করুন, আর ২ নম্বরে প্রম্পট লিখে এন্টার দিন—নিখুঁত কোড চলে আসবে নিমেষেই!\n\n👉 পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! পুরো টুলের লিংক পেতে কমেন্টে লিখুন 'AI', আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1791009778729_l1d7u",
+      "publishedAt": "2026-10-03T06:42:58.729Z"
+    },
     {
       "facebookPostId": "2310886373047628",
       "caption": "ভার্সিটির অ্যাসাইনমেন্ট বা প্রজেক্টের ভিডিও প্রেজেন্টেশন বানাতে গিয়ে কি ক্যানভা বা ক্যাপকাট ওপেন করে ঘন্টার পর ঘন্টা আটকে যাচ্ছেন?\n\nআর নিজে এডিট করার প্যারা নেওয়া লাগবে না, ব্যবহার করুন ক্যাপকাট ওয়েব ভার্সনের ট্রেন্ডিং অটো-টেমপ্লেট ফিচার! ১ নম্বরে ব্রাউজারে ক্যাপকাট ওয়েবসাইটে গিয়ে পছন্দমতো একটি ট্রেন্ডিং টেমপ্লেট বেছে নিন, আর ২ নম্বরে শুধু আপনার ভিডিও ক্লিপ আপলোড করে এক ক্লিকেই এক্সপোর্ট করে নিন!\n\n👉 পরে দরকার হতে পারে, তাই ভিডিওটি এখনই Save করে রাখুন! পুরো টুলস ও টেমপ্লেটের লিংক পেতে কমেন্টে লিখুন 'AI', আর এমন দরকারী সব টেক হ্যাকসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #AITools #BanglaTech #ReelsBD #TechReels",
@@ -409,6 +500,90 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1791015273590",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 1414732700781921, Topic: অনলাইনে ট্রেনের টিকিট কাটার সময় আর সার্ভার ডাউন পাবে না! দ্রুত টিকিট পাওয়ার অব্যর্থ ট্রিকস, Critic: 85/100, Duration: 28.536s",
+      "createdAt": "2026-10-03T08:14:33.590Z"
+    },
+    {
+      "id": "log_1791015139733",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"অনলাইনে ট্রেনের টিকিট কাটার সময় আর সার্ভার ডাউন পাবে না! দ্রুত টিকিট পাওয়ার অব্যর্থ ট্রিকস\", Score: 85/100, Revised: false, Feedback: The script addresses a very relatable everyday pain point for Bangladeshis. The tone is natural and casual, avoiding developer jargon and banned placeholders. The hook and actionable solution are clear, and the mandatory CTA is correctly included at the end.",
+      "createdAt": "2026-10-03T08:12:19.733Z"
+    },
+    {
+      "id": "log_1791014573420",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "FAILED",
+      "details": "Voice synthesis failed: undefined",
+      "createdAt": "2026-10-03T08:02:53.420Z"
+    },
+    {
+      "id": "log_1791014552469",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"ফোনে কি এক ফোঁটাও স্টোরেজ খালি নেই? ছবি-ভিডিও ডিলিট না করেই ফোন সুপার ফাস্ট করার ৪টি গোপন সেটিংস!\", Score: 88/100, Revised: true, Feedback: The script violates the casual human tone rule by using the abstract placeholder phrase 'এই সেটিংসটি' or similar generic descriptions, and the hook is a bit dry. It also promises '4টি গোপন সেটিংস' in the hook, but the body only mentions two generic actions instead of 4 specific settings.",
+      "createdAt": "2026-10-03T08:02:32.469Z"
+    },
+    {
+      "id": "log_1791012592195",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 2304988623375270, Topic: ElevenLabs ভয়েস ক্লোনিং ও Canva ব্যবহার করে মুখ না দেখিয়েFaceless শর্টস ভিডিও বানানোর কমপ্লিট ব্লুপ্রিন্ট।, Critic: 88/100, Duration: 31.56s",
+      "createdAt": "2026-10-03T07:29:52.195Z"
+    },
+    {
+      "id": "log_1791012435603",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"ElevenLabs ভয়েস ক্লোনিং ও Canva ব্যবহার করে মুখ না দেখিয়েFaceless শর্টস ভিডিও বানানোর কমপ্লিট ব্লুপ্রিন্ট।\", Score: 88/100, Revised: true, Feedback: The script contains banned placeholder phrases ('এই চমৎকার কম্বিনেশন') and lacks a specific target audience hook (Office Workers/Students/Freelancers) right at the 0-5s mark. It also uses slightly generic phrasing. Revision is required to match the rigorous ByteBangla senior tech mentor persona.",
+      "createdAt": "2026-10-03T07:27:15.603Z"
+    },
+    {
+      "id": "log_1791011369629",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 3329620547225655, Topic: এইচটিএমএল-সিএসএস (HTML-CSS) কোডিং না জেনেই আধুনিক ল্যান্ডিং পেজ ডিজাইন! নতুন এআই (AI) টুল যা ফ্রিল্যান্সারদের সময় বাঁচাবে, Critic: 88/100, Duration: 38.544s",
+      "createdAt": "2026-10-03T07:09:29.629Z"
+    },
+    {
+      "id": "log_1791011197786",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"এইচটিএমএল-সিএসএস (HTML-CSS) কোডিং না জেনেই আধুনিক ল্যান্ডিং পেজ ডিজাইন! নতুন এআই (AI) টুল যা ফ্রিল্যান্সারদের সময় বাঁচাবে\", Score: 88/100, Revised: true, Feedback: The script uses the banned phrase 'এই টুলটি' in the middle ('ব্যবহার করুন জেনারেটিভ এআই টুল v0.dev!'). According to audit rules, any banned placeholder phrase requires setting needsRevision to true and providing a revised script.",
+      "createdAt": "2026-10-03T07:06:37.786Z"
+    },
+    {
+      "id": "log_1791011184113",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "FAILED",
+      "details": "Topic: \"Submagic এআই দিয়ে ভিডিওতে ডায়নামিক ইমোজি ও রঙিন সাবটাইটেল বসিয়ে রিটেনশন দ্বিগুণ করার উপায়\", Score: 0/100, Generic/Abstract Script Rejected: Missing recognized software or tool name (e.g. ChatGPT, VS Code, Google Sheets, Excel, Windows, Chrome, GitHub, etc.)",
+      "createdAt": "2026-10-03T07:06:24.113Z"
+    },
+    {
+      "id": "log_1791009778733",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 1405827507727128, Topic: এইচটিএমএল-সিএসএস কোড লিখে ক্লান্ত? ছবি বা স্ক্রিনশট দিলেই স্বয়ংক্রিয় কোড বানিয়ে দেবে এই এআই!, Critic: 100/100, Duration: 36.432s",
+      "createdAt": "2026-10-03T06:42:58.733Z"
+    },
+    {
+      "id": "log_1791009683763",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"এইচটিএমএল-সিএসএস কোড লিখে ক্লান্ত? ছবি বা স্ক্রিনশট দিলেই স্বয়ংক্রিয় কোড বানিয়ে দেবে এই এআই!\", Score: 100/100, Revised: false, Feedback: The script is technically precise, references the correct tools (V0 by Vercel, ChatGPT Plus), contains no banned phrases, includes the exact required CTA hooks, and maintains an authentic Dhaka tech mentor tone.",
+      "createdAt": "2026-10-03T06:41:23.763Z"
+    },
+    {
+      "id": "log_1791009671906",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "FAILED",
+      "details": "Topic: \"Opus Clip দিয়ে পডকাস্ট বা লম্বা টিউটোরিয়াল ভিডিও থেকে এক ক্লিকে সেরা ১০টি ভাইরাল শর্টস ক্লিপ বানানোর সিক্রেট পদ্ধতি\", Score: 0/100, Generic/Abstract Script Rejected: Missing recognized software or tool name (e.g. ChatGPT, VS Code, Google Sheets, Excel, Windows, Chrome, GitHub, etc.)",
+      "createdAt": "2026-10-03T06:41:11.906Z"
+    },
     {
       "id": "log_1790967832242",
       "jobName": "AUTONOMOUS_REEL_PUBLISHER",

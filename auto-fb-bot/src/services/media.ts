@@ -87,10 +87,47 @@ const BRAND_ICONS: Record<string, string> = {
       <path d="M12.1 22c5.2 0 4.9-2.2 4.9-2.2l-.1-2.3h-4.9v-.7h7.4s2.6.3 2.6-4.9c0-5.2-2.3-5-2.3-5l-1.4.1v2s.1 2.3-2.3 2.3h-4v.7h4.9s2.3 0 2.3 2.3c0 2.3-2.3 2.3-2.3 2.3h-4.8V22zm1.8-1.4c-.4 0-.7-.3-.7-.7s.3-.7.7-.7.7.3.7.7-.3.7-.7.7z" fill="#FFD438"/>
     </svg>
   `,
+  capcut: `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" rx="5" fill="#000000"/>
+      <path d="M4 6.5C4 5.67 4.67 5 5.5 5H9.8L7.4 9.5H4V6.5Z" fill="#FFFFFF"/>
+      <path d="M20 6.5C20 5.67 19.33 5 18.5 5H14.2L16.6 9.5H20V6.5Z" fill="#FFFFFF"/>
+      <path d="M4 17.5C4 18.33 4.67 19 5.5 19H9.8L7.4 14.5H4V17.5Z" fill="#FFFFFF"/>
+      <path d="M20 17.5C20 18.33 19.33 19 18.5 19H14.2L16.6 14.5H20V17.5Z" fill="#FFFFFF"/>
+      <rect x="7.5" y="10.5" width="9" height="3" rx="1.5" fill="#00ED82"/>
+    </svg>
+  `,
   canva: `
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="11" fill="#00C4CC"/>
-      <path d="M13.5 7.5c-3 0-5.5 2.5-5.5 5.5s2.5 5.5 5.5 5.5c1.8 0 3.2-.8 4-1.8l-1.4-1.2c-.6.6-1.5 1.2-2.6 1.2-2 0-3.6-1.6-3.6-3.7s1.6-3.7 3.6-3.7c1.1 0 2 .5 2.6 1.2l1.4-1.2c-.8-1-2.2-1.8-4-1.8z" fill="white"/>
+      <defs>
+        <linearGradient id="canvaGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#00C4CC"/>
+          <stop offset="1" stop-color="#7D2AE8"/>
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#canvaGrad)"/>
+      <path d="M12.5 6.5C9.5 6.5 7.5 8.7 7.5 12C7.5 15.3 9.5 17.5 12.5 17.5C14.2 17.5 15.7 16.6 16.5 15.2L14.7 14.1C14.2 14.9 13.4 15.4 12.5 15.4C10.7 15.4 9.5 14 9.5 12C9.5 10 10.7 8.6 12.5 8.6C13.4 8.6 14.2 9.1 14.7 9.9L16.5 8.8C15.7 7.4 14.2 6.5 12.5 6.5Z" fill="white"/>
+    </svg>
+  `,
+  premiere: `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" rx="5" fill="#00005B"/>
+      <text x="5" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="12" fill="#EA77FF">Pr</text>
+    </svg>
+  `,
+  figma: `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="2" width="8" height="6.6" rx="3.3" fill="#F24E1E"/>
+      <rect x="12" y="2" width="8" height="6.6" rx="3.3" fill="#FF7262"/>
+      <rect x="4" y="8.6" width="8" height="6.6" rx="3.3" fill="#A259FF"/>
+      <circle cx="16" cy="12" r="3.3" fill="#1ABCFE"/>
+      <path d="M4 18.6C4 16.8 5.5 15.3 7.3 15.3H12V20C12 21.8 10.5 23.3 8.7 23.3C6.9 23.3 4 21.8 4 18.6Z" fill="#0ACF83"/>
+    </svg>
+  `,
+  deepseek: `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" rx="5" fill="#0284C7"/>
+      <path d="M12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C16.42 20 20 16.42 20 12C20 7.58 16.42 4 12 4ZM15 13H9V11H15V13Z" fill="white"/>
     </svg>
   `,
   claude: `
@@ -711,13 +748,19 @@ export async function generateCarouselSlides(topicTitle: string): Promise<Banner
  * =========================================================================
  */
 
+export type ToolCategory = 'VIDEO_EDITOR' | 'DESIGN_EDITOR' | 'SPREADSHEET' | 'CODE_EDITOR' | 'AI_CHAT' | 'PRODUCTIVITY';
+
 export interface DynamicReelSceneData {
   topic: string;
+  pillarCategory?: string;
+  twoWordHook?: string;
+  actionKeycap?: string;
+  actionLabel?: string;
   toolBrand?: string;
   toolName?: string;
   practicalSnippet?: string;
   snippetType?: 'CODE' | 'FORMULA' | 'PROMPT' | 'SHORTCUT';
-  targetAudience?: 'OFFICE' | 'STUDENTS' | 'FREELANCERS';
+  targetAudience?: string;
   phase1Hook: string;
   phase2Solution: string;
   phase3Steps: string;
@@ -731,640 +774,441 @@ export interface DynamicReelSceneFrames {
   scene4Path: string;
 }
 
-function isSpreadsheetTopic(topic: string, toolBrand?: string): boolean {
-  const combined = `${topic} ${toolBrand || ''}`.toLowerCase();
-  return (
-    combined.includes('sheet') ||
-    combined.includes('excel') ||
-    combined.includes('শিট') ||
-    combined.includes('এক্সেল') ||
-    combined.includes('formula') ||
-    combined.includes('ডাটা') ||
-    combined.includes('data') ||
-    combined.includes('table')
-  );
+export interface PillarTheme {
+  id: string;
+  badge: string;
+  accentColor: string;
+  glowColor: string;
+  defaultHook: string;
+  defaultActionKeycap: string;
+  defaultActionLabel: string;
+  iconSvg: string;
 }
 
-function resolveToolDisplayName(data: DynamicReelSceneData): string {
-  if (data.toolName && data.toolName.trim().length > 0) {
-    return data.toolName.trim();
-  }
-  const brand = (data.toolBrand || '').toLowerCase();
-  const topic = data.topic.toLowerCase();
+export const PILLAR_THEMES: Record<string, PillarTheme> = {
+  smart_life_hacks: {
+    id: 'smart_life_hacks',
+    badge: '💡 দরকারি লাইফ হ্যাক',
+    accentColor: '#06B6D4', // Cyan
+    glowColor: '#0891B2',
+    defaultHook: 'ফোন মেমোরি ফুল?',
+    defaultActionKeycap: 'ক্যাশ মেমোরি ক্লিয়ার',
+    defaultActionLabel: '১-ক্লিকে সমাধান',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z" fill="#06B6D4"/><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1z" fill="#06B6D4"/></svg>`,
+  },
+  scam_alert_security: {
+    id: 'scam_alert_security',
+    badge: '🛡️ অনলাইন সুরক্ষা ও সতর্কতা',
+    accentColor: '#10B981', // Emerald
+    glowColor: '#059669',
+    defaultHook: 'প্রতারণা সাবধান!',
+    defaultActionKeycap: '2-Step Verification',
+    defaultActionLabel: 'আইডি ১০০% সুরক্ষিত',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="#10B981"/><path d="M10 15.5l-3.5-3.5 1.41-1.41L10 12.67l6.09-6.09 1.41 1.41L10 15.5z" fill="#FFFFFF"/></svg>`,
+  },
+  inspiring_stories: {
+    id: 'inspiring_stories',
+    badge: '📖 জীবন বদলে দেওয়া গল্প',
+    accentColor: '#F59E0B', // Gold
+    glowColor: '#D97706',
+    defaultHook: 'অসম্ভব ঘুরে দাঁড়ানো',
+    defaultActionKeycap: 'ইচ্ছাশক্তির জয়',
+    defaultActionLabel: 'জীবন বদলে দেওয়া শিক্ষা',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 4.86 5.36.78-3.88 3.78.92 5.34L12 14.24l-4.8 2.52.92-5.34-3.88-3.78 5.36-.78L12 2z" fill="#F59E0B"/></svg>`,
+  },
+  psychology_wisdom: {
+    id: 'psychology_wisdom',
+    badge: '🧠 মনস্তত্ত্ব ও জীবনজ্ঞান',
+    accentColor: '#A855F7', // Purple
+    glowColor: '#9333EA',
+    defaultHook: 'মিথ্যা চেনার উপায়',
+    defaultActionKeycap: 'মনস্তাত্ত্বিক কৌশল',
+    defaultActionLabel: '২ মিনিটের রুল',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 21l3.54-.93C9.28 20.64 10.6 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z" fill="#A855F7"/><circle cx="9" cy="11" r="1.5" fill="#FFFFFF"/><circle cx="15" cy="11" r="1.5" fill="#FFFFFF"/></svg>`,
+  },
+  curiosity_history_wonders: {
+    id: 'curiosity_history_wonders',
+    badge: '🌍 অজানা রহস্য ও তথ্য',
+    accentColor: '#EC4899', // Rose
+    glowColor: '#DB2777',
+    defaultHook: 'অজানা বিস্ময়!',
+    defaultActionKeycap: 'ঐতিহাসিক রহস্য',
+    defaultActionLabel: 'অবিশ্বাস্য সত্য',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#EC4899"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="#FFFFFF" stroke-width="2"/></svg>`,
+  },
+};
 
-  if (brand.includes('vscode') || topic.includes('vs code') || topic.includes('vscode')) {
-    return 'VS Code Auto Prettier';
+/**
+ * Resolves the visual theme from the 5 universal mass-market pillars
+ */
+export function resolvePillarTheme(data: DynamicReelSceneData): PillarTheme {
+  const text = `${data.pillarCategory || ''} ${data.topic || ''} ${data.phase1Hook || ''} ${data.toolBrand || ''}`.toLowerCase();
+
+  if (
+    text.includes('সুরক্ষা') ||
+    text.includes('হ্যাক') ||
+    text.includes('বিকাশ') ||
+    text.includes('নগদ') ||
+    text.includes('প্রতারণা') ||
+    text.includes('scam') ||
+    text.includes('security') ||
+    text.includes('পিন')
+  ) {
+    return PILLAR_THEMES.scam_alert_security;
   }
-  if (brand.includes('sheet') || topic.includes('sheet') || topic.includes('শিট')) {
-    return 'Google Sheets =UNIQUE()';
+
+  if (
+    text.includes('গল্প') ||
+    text.includes('কালাম') ||
+    text.includes('নজরুল') ||
+    text.includes('জবস') ||
+    text.includes('স্যান্ডার্স') ||
+    text.includes('inspiring') ||
+    text.includes('story') ||
+    text.includes('জীবনী') ||
+    text.includes('অনুপ্রেরণা')
+  ) {
+    return PILLAR_THEMES.inspiring_stories;
   }
-  if (brand.includes('excel') || topic.includes('excel') || topic.includes('এক্সেল')) {
-    return 'Excel Power Query';
+
+  if (
+    text.includes('মনস্তত্ত্ব') ||
+    text.includes('psychology') ||
+    text.includes('বডি ল্যাঙ্গুয়েজ') ||
+    text.includes('মিথ্যা') ||
+    text.includes('রাগ') ||
+    text.includes('দুশ্চিন্তা') ||
+    text.includes('অভ্যাস') ||
+    text.includes('টাকা ধরে')
+  ) {
+    return PILLAR_THEMES.psychology_wisdom;
   }
-  if (brand.includes('chatgpt') || topic.includes('chatgpt') || topic.includes('gpt')) {
-    return 'ChatGPT Code Interpreter';
+
+  if (
+    text.includes('ইতিহাস') ||
+    text.includes('রহস্য') ||
+    text.includes('পানাম') ||
+    text.includes('লালবাগ') ||
+    text.includes('বিস্ময়') ||
+    text.includes('সমুদ্র') ||
+    text.includes('curiosity') ||
+    text.includes('wonder') ||
+    text.includes('পৃথিবী')
+  ) {
+    return PILLAR_THEMES.curiosity_history_wonders;
   }
-  if (brand.includes('claude') || topic.includes('claude')) {
-    return 'Claude 3.7 Sonnet';
-  }
-  if (brand.includes('gemini') || topic.includes('gemini')) {
-    return 'Google Gemini 2.5';
-  }
-  if (brand.includes('github') || topic.includes('github') || topic.includes('git')) {
-    return 'GitHub Copilot Workspace';
-  }
-  if (brand.includes('notion') || topic.includes('notion')) {
-    return 'Notion AI Workspace';
-  }
-  if (brand.includes('canva') || topic.includes('canva')) {
-    return 'Canva Magic Studio';
-  }
-  if (brand.includes('python') || topic.includes('python')) {
-    return 'Python Automation Script';
-  }
-  return 'Smart AI Productivity Tool';
+
+  return PILLAR_THEMES.smart_life_hacks;
 }
 
-function resolveShortcutDetails(data: DynamicReelSceneData): { keys: string[]; isFormula: boolean; label: string } {
-  const snippet = (data.practicalSnippet || '').trim();
-  if (snippet.startsWith('=')) {
+export function extractMassMarketHook(data: DynamicReelSceneData, theme: PillarTheme): string {
+  if (data.twoWordHook && data.twoWordHook.trim().length > 0) {
+    return data.twoWordHook.trim();
+  }
+  const text = `${data.topic} ${data.phase1Hook || ''}`.toLowerCase();
+  if (text.includes('মেমোরি') || text.includes('স্টোরেজ')) return 'ফোন মেমোরি ফুল?';
+  if (text.includes('অচেনা') || text.includes('নাম্বার')) return 'অচেনা নম্বর কল?';
+  if (text.includes('অনুবাদ') || text.includes('ক্যামেরা')) return 'ক্যামেরা দিয়ে অনুবাদ!';
+  if (text.includes('ট্রেন') || text.includes('টিকিট')) return 'ট্রেন টিকিট ট্রিক!';
+  if (text.includes('ব্যাটারি') || text.includes('চার্জ')) return 'ব্যাটারি ব্যাকআপ দ্বিগুণ!';
+  if (text.includes('বিকাশ') || text.includes('নগদ')) return 'বিকাশ প্রতারণা সাবধান!';
+  if (text.includes('হ্যাক') || text.includes('আইডি')) return 'ফেসবুক হ্যাক রক্ষা!';
+  if (text.includes('কালাম')) return 'এ পি জে কালাম';
+  if (text.includes('নজরুল')) return 'বিদ্রোহী কবি নজরুল';
+  if (text.includes('স্টিভ জবস') || text.includes('জবস')) return 'স্টিভ জবসের ঘুরে দাঁড়ানো';
+  if (text.includes('মিথ্যা') || text.includes('চোখ')) return 'মিথ্যা চেনার গোপন নিয়ম!';
+  if (text.includes('রাগ') || text.includes('দুশ্চিন্তা')) return 'রাগ কমানোর ২ মিনিট!';
+  if (text.includes('পানাম')) return 'পানাম নগর রহস্য!';
+  if (text.includes('লালবাগ')) return 'লালবাগ কেল্লার সুড়ঙ্গ!';
+
+  return theme.defaultHook;
+}
+
+export function resolveMassMarketAction(
+  data: DynamicReelSceneData,
+  theme: PillarTheme
+): { keycap: string; label: string } {
+  if (data.actionKeycap && data.actionKeycap.trim().length > 0) {
     return {
-      keys: [snippet.slice(0, 36)],
-      isFormula: true,
-      label: 'Formula / ফাংশন',
+      keycap: data.actionKeycap.trim(),
+      label: data.actionLabel?.trim() || theme.defaultActionLabel,
     };
   }
-  if (snippet.includes('+')) {
-    const rawKeys = snippet.split('+').map((k) => k.trim().replace(/[\[\]]/g, ''));
-    return {
-      keys: rawKeys.filter(Boolean),
-      isFormula: false,
-      label: 'Keyboard Shortcut',
-    };
-  }
-  const brand = (data.toolBrand || '').toLowerCase();
-  const topic = data.topic.toLowerCase();
-  if (brand.includes('vscode') || topic.includes('vs code')) {
-    return { keys: ['Alt', 'Shift', 'F'], isFormula: false, label: 'Format Document' };
-  }
-  if (brand.includes('sheet') || topic.includes('sheet') || topic.includes('শিট')) {
-    return { keys: ['=UNIQUE(A2:D)'], isFormula: true, label: 'Deduplication Formula' };
-  }
-  if (brand.includes('excel') || topic.includes('excel')) {
-    return { keys: ['Alt', 'F12'], isFormula: false, label: 'Power Query' };
-  }
-  return { keys: ['Ctrl', 'Shift', 'P'], isFormula: false, label: 'Command Palette' };
+  return {
+    keycap: theme.defaultActionKeycap,
+    label: theme.defaultActionLabel,
+  };
 }
 
-function resolveAudienceLabel(audience?: string): string {
-  switch (audience) {
-    case 'OFFICE':
-      return '🎯 অফিস কর্মী ও এক্সেল ইউজারদের বড় ভুল';
-    case 'STUDENTS':
-      return '🎯 শিক্ষার্থী ও অ্যাসাইনমেন্ট নির্মাতাদের সমস্যা';
-    case 'FREELANCERS':
-      return '🎯 ফ্রিল্যান্সার ও কোডারদের সময় অপচয়';
-    default:
-      return '🎯 অধিকাংশ মানুষের নিয়মিত ভুল ও সময় অপচয়';
-  }
+// Brand preset fallback for backwards compatibility
+export interface BrandPreset {
+  brandKey: string;
+  toolName: string;
+  actionKeycap: string;
+  actionLabel: string;
+  accentColor: string;
+  glowColor: string;
+  defaultHook: string;
+}
+
+export const BRAND_PRESETS: Record<string, BrandPreset> = {
+  canva: {
+    brandKey: 'canva',
+    toolName: 'Canva',
+    actionKeycap: 'Magic Switch',
+    actionLabel: '1-Click Auto Layout & Instant Resize',
+    accentColor: '#00C4CC',
+    glowColor: '#7D2AE8',
+    defaultHook: 'ডিজাইন নষ্ট',
+  },
+  capcut: {
+    brandKey: 'capcut',
+    toolName: 'CapCut',
+    actionKeycap: 'Ctrl + B',
+    actionLabel: 'Auto Beat Sync & Split',
+    accentColor: '#00ED82',
+    glowColor: '#00ED82',
+    defaultHook: 'ভিডিও কাটছাঁট',
+  },
+  default: {
+    brandKey: 'default',
+    toolName: 'Smart Life Hack',
+    actionKeycap: 'গোপন ট্রিক',
+    actionLabel: '১-ক্লিকে সমাধান',
+    accentColor: '#06B6D4',
+    glowColor: '#0891B2',
+    defaultHook: 'দরকারি তথ্য',
+  },
+};
+
+export function resolveBrandPreset(data: DynamicReelSceneData): BrandPreset {
+  const brand = (data.toolBrand || '').toLowerCase().trim();
+  if (brand.includes('canva')) return BRAND_PRESETS.canva;
+  if (brand.includes('capcut')) return BRAND_PRESETS.capcut;
+  return BRAND_PRESETS.default;
+}
+
+export function getSafeToolDisplayName(data: DynamicReelSceneData, preset: BrandPreset): string {
+  return preset.toolName;
+}
+
+export interface ToolCategoryInfo {
+  category: string;
+  brandKey: string;
+  toolName: string;
+  fileName: string;
+  tagTitle: string;
+  errorBadge: string;
+  warningTitle: string;
+  warningDesc: string;
+  shortcutKeys: string[];
+  isFormula: boolean;
+  shortcutLabel: string;
+  solutionHighlight: string;
+  accentColor: string;
+  glowColor: string;
+  descriptionText: string;
+}
+
+export function resolveToolCategoryInfo(data: DynamicReelSceneData): ToolCategoryInfo {
+  const theme = resolvePillarTheme(data);
+  return {
+    category: theme.id,
+    brandKey: theme.id,
+    toolName: theme.badge,
+    fileName: `${theme.id}_viral`,
+    tagTitle: theme.badge,
+    errorBadge: '⚠️ সাধারণ ভুল',
+    warningTitle: '❌ সমস্যা সতর্কতা',
+    warningDesc: '⚠️ অসতর্কতায় বড় ক্ষতি!',
+    shortcutKeys: [theme.defaultActionKeycap],
+    isFormula: false,
+    shortcutLabel: theme.defaultActionLabel,
+    solutionHighlight: '১০০% কার্যকর সমাধান',
+    accentColor: theme.accentColor,
+    glowColor: theme.glowColor,
+    descriptionText: `${theme.badge} — ১ মিনিটে জেনে নিন দরকারি তথ্য!`,
+  };
 }
 
 /**
- * Scene 1: The Problem State (0s – 5s)
- * Dark-mode code editor or spreadsheet showing messy unformatted data with red syntax squiggles
- * and top tag pulsing with "⚠️ Common Mistake / Pain Point".
+ * Scene 1: The Problem State (Minimalist Floating Glass Pill + Bold 2-Word Hook)
+ * Completely eliminates bulky windows. 100% transparent canvas.
  */
 function buildScene1ProblemHtml(data: DynamicReelSceneData): string {
-  const isSheet = isSpreadsheetTopic(data.topic, data.toolBrand);
-  const audienceBadge = resolveAudienceLabel(data.targetAudience);
+  const theme = resolvePillarTheme(data);
+  const twoWordHook = extractMassMarketHook(data, theme);
 
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 1080px;
       height: 1920px;
-      background: radial-gradient(circle at 50% 20%, #1e0910 0%, #030712 100%);
+      background: transparent;
       font-family: 'Hind Siliguri', sans-serif;
-      color: #ffffff;
       overflow: hidden;
       position: relative;
     }
-    .glow-blob-red {
+    .focal-container {
       position: absolute;
-      width: 650px;
-      height: 650px;
-      border-radius: 50%;
-      background: #dc2626;
-      filter: blur(170px);
-      opacity: 0.18;
-      top: 180px;
-      left: 215px;
-      pointer-events: none;
-    }
-    .top-header {
-      position: absolute;
-      top: 140px;
-      left: 60px;
-      right: 60px;
+      top: 260px;
+      left: 0;
+      right: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
-      z-index: 10;
+      justify-content: center;
+      text-align: center;
+      padding: 0 40px;
     }
-    .pulse-badge {
+    .problem-pill {
       display: inline-flex;
       align-items: center;
-      gap: 14px;
-      background: rgba(239, 68, 68, 0.15);
-      border: 2px solid #ef4444;
-      box-shadow: 0 0 30px rgba(239, 68, 68, 0.45);
-      padding: 12px 34px;
-      border-radius: 40px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 2px solid ${theme.accentColor};
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 35px ${theme.glowColor}66;
+      padding: 14px 40px;
+      border-radius: 9999px;
+      font-size: 28px;
       font-weight: 800;
-      color: #fca5a5;
+      color: #ffffff;
       letter-spacing: 0.5px;
     }
-    .pulse-dot {
-      width: 16px;
-      height: 16px;
-      background: #ef4444;
-      border-radius: 50%;
-      box-shadow: 0 0 16px #ef4444;
+    .problem-hook {
+      margin-top: 20px;
+      font-family: 'Hind Siliguri', sans-serif;
+      font-size: 58px;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9), 0 0 35px ${theme.glowColor}88;
+      background: linear-gradient(180deg, #ffffff 30%, ${theme.accentColor} 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      max-width: 880px;
     }
-    .audience-pill {
+  </style>
+</head>
+<body>
+  <div class="focal-container">
+    <div class="problem-pill">${theme.badge}</div>
+    <div class="problem-hook">${twoWordHook}</div>
+  </div>
+</body>
+</html>
+`;
+}
+
+/**
+ * Scene 2: The Core Reveal (Minimalist Floating Glowing Pill)
+ * ONLY clean vector SVG icon + Pillar badge & sub-headline. 100% transparent.
+ */
+function buildScene2RevealHtml(data: DynamicReelSceneData): string {
+  const theme = resolvePillarTheme(data);
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1080px;
+      height: 1920px;
+      background: transparent;
+      font-family: 'Hind Siliguri', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+    .focal-container {
+      position: absolute;
+      top: 260px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 40px;
+    }
+    .tool-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 22px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 2.5px solid ${theme.accentColor};
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 45px ${theme.glowColor}66;
+      padding: 16px 44px;
+      border-radius: 9999px;
+    }
+    .logo-box {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 14px ${theme.glowColor}99);
+    }
+    .tool-title {
+      font-family: 'Hind Siliguri', 'Outfit', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+    }
+    .tool-subbadge {
+      margin-top: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 8px 24px;
       border-radius: 20px;
+      font-family: 'Hind Siliguri', sans-serif;
       font-size: 24px;
       font-weight: 700;
       color: #e2e8f0;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
     }
-    .main-window {
-      position: absolute;
-      top: 360px;
-      left: 60px;
-      right: 60px;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(20px);
-      border: 2px solid rgba(239, 68, 68, 0.4);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(239, 68, 68, 0.2);
-      border-radius: 28px;
-      overflow: hidden;
-      z-index: 10;
-    }
-    .window-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(10, 15, 30, 0.95);
-      border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
-      padding: 16px 24px;
-    }
-    .macos-dots { display: flex; gap: 10px; }
-    .macos-dot { width: 14px; height: 14px; border-radius: 50%; }
-    .dot-red { background: #FF5F56; }
-    .dot-yellow { background: #FFBD2E; }
-    .dot-green { background: #27C93F; }
-    .window-title {
-      font-family: 'Fira Code', monospace;
-      font-size: 20px;
-      font-weight: 600;
-      color: #f87171;
-    }
-    .window-tag {
-      font-family: 'Outfit', sans-serif;
-      font-size: 18px;
-      font-weight: 800;
-      color: #94a3b8;
-    }
-    .window-body {
-      padding: 34px 38px;
-      min-height: 480px;
-    }
-    /* Spreadsheet Styles */
-    .sheet-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: 'Fira Code', monospace;
-      font-size: 22px;
-    }
-    .sheet-table th {
-      background: rgba(30, 41, 59, 0.9);
-      color: #94a3b8;
-      padding: 14px 18px;
-      text-align: left;
-      border: 1px solid #334155;
-      font-size: 18px;
-    }
-    .sheet-table td {
-      padding: 16px 18px;
-      border: 1px solid #1e293b;
-      color: #cbd5e1;
-    }
-    .row-duplicate {
-      background: rgba(239, 68, 68, 0.12);
-    }
-    .squiggly-error {
-      text-decoration: underline wavy #ef4444;
-      text-decoration-thickness: 3px;
-      color: #fca5a5;
-      font-weight: 700;
-    }
-    .tag-error-pill {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid #ef4444;
-      color: #fca5a5;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-    }
-    /* Code Editor Styles */
-    .code-editor {
-      font-family: 'Fira Code', monospace;
-      font-size: 24px;
-      line-height: 1.8;
-      color: #cbd5e1;
-    }
-    .code-line {
-      display: flex;
-      gap: 20px;
-    }
-    .line-no {
-      color: #64748b;
-      width: 35px;
-      text-align: right;
-      user-select: none;
-    }
-    .syntax-kw { color: #f43f5e; font-weight: 700; }
-    .syntax-fn { color: #38bdf8; font-weight: 600; }
-    .syntax-str { color: #facc15; }
-    .syntax-comment { color: #ef4444; font-weight: 600; }
-    /* Warning Footer Box */
-    .warning-footer {
-      margin-top: 28px;
-      background: rgba(239, 68, 68, 0.15);
-      border: 2px dashed #ef4444;
-      border-radius: 18px;
-      padding: 20px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .warning-footer-title {
-      font-size: 26px;
-      font-weight: 800;
-      color: #fca5a5;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .warning-footer-desc {
-      font-size: 22px;
-      color: #fecaca;
-    }
-    /* Bottom Voice Caption Card */
-    .bottom-caption-card {
-      position: absolute;
-      bottom: 200px;
-      left: 60px;
-      right: 60px;
-      background: rgba(3, 7, 18, 0.94);
-      backdrop-filter: blur(24px);
-      border: 3px solid #ef4444;
-      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 35px rgba(239, 68, 68, 0.35);
-      border-radius: 28px;
-      padding: 28px 36px;
-      text-align: center;
-      z-index: 50;
-    }
-    .caption-pill {
-      display: inline-block;
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid #ef4444;
-      color: #fca5a5;
-      padding: 6px 20px;
-      border-radius: 20px;
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .caption-text {
-      font-size: 42px;
-      font-weight: 700;
-      line-height: 1.35;
-      color: #ffffff;
-      text-shadow: 0 2px 14px rgba(0,0,0,0.9);
+    .tool-subbadge .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: ${theme.accentColor};
+      box-shadow: 0 0 12px ${theme.accentColor};
     }
   </style>
 </head>
 <body>
-  <div class="glow-blob-red"></div>
-
-  <div class="top-header">
-    <div class="pulse-badge">
-      <span class="pulse-dot"></span>
-      <span>⚠️ Common Mistake / Pain Point</span>
+  <div class="focal-container">
+    <div class="tool-pill">
+      <div class="logo-box">
+        ${theme.iconSvg}
+      </div>
+      <div class="tool-title">${theme.badge}</div>
     </div>
-    <div class="audience-pill">${audienceBadge}</div>
-  </div>
-
-  <div class="main-window">
-    <div class="window-bar">
-      <div class="macos-dots">
-        <span class="macos-dot dot-red"></span>
-        <span class="macos-dot dot-yellow"></span>
-        <span class="macos-dot dot-green"></span>
-      </div>
-      <div class="window-title">${isSheet ? 'sales_messy_records.xlsx ⚠️' : 'unformatted_legacy_code.ts ⚠️'}</div>
-      <div class="window-tag">BYTEBANGLA UI</div>
-    </div>
-    <div class="window-body">
-      ${
-        isSheet
-          ? `
-      <table class="sheet-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>CLIENT NAME</th>
-            <th>RAW VALUE</th>
-            <th>STATUS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>#101</td>
-            <td>john doe  </td>
-            <td>  $4,500 </td>
-            <td>PENDING</td>
-          </tr>
-          <tr class="row-duplicate">
-            <td>#101</td>
-            <td><span class="squiggly-error">JOHN DOE  </span></td>
-            <td>  $4,500 </td>
-            <td><span class="tag-error-pill">❌ DUPLICATE</span></td>
-          </tr>
-          <tr>
-            <td>#102</td>
-            <td>Sara K.   </td>
-            <td><span class="squiggly-error">#REF! ERROR</span></td>
-            <td><span class="tag-error-pill">❌ BROKEN</span></td>
-          </tr>
-          <tr class="row-duplicate">
-            <td>#101</td>
-            <td><span class="squiggly-error">john doe  </span></td>
-            <td>  $4,500 </td>
-            <td><span class="tag-error-pill">❌ DUPLICATE</span></td>
-          </tr>
-          <tr>
-            <td>#103</td>
-            <td>Rahim M.  </td>
-            <td>  $1,200 </td>
-            <td>DONE</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="warning-footer">
-        <div class="warning-footer-title">❌ 348 Duplicate Records & Unformatted Rows Detected</div>
-        <div class="warning-footer-desc">⚠️ এক এক করে ম্যানুয়ালি ঠিক করতে ২-৩ ঘণ্টা মূল্যবান সময় নষ্ট!</div>
-      </div>
-      `
-          : `
-      <div class="code-editor">
-        <div class="code-line"><span class="line-no">1</span><span><span class="syntax-kw">const</span> <span class="syntax-fn">fetchData</span> = <span class="syntax-kw">async</span>(url) =&gt; {</span></div>
-        <div class="code-line"><span class="line-no">2</span><span>  <span class="syntax-kw">var</span> raw = <span class="syntax-kw">await</span> fetch(url); <span class="syntax-comment">// ❌ Legacy var</span></span></div>
-        <div class="code-line"><span class="line-no">3</span><span>  <span class="squiggly-error">let parsed = raw.json();</span> <span class="syntax-comment">// ❌ Missing await error</span></span></div>
-        <div class="code-line"><span class="line-no">4</span><span>  <span class="syntax-kw">for</span>(i = 0; i &lt; parsed.length; i++){</span></div>
-        <div class="code-line"><span class="line-no">5</span><span>    <span class="squiggly-error">console.log( parsed[ i ] );</span> <span class="syntax-comment">// ❌ Bad indent & spacing</span></span></div>
-        <div class="code-line"><span class="line-no">6</span><span>  }</span></div>
-        <div class="code-line"><span class="line-no">7</span><span>};</span></div>
-      </div>
-      <div class="warning-footer">
-        <div class="warning-footer-title">❌ 3 Syntax Warnings & Code Smells Detected</div>
-        <div class="warning-footer-desc">⚠️ প্রতি লাইনে কোড ম্যানুয়ালি রি-ফরম্যাট করতে ৪৫ মিনিট সময় অপচয়!</div>
-      </div>
-      `
-      }
-    </div>
-  </div>
-
-  <div class="bottom-caption-card">
-    <div class="caption-pill">⚠️ পেইন-পয়েন্ট ও সাধারণ ভুল</div>
-    <div class="caption-text">${data.phase1Hook}</div>
-  </div>
-</body>
-</html>
-`;
-}
-
-/**
- * Scene 2: The Tool Reveal (5s – 12s)
- * Screen transition showing prominent official brand logo inside an animated glow card
- * with large typography displaying the EXACT tool/extension/formula name.
- */
-function buildScene2RevealHtml(data: DynamicReelSceneData): string {
-  const toolName = resolveToolDisplayName(data);
-  const brandIconSvg = getBrandIconSvg(data.toolBrand, 110);
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      width: 1080px;
-      height: 1920px;
-      background: radial-gradient(circle at 50% 25%, #082142 0%, #020713 100%);
-      font-family: 'Hind Siliguri', sans-serif;
-      color: #ffffff;
-      overflow: hidden;
-      position: relative;
-    }
-    .glow-blob-cyan {
-      position: absolute;
-      width: 700px;
-      height: 700px;
-      border-radius: 50%;
-      background: #0284c7;
-      filter: blur(180px);
-      opacity: 0.25;
-      top: 280px;
-      left: 190px;
-      pointer-events: none;
-    }
-    .top-header {
-      position: absolute;
-      top: 140px;
-      left: 60px;
-      right: 60px;
-      display: flex;
-      justify-content: center;
-      z-index: 10;
-    }
-    .top-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      background: rgba(56, 189, 248, 0.15);
-      border: 2px solid #38bdf8;
-      box-shadow: 0 0 35px rgba(56, 189, 248, 0.4);
-      padding: 12px 36px;
-      border-radius: 40px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      color: #7dd3fc;
-      letter-spacing: 0.5px;
-    }
-    .top-badge .dot {
-      width: 14px;
-      height: 14px;
-      background: #38bdf8;
-      border-radius: 50%;
-      box-shadow: 0 0 14px #38bdf8;
-    }
-    .reveal-card {
-      position: absolute;
-      top: 320px;
-      left: 60px;
-      right: 60px;
-      background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
-      backdrop-filter: blur(28px);
-      border: 3px solid rgba(56, 189, 248, 0.55);
-      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 55px rgba(14, 165, 233, 0.3);
-      border-radius: 36px;
-      padding: 60px 48px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      z-index: 10;
-    }
-    .brand-logo-ring {
-      width: 170px;
-      height: 170px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.05);
-      border: 3px solid rgba(56, 189, 248, 0.7);
-      box-shadow: 0 0 50px rgba(56, 189, 248, 0.4), inset 0 0 30px rgba(56, 189, 248, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 34px;
-    }
-    .tool-headline {
-      font-family: 'Outfit', sans-serif;
-      font-size: 64px;
-      font-weight: 900;
-      line-height: 1.15;
-      color: #ffffff;
-      text-shadow: 0 4px 25px rgba(56, 189, 248, 0.6);
-      margin-bottom: 24px;
-      max-width: 820px;
-    }
-    .pills-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 32px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .value-pill {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(56, 189, 248, 0.4);
-      padding: 10px 22px;
-      border-radius: 20px;
-      font-size: 22px;
-      font-weight: 700;
-      color: #e0f2fe;
-    }
-    .value-pill.highlight {
-      background: rgba(74, 222, 128, 0.15);
-      border-color: #4ade80;
-      color: #86efac;
-    }
-    .tool-description {
-      font-size: 28px;
-      font-weight: 600;
-      color: #94a3b8;
-      line-height: 1.4;
-      max-width: 760px;
-    }
-    /* Bottom Voice Caption Card */
-    .bottom-caption-card {
-      position: absolute;
-      bottom: 200px;
-      left: 60px;
-      right: 60px;
-      background: rgba(3, 7, 18, 0.94);
-      backdrop-filter: blur(24px);
-      border: 3px solid #38bdf8;
-      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.35);
-      border-radius: 28px;
-      padding: 28px 36px;
-      text-align: center;
-      z-index: 50;
-    }
-    .caption-pill {
-      display: inline-block;
-      background: rgba(56, 189, 248, 0.2);
-      border: 1px solid #38bdf8;
-      color: #7dd3fc;
-      padding: 6px 20px;
-      border-radius: 20px;
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .caption-text {
-      font-size: 42px;
-      font-weight: 700;
-      line-height: 1.35;
-      color: #ffffff;
-      text-shadow: 0 2px 14px rgba(0,0,0,0.9);
-    }
-  </style>
-</head>
-<body>
-  <div class="glow-blob-cyan"></div>
-
-  <div class="top-header">
-    <div class="top-badge">
+    <div class="tool-subbadge">
       <span class="dot"></span>
-      <span>⚡ THE SMART SOLUTION / অফিশিয়াল সমাধান</span>
+      <span>আসল তথ্য ও সমাধান</span>
     </div>
-  </div>
-
-  <div class="reveal-card">
-    <div class="brand-logo-ring">
-      ${brandIconSvg}
-    </div>
-    <h1 class="tool-headline">${toolName}</h1>
-    <div class="pills-row">
-      <div class="value-pill highlight">⭐ 100% Free & Official</div>
-      <div class="value-pill">⚡ 1-Click Action</div>
-      <div class="value-pill">⏱️ Saves 2+ Hours Daily</div>
-    </div>
-    <p class="tool-description">ম্যানুয়ালি সময় নষ্ট করা বন্ধ করুন — এই স্মার্ট টুলটি স্বয়ংক্রিয়ভাবে জটিল কাজ নিমেষেই শেষ করে!</p>
-  </div>
-
-  <div class="bottom-caption-card">
-    <div class="caption-pill">💡 অফিশিয়াল স্মার্ট টুল</div>
-    <div class="caption-text">${data.phase2Solution}</div>
   </div>
 </body>
 </html>
@@ -1372,361 +1216,97 @@ function buildScene2RevealHtml(data: DynamicReelSceneData): string {
 }
 
 /**
- * Scene 3: The Live Solution & Shortcut (12s – 22s)
- * macOS code window showing live before-and-after transformation with animated glowing key-caps
- * popping into screen and instant clean syntax-highlighted beauty.
+ * Scene 3: The Action / Takeaway State (Sleek Floating 3D Keycap Pill)
+ * ONLY sleek 3D keycap pill (e.g. [ ক্যাশ মেমোরি ক্লিয়ার ] or [ 2-Step Verification ] or [ ২ মিনিটের রুল ])
+ * with a glowing border and subtitle. 100% transparent.
  */
 function buildScene3SolutionHtml(data: DynamicReelSceneData): string {
-  const isSheet = isSpreadsheetTopic(data.topic, data.toolBrand);
-  const shortcut = resolveShortcutDetails(data);
+  const theme = resolvePillarTheme(data);
+  const action = resolveMassMarketAction(data, theme);
 
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@600;700&family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 1080px;
       height: 1920px;
-      background: radial-gradient(circle at 50% 20%, #032b1a 0%, #020b06 100%);
+      background: transparent;
       font-family: 'Hind Siliguri', sans-serif;
-      color: #ffffff;
       overflow: hidden;
       position: relative;
     }
-    .glow-blob-green {
+    .focal-container {
       position: absolute;
-      width: 650px;
-      height: 650px;
-      border-radius: 50%;
-      background: #10b981;
-      filter: blur(170px);
-      opacity: 0.22;
-      top: 240px;
-      left: 215px;
-      pointer-events: none;
-    }
-    .top-header {
-      position: absolute;
-      top: 140px;
-      left: 60px;
-      right: 60px;
-      display: flex;
-      justify-content: center;
-      z-index: 10;
-    }
-    .top-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      background: rgba(74, 222, 128, 0.15);
-      border: 2px solid #4ade80;
-      box-shadow: 0 0 35px rgba(74, 222, 128, 0.4);
-      padding: 12px 36px;
-      border-radius: 40px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      color: #86efac;
-      letter-spacing: 0.5px;
-    }
-    .top-badge .dot {
-      width: 14px;
-      height: 14px;
-      background: #4ade80;
-      border-radius: 50%;
-      box-shadow: 0 0 14px #4ade80;
-    }
-    .solution-window {
-      position: absolute;
-      top: 320px;
-      left: 60px;
-      right: 60px;
-      background: rgba(15, 23, 42, 0.90);
-      backdrop-filter: blur(24px);
-      border: 2.5px solid rgba(74, 222, 128, 0.5);
-      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 45px rgba(74, 222, 128, 0.25);
-      border-radius: 30px;
-      overflow: hidden;
-      z-index: 10;
-    }
-    .window-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(10, 15, 30, 0.95);
-      border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
-      padding: 16px 24px;
-    }
-    .macos-dots { display: flex; gap: 10px; }
-    .macos-dot { width: 14px; height: 14px; border-radius: 50%; }
-    .dot-red { background: #FF5F56; }
-    .dot-yellow { background: #FFBD2E; }
-    .dot-green { background: #27C93F; }
-    .window-title {
-      font-family: 'Fira Code', monospace;
-      font-size: 20px;
-      font-weight: 600;
-      color: #86efac;
-    }
-    .window-status {
-      background: rgba(74, 222, 128, 0.2);
-      border: 1px solid #4ade80;
-      color: #86efac;
-      padding: 4px 14px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 800;
-    }
-    .window-body {
-      padding: 30px 36px;
-    }
-    /* 3D Glowing Mechanical Keycaps / Formula Capsule */
-    .shortcut-hero {
-      background: rgba(3, 7, 18, 0.85);
-      border: 2px solid rgba(56, 189, 248, 0.4);
-      border-radius: 24px;
-      padding: 24px 30px;
-      margin-bottom: 26px;
+      top: 260px;
+      left: 0;
+      right: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 14px;
+      justify-content: center;
+      text-align: center;
+      padding: 0 40px;
     }
-    .keycaps-row {
-      display: flex;
+    .keycap-pill {
+      display: inline-flex;
       align-items: center;
       gap: 16px;
-    }
-    .keycap-3d {
-      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-      border: 2.5px solid #38bdf8;
-      border-bottom: 7px solid #0284c7;
-      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.35);
-      border-radius: 16px;
-      padding: 14px 28px;
-      font-family: 'Fira Code', monospace;
-      font-size: 34px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: 1px;
-    }
-    .plus-sign {
-      font-family: 'Outfit', sans-serif;
-      font-size: 36px;
-      font-weight: 900;
-      color: #38bdf8;
-      text-shadow: 0 0 16px #38bdf8;
-    }
-    .formula-capsule {
-      background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
-      border: 2.5px solid #4ade80;
-      border-bottom: 7px solid #16a34a;
-      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.8), 0 0 30px rgba(74, 222, 128, 0.4);
-      border-radius: 20px;
-      padding: 16px 34px;
-      font-family: 'Fira Code', monospace;
-      font-size: 30px;
-      font-weight: 700;
-      color: #ffffff;
-    }
-    .shortcut-instruction {
-      font-size: 22px;
-      font-weight: 700;
-      color: #facc15;
-    }
-    /* Clean Transformed Content */
-    .sheet-clean-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: 'Fira Code', monospace;
-      font-size: 21px;
-    }
-    .sheet-clean-table th {
-      background: rgba(30, 41, 59, 0.95);
-      color: #86efac;
-      padding: 12px 16px;
-      text-align: left;
-      border: 1px solid #334155;
-      font-size: 17px;
-    }
-    .sheet-clean-table td {
-      padding: 14px 16px;
-      border: 1px solid #1e293b;
-      color: #f1f5f9;
-    }
-    .badge-success {
-      background: rgba(74, 222, 128, 0.2);
-      border: 1px solid #4ade80;
-      color: #86efac;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 800;
-    }
-    .code-clean {
-      font-family: 'Fira Code', monospace;
-      font-size: 23px;
-      line-height: 1.8;
-      color: #f8fafc;
-    }
-    .code-line {
-      display: flex;
-      gap: 18px;
-    }
-    .line-no {
-      color: #64748b;
-      width: 30px;
-      text-align: right;
-      user-select: none;
-    }
-    .syntax-kw { color: #38bdf8; font-weight: 700; }
-    .syntax-fn { color: #facc15; font-weight: 600; }
-    .syntax-type { color: #4ade80; }
-    .syntax-comment { color: #86efac; font-weight: 600; }
-    .success-footer {
-      margin-top: 22px;
-      background: rgba(74, 222, 128, 0.15);
-      border: 2px solid #4ade80;
-      border-radius: 18px;
-      padding: 16px 22px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 22px;
-      font-weight: 800;
-      color: #86efac;
-    }
-    /* Bottom Voice Caption Card */
-    .bottom-caption-card {
-      position: absolute;
-      bottom: 200px;
-      left: 60px;
-      right: 60px;
-      background: rgba(3, 7, 18, 0.94);
-      backdrop-filter: blur(24px);
-      border: 3px solid #4ade80;
-      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 35px rgba(74, 222, 128, 0.35);
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.96) 100%);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 2.5px solid ${theme.accentColor};
+      border-bottom: 7px solid ${theme.glowColor};
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.75), 0 0 40px ${theme.glowColor}55;
+      padding: 18px 48px;
       border-radius: 28px;
-      padding: 28px 36px;
-      text-align: center;
-      z-index: 50;
     }
-    .caption-pill {
-      display: inline-block;
-      background: rgba(74, 222, 128, 0.2);
-      border: 1px solid #4ade80;
-      color: #86efac;
-      padding: 6px 20px;
-      border-radius: 20px;
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .caption-text {
-      font-size: 42px;
-      font-weight: 700;
-      line-height: 1.35;
+    .key-badge {
+      font-family: 'Hind Siliguri', 'Outfit', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
       color: #ffffff;
-      text-shadow: 0 2px 14px rgba(0,0,0,0.9);
+      letter-spacing: 0.5px;
+      text-shadow: 0 3px 14px rgba(0, 0, 0, 0.9), 0 0 25px ${theme.glowColor}99;
+    }
+    .action-caption {
+      margin-top: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 26px;
+      border-radius: 20px;
+      font-family: 'Hind Siliguri', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: ${theme.accentColor};
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    }
+    .action-caption .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: ${theme.accentColor};
+      box-shadow: 0 0 10px ${theme.accentColor};
     }
   </style>
 </head>
 <body>
-  <div class="glow-blob-green"></div>
-
-  <div class="top-header">
-    <div class="top-badge">
+  <div class="focal-container">
+    <div class="keycap-pill">
+      <span class="key-badge">[ ${action.keycap} ]</span>
+    </div>
+    <div class="action-caption">
       <span class="dot"></span>
-      <span>✨ LIVE SOLUTION & SHORTCUT / ম্যাজিক সলিউশন</span>
+      <span>${action.label}</span>
     </div>
-  </div>
-
-  <div class="solution-window">
-    <div class="window-bar">
-      <div class="macos-dots">
-        <span class="macos-dot dot-red"></span>
-        <span class="macos-dot dot-yellow"></span>
-        <span class="macos-dot dot-green"></span>
-      </div>
-      <div class="window-title">${isSheet ? 'clean_analytics_final.xlsx' : 'clean_production_code.ts'}</div>
-      <div class="window-status">✅ 100% Formatted</div>
-    </div>
-    <div class="window-body">
-      <div class="shortcut-hero">
-        ${
-          shortcut.isFormula
-            ? `<div class="formula-capsule"><code>${shortcut.keys[0]}</code></div>`
-            : `
-        <div class="keycaps-row">
-          ${shortcut.keys.map((k) => `<div class="keycap-3d">${k}</div>`).join('<span class="plus-sign">+</span>')}
-        </div>
-        `
-        }
-        <div class="shortcut-instruction">⚡ প্রেস করতেই ১ সেকেন্ডে অটোমেটিক ট্রান্সফর্মেশন!</div>
-      </div>
-
-      ${
-        isSheet
-          ? `
-      <table class="sheet-clean-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>CLEAN CLIENT NAME</th>
-            <th>FORMATTED AMOUNT</th>
-            <th>STATUS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>#101</td>
-            <td>John Doe</td>
-            <td>$4,500.00</td>
-            <td><span class="badge-success">✅ ACTIVE</span></td>
-          </tr>
-          <tr>
-            <td>#102</td>
-            <td>Sara K.</td>
-            <td>$3,800.00</td>
-            <td><span class="badge-success">✅ ACTIVE</span></td>
-          </tr>
-          <tr>
-            <td>#103</td>
-            <td>Rahim M.</td>
-            <td>$1,200.00</td>
-            <td><span class="badge-success">✅ ACTIVE</span></td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="success-footer">
-        <span>✨ 0 Duplicates • Clean Table Auto-Sorted</span>
-        <span>⏱️ 0.1s Execution</span>
-      </div>
-      `
-          : `
-      <div class="code-clean">
-        <div class="code-line"><span class="line-no">1</span><span><span class="syntax-comment">// ✅ Clean, Formatted &amp; Optimized Production Code</span></span></div>
-        <div class="code-line"><span class="line-no">2</span><span><span class="syntax-kw">export const</span> <span class="syntax-fn">fetchCleanData</span> = <span class="syntax-kw">async</span> (url: <span class="syntax-type">string</span>) =&gt; {</span></div>
-        <div class="code-line"><span class="line-no">3</span><span>  <span class="syntax-kw">const</span> response = <span class="syntax-kw">await</span> fetch(url);</span></div>
-        <div class="code-line"><span class="line-no">4</span><span>  <span class="syntax-kw">return</span> response.json();</span></div>
-        <div class="code-line"><span class="line-no">5</span><span>};</span></div>
-      </div>
-      <div class="success-footer">
-        <span>✨ Auto-Formatted Document • Clean Syntax</span>
-        <span>⚡ 0 Warnings</span>
-      </div>
-      `
-      }
-    </div>
-  </div>
-
-  <div class="bottom-caption-card">
-    <div class="caption-pill">🚀 লাইভ সমাধান ও স্টেপস</div>
-    <div class="caption-text">${data.phase3Steps}</div>
   </div>
 </body>
 </html>
@@ -1734,9 +1314,8 @@ function buildScene3SolutionHtml(data: DynamicReelSceneData): string {
 }
 
 /**
- * Scene 4: Viral Save & CTA State (22s – 30s)
- * Bookmark/Save animation + floating Facebook comment bubble showing "💬 Type 'AI' to get link"
- * with ByteBangla verified creator badge at the center.
+ * Scene 4: Viral Save & Share CTA State (Minimalist Floating Pill)
+ * A single minimalist pill: 🔖 Save করে রাখুন | বন্ধুদের Share করুন
  */
 function buildScene4CtaHtml(data: DynamicReelSceneData): string {
   return `
@@ -1744,303 +1323,82 @@ function buildScene4CtaHtml(data: DynamicReelSceneData): string {
 <html>
 <head>
   <meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 1080px;
       height: 1920px;
-      background: radial-gradient(circle at 50% 25%, #250942 0%, #06020c 100%);
+      background: transparent;
       font-family: 'Hind Siliguri', sans-serif;
-      color: #ffffff;
       overflow: hidden;
       position: relative;
     }
-    .glow-blob-purple {
+    .focal-container {
       position: absolute;
-      width: 700px;
-      height: 700px;
-      border-radius: 50%;
-      background: #a855f7;
-      filter: blur(180px);
-      opacity: 0.24;
       top: 260px;
-      left: 190px;
-      pointer-events: none;
-    }
-    .top-header {
-      position: absolute;
-      top: 140px;
-      left: 60px;
-      right: 60px;
-      display: flex;
-      justify-content: center;
-      z-index: 10;
-    }
-    .top-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      background: rgba(168, 85, 247, 0.18);
-      border: 2px solid #a855f7;
-      box-shadow: 0 0 35px rgba(168, 85, 247, 0.45);
-      padding: 12px 36px;
-      border-radius: 40px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      color: #e9d5ff;
-      letter-spacing: 0.5px;
-    }
-    .top-badge .dot {
-      width: 14px;
-      height: 14px;
-      background: #c084fc;
-      border-radius: 50%;
-      box-shadow: 0 0 14px #c084fc;
-    }
-    .cta-hub {
-      position: absolute;
-      top: 290px;
-      left: 60px;
-      right: 60px;
+      left: 0;
+      right: 0;
       display: flex;
       flex-direction: column;
-      gap: 24px;
-      z-index: 10;
-    }
-    /* Verified Creator Card */
-    .creator-card {
-      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 15, 55, 0.95));
-      backdrop-filter: blur(24px);
-      border: 2px solid rgba(168, 85, 247, 0.4);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(168, 85, 247, 0.25);
-      border-radius: 30px;
-      padding: 30px 36px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .creator-left {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .avatar-circle {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #38bdf8, #818cf8);
-      display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Outfit', sans-serif;
-      font-size: 32px;
-      font-weight: 900;
-      color: #030712;
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.5);
+      text-align: center;
+      padding: 0 40px;
     }
-    .creator-info h2 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 34px;
-      font-weight: 800;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .verified-icon {
+    .cta-pill {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: #0284c7;
-      color: #ffffff;
-      font-size: 16px;
-      font-weight: 900;
-    }
-    .creator-info p {
-      font-size: 22px;
-      color: #cbd5e1;
-      font-weight: 600;
-    }
-    .follow-pill {
-      background: linear-gradient(90deg, #0284c7, #6366f1);
-      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.4);
-      padding: 12px 28px;
-      border-radius: 30px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 22px;
+      gap: 16px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 2.5px solid #a855f7;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 45px rgba(168, 85, 247, 0.5);
+      padding: 18px 46px;
+      border-radius: 9999px;
+      font-size: 34px;
       font-weight: 800;
-      color: #ffffff;
+      color: #f3e8ff;
+      letter-spacing: 0.5px;
+      text-shadow: 0 3px 16px rgba(0, 0, 0, 0.9);
       white-space: nowrap;
     }
-    /* Bookmark / Save Card */
-    .save-card {
-      background: linear-gradient(145deg, rgba(20, 10, 40, 0.95), rgba(10, 5, 25, 0.95));
-      backdrop-filter: blur(24px);
-      border: 2.5px solid #facc15;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(250, 204, 21, 0.25);
-      border-radius: 30px;
-      padding: 34px 40px;
-      display: flex;
+    .brand-credit {
+      margin-top: 18px;
+      display: inline-flex;
       align-items: center;
-      gap: 26px;
-    }
-    .save-icon-box {
-      width: 90px;
-      height: 90px;
-      border-radius: 24px;
-      background: rgba(250, 204, 21, 0.15);
-      border: 2px solid #facc15;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 44px;
-      flex-shrink: 0;
-      box-shadow: 0 0 30px rgba(250, 204, 21, 0.35);
-    }
-    .save-content h3 {
-      font-size: 32px;
-      font-weight: 800;
-      color: #fef08a;
-      line-height: 1.25;
-      margin-bottom: 6px;
-    }
-    .save-content p {
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-family: 'Outfit', 'Hind Siliguri', sans-serif;
       font-size: 22px;
-      color: #cbd5e1;
-    }
-    /* Floating Facebook Comment Bubble */
-    .comment-bubble-card {
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(24px);
-      border: 2.5px solid #38bdf8;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(56, 189, 248, 0.3);
-      border-radius: 30px;
-      padding: 32px 38px;
-      display: flex;
-      gap: 22px;
-    }
-    .comment-avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: #0284c7;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      flex-shrink: 0;
-    }
-    .comment-box {
-      flex: 1;
-      background: rgba(30, 41, 59, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      padding: 18px 24px;
-    }
-    .comment-header {
-      font-family: 'Outfit', sans-serif;
-      font-size: 20px;
-      font-weight: 800;
-      color: #38bdf8;
-      margin-bottom: 6px;
-    }
-    .comment-main {
-      font-size: 30px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 6px;
-    }
-    .comment-sub {
-      font-size: 20px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-    /* Bottom Voice Caption Card */
-    .bottom-caption-card {
-      position: absolute;
-      bottom: 200px;
-      left: 60px;
-      right: 60px;
-      background: rgba(3, 7, 18, 0.94);
-      backdrop-filter: blur(24px);
-      border: 3px solid #c084fc;
-      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 35px rgba(192, 132, 252, 0.35);
-      border-radius: 28px;
-      padding: 28px 36px;
-      text-align: center;
-      z-index: 50;
-    }
-    .caption-pill {
-      display: inline-block;
-      background: rgba(168, 85, 247, 0.2);
-      border: 1px solid #c084fc;
+      font-weight: 700;
       color: #e9d5ff;
-      padding: 6px 20px;
-      border-radius: 20px;
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 12px;
     }
-    .caption-text {
-      font-size: 42px;
-      font-weight: 700;
-      line-height: 1.35;
-      color: #ffffff;
-      text-shadow: 0 2px 14px rgba(0,0,0,0.9);
+    .brand-credit .verified-icon {
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
     }
   </style>
 </head>
 <body>
-  <div class="glow-blob-purple"></div>
-
-  <div class="top-header">
-    <div class="top-badge">
-      <span class="dot"></span>
-      <span>💾 SAVE THIS REEL • পরে কাজে লাগবে</span>
+  <div class="focal-container">
+    <div class="cta-pill">
+      <span>🔖 Save করে রাখুন | বন্ধুদের Share করুন</span>
     </div>
-  </div>
-
-  <div class="cta-hub">
-    <!-- Verified Creator Badge -->
-    <div class="creator-card">
-      <div class="creator-left">
-        <div class="avatar-circle">BB</div>
-        <div class="creator-info">
-          <h2>ByteBangla <span class="verified-icon">✓</span></h2>
-          <p>টেকনোলজি সহজ বাংলায় • Verified Creator</p>
-        </div>
-      </div>
-      <div class="follow-pill">+ Follow</div>
+    <div class="brand-credit">
+      <span class="verified-icon">
+        <svg viewBox="0 0 24 24" fill="#38BDF8">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </span>
+      <span>ByteBangla • জীবন বদলে দেওয়া টিপস</span>
     </div>
-
-    <!-- Bookmark / Save Trigger Card -->
-    <div class="save-card">
-      <div class="save-icon-box">🔖</div>
-      <div class="save-content">
-        <h3>পরে দরকার হতে পারে — ভিডিওটি এখনই Save করে রাখুন!</h3>
-        <p>ভবিষ্যতে সহজেই খুঁজে পেতে নিচের Bookmark অপশনে ক্লিক করে রাখুন।</p>
-      </div>
-    </div>
-
-    <!-- Floating Facebook Comment Bubble -->
-    <div class="comment-bubble-card">
-      <div class="comment-avatar">🤖</div>
-      <div class="comment-box">
-        <div class="comment-header">ByteBangla Automated Assistant</div>
-        <div class="comment-main">💬 কমেন্টে লিখুন 'AI'</div>
-        <div class="comment-sub">অফিসিয়াল টুল লিঙ্ক ও স্টেপ-বাই-স্টেপ গাইড সরাসরি আপনার ইনবক্সে চলে যাবে! 🚀</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bottom-caption-card">
-    <div class="caption-pill">⚡ ফ্রি রিসোর্স অ্যাক্সেস</div>
-    <div class="caption-text">${data.phase4Cta}</div>
   </div>
 </body>
 </html>
@@ -2076,25 +1434,25 @@ export async function renderDynamicReelScenes(
     // Scene 1: The Problem State (0s – 5s)
     const html1 = buildScene1ProblemHtml(data);
     await page.setContent(html1, { waitUntil: 'domcontentloaded' });
-    const buf1 = await page.screenshot({ type: 'png' });
+    const buf1 = await page.screenshot({ type: 'png', omitBackground: true });
     fs.writeFileSync(scene1Path, buf1);
 
     // Scene 2: The Tool Reveal (5s – 12s)
     const html2 = buildScene2RevealHtml(data);
     await page.setContent(html2, { waitUntil: 'domcontentloaded' });
-    const buf2 = await page.screenshot({ type: 'png' });
+    const buf2 = await page.screenshot({ type: 'png', omitBackground: true });
     fs.writeFileSync(scene2Path, buf2);
 
     // Scene 3: The Live Solution & Shortcut (12s – 22s)
     const html3 = buildScene3SolutionHtml(data);
     await page.setContent(html3, { waitUntil: 'domcontentloaded' });
-    const buf3 = await page.screenshot({ type: 'png' });
+    const buf3 = await page.screenshot({ type: 'png', omitBackground: true });
     fs.writeFileSync(scene3Path, buf3);
 
     // Scene 4: Viral Save & CTA State (22s – 30s)
     const html4 = buildScene4CtaHtml(data);
     await page.setContent(html4, { waitUntil: 'domcontentloaded' });
-    const buf4 = await page.screenshot({ type: 'png' });
+    const buf4 = await page.screenshot({ type: 'png', omitBackground: true });
     fs.writeFileSync(scene4Path, buf4);
 
     console.log(`[Media Service] ✅ All 4 dynamic synced scenes rendered to disk.`);
