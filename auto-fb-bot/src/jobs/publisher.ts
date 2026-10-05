@@ -13,7 +13,7 @@ import { collectAllRecentMetrics } from '../services/analytics';
  * Enforces minimum 6-hour cooldown between automated publishing runs
  * to protect Facebook page algorithmic health from spam penalties.
  */
-export async function isCooldownActive(minHours: number = 6): Promise<{ active: boolean; remainingMinutes: number }> {
+export async function isCooldownActive(minHours: number = 2): Promise<{ active: boolean; remainingMinutes: number }> {
   try {
     const recent = await getRecentPosts(1);
     if (!recent || recent.length === 0) return { active: false, remainingMinutes: 0 };
@@ -102,14 +102,14 @@ export async function triggerManualPost(
   console.log(`[Autonomous Publisher] 🚀 Starting Facebook Pipeline ${slotId ? `for [${slotId}]` : ''} at ${timestamp} (Manual/Bypass: ${bypassCooldown})`);
 
   try {
-    // Enforce 6-hour Anti-Spam Rate Limit Cooldown ONLY for background scheduled automated runs
+    // Enforce 2-hour Anti-Spam Rate Limit Cooldown ONLY for background scheduled automated runs
     if (!bypassCooldown && slotId && !dryRun && !customTopic) {
-      const cooldown = await isCooldownActive(6);
+      const cooldown = await isCooldownActive(2);
       if (cooldown.active) {
-        console.log(`[Autonomous Publisher] ⏳ Anti-Spam Rate Limit Active! Last post was less than 6 hours ago (${cooldown.remainingMinutes}m remaining). Skipping scheduled background run to protect Facebook Page algorithm.`);
+        console.log(`[Autonomous Publisher] ⏳ Anti-Spam Rate Limit Active! Last post was less than 2 hours ago (${cooldown.remainingMinutes}m remaining). Skipping scheduled background run to protect Facebook Page algorithm.`);
         return {
           success: false,
-          topic: 'Skipped: 6-Hour Anti-Spam Cooldown Active',
+          topic: 'Skipped: 2-Hour Anti-Spam Cooldown Active',
           content: '',
           slotId,
           error: `Cooldown active: ${cooldown.remainingMinutes} minutes remaining.`,
@@ -400,14 +400,14 @@ export async function triggerAutonomousReelPost(
   console.log(`[Reel Publisher] 🎬 Starting Facebook Reel Pipeline for [${slotId}] at ${timestamp} (Manual/Bypass: ${bypassCooldown})`);
 
   try {
-    // Enforce 6-hour Anti-Spam Rate Limit Cooldown ONLY for background scheduled automated runs
+    // Enforce 2-hour Anti-Spam Rate Limit Cooldown ONLY for background scheduled automated runs
     if (!bypassCooldown && slotId && !dryRun && !customTopic) {
-      const cooldown = await isCooldownActive(6);
+      const cooldown = await isCooldownActive(2);
       if (cooldown.active) {
-        console.log(`[Reel Publisher] ⏳ Anti-Spam Rate Limit Active! Last post was less than 6 hours ago (${cooldown.remainingMinutes}m remaining). Skipping scheduled background run to protect Facebook Page algorithm.`);
+        console.log(`[Reel Publisher] ⏳ Anti-Spam Rate Limit Active! Last post was less than 2 hours ago (${cooldown.remainingMinutes}m remaining). Skipping scheduled background run to protect Facebook Page algorithm.`);
         return {
           success: false,
-          topic: 'Skipped: 6-Hour Anti-Spam Cooldown Active',
+          topic: 'Skipped: 2-Hour Anti-Spam Cooldown Active',
           slotId,
           error: `Cooldown active: ${cooldown.remainingMinutes} minutes remaining.`,
           timestamp,

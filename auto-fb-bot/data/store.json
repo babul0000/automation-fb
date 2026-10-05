@@ -1,6 +1,15 @@
 {
   "topics": [
     {
+      "title": "নাম্বার একই, হুবহু ব্যাংক বা বিকাশ নম্বর থেকে কল! এআই ভয়েস ক্লোনিং স্ক্যাম থেকে বাঁচার ভয়ঙ্কর এই উপায়টি কি জানেন?",
+      "titleHash": "7c3dcea1b45d63497fa504c71004408a9ff28dce8b9aded162298368ef8a5482",
+      "category": "Scam Alert & Digital Security",
+      "score": 98,
+      "status": "DISCOVERED",
+      "id": "topic_1791223693332_dmojk",
+      "createdAt": "2026-10-05T18:08:13.332Z"
+    },
+    {
       "title": "অনলাইনে ট্রেনের টিকিট কাটার সময় আর সার্ভার ডাউন পাবে না! দ্রুত টিকিট পাওয়ার অব্যর্থ ট্রিকস",
       "titleHash": "707325e4427e5e9bf7783d1521e84a405d3ecdc8ef268c80698dcaf18212ea1d",
       "category": "Smart Mobile & Life Hacks",
@@ -227,6 +236,14 @@
     }
   ],
   "posts": [
+    {
+      "facebookPostId": "1248686841665823_122116660035444051",
+      "caption": "আপনার পরিচিত ব্যাংক বা বিকাশের অফিশিয়াল নম্বর থেকেই যদি হুবহু কল আসে—আর ফোনের অপর প্রান্তের গলাটাও যদি আপনার চেনা কারো মতো শোনায়, বুঝবেন কি এটি প্রতারণা নাকি সত্যি?\n\nআজকাল এআই বা কৃত্রিম বুদ্ধিমত্তা দিয়ে গলা হুবহু নকল করার ভয়ংকর স্ক্যাম চলছে। একটু সাবধান না হলে চোখের পলকে সর্বস্বান্ত হয়ে যেতে পারেন আপনি বা আপনার পরিবার। হ্যাকাররা এখন প্রযুক্তি ব্যবহার করে আপনার প্রিয়জন বা ব্যাংক কর্মকর্তার কণ্ঠস্বর ক্লোন করে আপনাকে ফাঁদে ফেলছে।\n\nএই মারাত্মক এআই ভয়েস ক্লোনিং স্ক্যাম থেকে বাঁচার ৩টি নিশ্চিত উপায় জেনে রাখুন:\n\n১. ব্যাংক বা পরিচিত কেউ দাবি করে হঠাৎ টাকা বা কোনো জরুরি পিন নম্বর চাইলে, সঙ্গে সঙ্গে কল কেটে দিন।\n২. সন্দেহজনক কোনো কল পেলেই নিজে থেকে ফোন কেটে দিয়ে, আপনার জানা অফিশিয়াল নম্বরে বা ব্যাংকে নিজে কল করে বিষয়টি নিশ্চিত হোন।\n৩. ফোনের অপর প্রান্তের মানুষটি যতই বিশ্বস্ত হোক না কেন, ভুলেও ব্যাংক অ্যাকাউন্ট বা বিকাশের গোপন পিন বা ওটিপি মুখে বলবেন না।\n\n📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই পোস্টটি এখনই Save করে রাখুন আর প্রিয়জনদের সাথে Share করে সতর্ক করুন! এমন প্রতিদিনের জরুরি সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #ScamAlert #DigitalSecurity #VoiceCloning #BanglaTips",
+      "imageUrl": "C:\\project file\\FACEBOOK-AUTOMATION\\auto-fb-bot\\data\\posts\\carousel_1791223703061_1.png",
+      "status": "PUBLISHED",
+      "id": "post_1791223718503_v387k",
+      "publishedAt": "2026-10-05T18:08:38.503Z"
+    },
     {
       "facebookPostId": "1414732700781921",
       "caption": "অনলাইনে ট্রেনের টিকিট কাটার সময় সার্ভার ডাউন পেয়ে কি বারবার মেজাজ খারাপ হয়?\n\nঠিক যখন পেমেন্ট করতে যান, তখন স্ক্রিন আটকে যায় আর চোখের সামনে সব টিকিট শেষ হয়ে যায়। কম্পিউটারের গুগল ক্রোম ব্রাউজারের ইনকগনিটো উইন্ডো ব্যবহার করুন এবং মোবাইল ফিন্যান্সিয়াল সার্ভিস দিয়ে দ্রুত পেমেন্ট সম্পন্ন করুন।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
@@ -500,6 +517,34 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1791223718506",
+      "jobName": "AUTONOMOUS_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Post ID: 1248686841665823_122116660035444051, Topic: নাম্বার একই, হুবহু ব্যাংক বা বিকাশ নম্বর থেকে কল! এআই ভয়েস ক্লোনিং স্ক্যাম থেকে বাঁচার ভয়ঙ্কর এই উপায়টি কি জানেন? [Viral Web Trend], Critic: 85/100, Carousel: 3 slides, FirstComment: false",
+      "createdAt": "2026-10-05T18:08:38.506Z"
+    },
+    {
+      "id": "log_1791223700225",
+      "jobName": "CRITIC_AUDIT_FEED",
+      "status": "COMPLETED",
+      "details": "Topic: \"নাম্বার একই, হুবহু ব্যাংক বা বিকাশ নম্বর থেকে কল! এআই ভয়েস ক্লোনিং স্ক্যাম থেকে বাঁচার ভয়ঙ্কর এই উপায়টি কি জানেন?\", Score: 85/100, Revised: true, Feedback: The draft is quite strong and hits all the required criteria, but it contains a slight hallucination/mismatch in the CTA: it asks users to 'Save করে রাখুন আর ভিডিওটি শেয়ার করুন' (save the *video*), whereas this is a standard text/image Facebook post, not a Reel or video. The Bengali conversational flow can also be made a bit more natural and punchy for the Dhaka mass-market audience.",
+      "createdAt": "2026-10-05T18:08:20.226Z"
+    },
+    {
+      "id": "log_1791222183416",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"টেস্ট রিল টপিক\", Score: 100/100, Revised: false, Feedback: The script is highly relatable, uses a natural conversational tone without any robotic words or developer jargon, starts with a strong pain-point hook, delivers an actionable solution, and includes the exact mandatory CTA required by ByteBangla.",
+      "createdAt": "2026-10-05T17:43:03.416Z"
+    },
+    {
+      "id": "log_1791222162466",
+      "jobName": "CRITIC_AUDIT_FEED",
+      "status": "COMPLETED",
+      "details": "Topic: \"টেস্ট টপিক\", Score: 85/100, Revised: true, Feedback: The draft is quite good and hits all the criteria, but the Bengali conversational tone can be made punchier and more relatable to young Dhaka commuters. Also, the CTA mentions 'ভিডিওটি' (video) while the post is text/image based, which is a minor mismatch.",
+      "createdAt": "2026-10-05T17:42:42.466Z"
+    },
     {
       "id": "log_1791015273590",
       "jobName": "AUTONOMOUS_REEL_PUBLISHER",
@@ -821,34 +866,6 @@
       "status": "SUCCESS",
       "details": "Post ID: 1248686841665823_122115271389444051, Topic: চ্যাটজিপিটি থেকে নিখুঁত উত্তর পাওয়ার ম্যাজিক ফর্মুলা: প্রম্পট ইঞ্জিনিয়ারিংয়ের ৩টি গোপন কৌশল যা আপনার ১ ঘণ্টার কাজ শেষ করবে ৫ মিনিটে!, Critic: 95/100, Carousel: 2 slides, FirstComment: false",
       "createdAt": "2026-09-29T17:11:59.816Z"
-    },
-    {
-      "id": "log_1790701872306",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"চ্যাটজিপিটি থেকে নিখুঁত উত্তর পাওয়ার ম্যাজিক ফর্মুলা: প্রম্পট ইঞ্জিনিয়ারিংয়ের ৩টি গোপন কৌশল যা আপনার ১ ঘণ্টার কাজ শেষ করবে ৫ মিনিটে!\", Score: 95/100, Revised: true, Feedback: The draft is strong, factual, and well-structured. However, to push it to a true viral Facebook standard, the hook can be made punchier, and the transition into Bengali needs to feel even more native and conversational rather than textbook-style.",
-      "createdAt": "2026-09-29T17:11:12.306Z"
-    },
-    {
-      "id": "log_1790700958178",
-      "jobName": "AUTONOMOUS_PUBLISHER",
-      "status": "SUCCESS",
-      "details": "Post ID: 1248686841665823_122115269181444051, Topic: ছাত্র-ছাত্রী ও প্রফেশনালদের জন্য মাত্র ২ মিনিটে যেকোনো বড় আর্টিকেল বা পিডিএফ সামারি করার সেরা এআই টুল 📚✨, Critic Score: 95/100",
-      "createdAt": "2026-09-29T16:55:58.178Z"
-    },
-    {
-      "id": "log_1790700947910",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"ছাত্র-ছাত্রী ও প্রফেশনালদের জন্য মাত্র ২ মিনিটে যেকোনো বড় আর্টিকেল বা পিডিএফ সামারি করার সেরা এআই টুল 📚✨\", Score: 95/100, Revised: true, Feedback: The draft is technically very accurate, recommending real and effective tools (ChatGPT, Claude, Perplexity). The Bengali flow is natural, engaging, and fits the 'ByteBangla' brand voice. The hook is solid, and the actionable tips with a clean CTA and hashtags are well-structured.",
-      "createdAt": "2026-09-29T16:55:47.910Z"
-    },
-    {
-      "id": "log_1790700010253",
-      "jobName": "AUTONOMOUS_PUBLISHER",
-      "status": "SUCCESS",
-      "details": "Post ID: 1248686841665823_122115267657444051, Topic: অ্যাডভান্সড প্রম্পট ইঞ্জিনিয়ারিং: এআই থেকে নিখুঁত কোড ও কন্টেন্ট পাওয়ার জাদুকরী কৌশল",
-      "createdAt": "2026-09-29T16:40:10.253Z"
     }
   ]
 }

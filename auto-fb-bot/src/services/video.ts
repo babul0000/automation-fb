@@ -222,9 +222,22 @@ export async function generateHumanBengaliVoiceover(
         timeout: 60000,
       });
 
-      await tts.ttsPromise(cleanSpeech, outputAudioPath);
+      let edgeSuccess = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await tts.ttsPromise(cleanSpeech, outputAudioPath);
+          if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
+            edgeSuccess = true;
+            break;
+          }
+        } catch (attemptErr: any) {
+          if (attempt === 2) throw attemptErr;
+          console.warn(`[Video Engine Notice] Edge TTS attempt ${attempt} notice: ${attemptErr.message || attemptErr}. Retrying in 2s...`);
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
 
-      if (fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
+      if (edgeSuccess && fs.existsSync(outputAudioPath) && fs.statSync(outputAudioPath).size > 1000) {
         const duration = await getAudioDuration(outputAudioPath);
         let wordCues: WordCue[] = [];
         const subJsonPath = outputAudioPath + '.json';
