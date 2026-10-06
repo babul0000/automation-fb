@@ -1393,7 +1393,18 @@ app.get('/', async (_req: Request, res: Response) => {
           const res = await fetch('/api/trigger-slot/' + slotId, {
             method: 'POST',
           });
-          const json = await res.json();
+          const text = await res.text();
+          let json;
+          try {
+            json = JSON.parse(text);
+          } catch (parseErr) {
+            if (res.status === 502 || res.status === 503 || res.status === 504) {
+              alert('⏳ রেন্ডার ক্লাউড সার্ভার আপডেট বা রিস্টার্ট হচ্ছে। অনুগ্রহ করে ৩০ সেকেন্ড পর আবার চেষ্টা করুন।');
+              return;
+            }
+            alert('সার্ভার রেসপন্স এরর (' + res.status + '): অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+            return;
+          }
           if (json.success) {
             alert('🌟 পোস্ট সফলভাবে ফেসবুকে লাইভ পাবলিশ করা হয়েছে! পোস্ট আইডি: ' + json.data.postId);
             window.location.reload();

@@ -42,5 +42,7 @@ auto-fb-bot/data/*.pcm
 *.wav
 *.pcm
 !auto-fb-bot/assets/audio/**
+!auto-fb-bot/assets/videos/**
+!assets/videos/**
 auto-fb-bot/output/
 output/

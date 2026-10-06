@@ -463,6 +463,9 @@ export async function generateHumanBengaliVoiceover(
  */
 export function getAvailableMediaVideos(): string[] {
   const candidateDirs = [
+    path.resolve(__dirname, '..', '..', 'assets', 'videos'),
+    path.resolve(process.cwd(), 'assets', 'videos'),
+    path.resolve(process.cwd(), 'auto-fb-bot', 'assets', 'videos'),
     path.resolve(process.cwd(), '..', 'media'),
     path.resolve(process.cwd(), 'media'),
     'C:\\project file\\FACEBOOK-AUTOMATION\\media',
@@ -484,20 +487,6 @@ export function getAvailableMediaVideos(): string[] {
     }
   }
 
-  // Fallback to assets/videos if media/ is empty
-  const fallbackDir = path.resolve(process.cwd(), 'assets', 'videos');
-  if (fs.existsSync(fallbackDir)) {
-    try {
-      const files = fs
-        .readdirSync(fallbackDir)
-        .filter((f) => /\.(mp4|mov|webm)$/i.test(f))
-        .map((f) => path.join(fallbackDir, f));
-      if (files.length > 0) {
-        return files;
-      }
-    } catch {}
-  }
-
   return [];
 }
 
@@ -511,8 +500,24 @@ let lastSelectedVideoPath = '';
  * 3. Rotational selection ensuring consecutive posts NEVER repeat the same video file
  */
 export function selectMediaBackgroundVideo(toolBrand?: string, topic?: string): string {
-  const videos = getAvailableMediaVideos();
+  let videos = getAvailableMediaVideos();
   if (videos.length === 0) {
+    console.warn(`[Video Engine Warning] No background video files found. Generating dynamic 1080x1920 fallback video...`);
+    const fallbackDir = path.resolve(process.cwd(), 'data', 'temp_reels');
+    if (!fs.existsSync(fallbackDir)) fs.mkdirSync(fallbackDir, { recursive: true });
+    const fallbackPath = path.join(fallbackDir, 'synthetic_bg.mp4');
+    if (!fs.existsSync(fallbackPath)) {
+      const ffmpegBin = ffmpegInstaller?.path || 'ffmpeg';
+      try {
+        const { execSync } = require('child_process');
+        execSync(`"${ffmpegBin}" -f lavfi -i "color=c=0x090d16:s=1080x1920:d=35,format=yuv420p" -c:v libx264 -preset ultrafast -y "${fallbackPath}"`, { stdio: 'ignore', timeout: 30000 });
+      } catch (err: any) {
+        console.warn(`[Video Engine Warning] Fallback video creation failed: ${err.message}`);
+      }
+    }
+    if (fs.existsSync(fallbackPath)) {
+      return fallbackPath;
+    }
     throw new Error('No background video files found in ./media/ directory.');
   }
 
