@@ -1,6 +1,15 @@
 {
   "topics": [
     {
+      "title": "আপনার বিকাশ বা ব্যাংকের নামেই কি কল আসছে? জালিয়াতি থেকে বাঁচতে ১ সেকেন্ডে যেভাবে আসল-নকল চেক করবেন",
+      "titleHash": "c7344f9892f3bfb4896a1d83d1c5b388f3bd3c6fde17eb63342494ce027714e2",
+      "category": "Digital Safety Alert",
+      "score": 99,
+      "status": "DISCOVERED",
+      "id": "topic_1791300386109_45ahj",
+      "createdAt": "2026-10-06T15:26:26.109Z"
+    },
+    {
       "title": "ফেসবুকে আপনার অজান্তেই কি অন্য কেউ ছবি বা স্ট্যাটাস দেখছে? এক ক্লিকে চেক করুন গোপন প্রাইভেসি সেটিংস",
       "titleHash": "c34b6d2f0ce83cf4f92f32da139824a7c942166eeae4bd093f569656a09ce219",
       "category": "Social Media Privacy Alert",
@@ -254,6 +263,14 @@
     }
   ],
   "posts": [
+    {
+      "facebookPostId": "1248686841665823_122116853463444051",
+      "caption": "বিকাশ বা ব্যাংক থেকে ফোন দিয়ে কেউ কি আপনার অ্যাকাউন্ট নিয়ে ভয় দেখাচ্ছে? সাবধান! আসল নম্বরের হুবহু নকল করে এখন সর্বস্বান্ত করছে প্রতারকরা।\n\nমাথায় রাখবেন, ব্যাংক বা বিকাশ থেকে কখনো আপনার কাছে গোপন পিন, ওটিপি বা পাসওয়ার্ড জানতে চাওয়া হয় না। অচেনা নম্বর থেকে এমন কল আসলে যা করবেন:\n\n১. এক সেকেন্ডেই আসল-নকল যাচাই করতে কল আসা নম্বরটি Truecaller অ্যাপে সার্চ করুন বা সাথে সাথে ফোন কেটে অফিশিয়াল অ্যাপ থেকে হেল্পলাইন নম্বর মিলিয়ে নিন।\n২. যত বড় বিপদের ভয়ই দেখাক না কেন, ভুলেও কখনো আপনার পিন নম্বর বা ওটিপি মুখে বলবেন না।\n৩. সন্দেহ হলে ফোন কেটে দিয়ে সরাসরি আপনার কাছের ব্যাংকের শাখায় যোগাযোগ করুন বা অফিশিয়াল নম্বরে কল দিন।\n\n📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই পোস্টটি এখনই Save করে রাখুন আর প্রিয়জনদের সাথে Share করে তাদের সতর্ক করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #ScamAlert #DigitalSecurity #OnlineSafety #BanglaTips #Bangladesh",
+      "imageUrl": "C:\\project file\\FACEBOOK-AUTOMATION\\auto-fb-bot\\data\\posts\\carousel_1791300395904_1.png",
+      "status": "PUBLISHED",
+      "id": "post_1791300412924_uviei",
+      "publishedAt": "2026-10-06T15:26:52.924Z"
+    },
     {
       "facebookPostId": "1628104012089858",
       "caption": "আজকে ফেসবুকের গোপন প্রাইভেসি সেটিংস নিয়ে যে ভীতি ছড়াচ্ছে, আপনার অজান্তেই কি কেউ আপনার ছবি দেখছে?\n\nঅনেকেই বুঝতে পারেন না কীভাবে নিজেদের অ্যাকাউন্ট সুরক্ষিত রাখবেন, অথচ একটু সচেতন হলেই প্রোফাইল নিরাপদ রাখা সম্ভব। ফেসবুকের সেটিংস অপশনে গিয়ে প্রাইভেসি চেকআপে ঢুকে কে কে আপনার ছবি দেখবে তা শুধু বন্ধুদের জন্য সেট করে দিন।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
@@ -542,6 +559,20 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1791300412932",
+      "jobName": "AUTONOMOUS_SLOT_FEED",
+      "status": "SUCCESS",
+      "details": "Post ID: 1248686841665823_122116853463444051, Topic: আপনার বিকাশ বা ব্যাংকের নামেই কি কল আসছে? জালিয়াতি থেকে বাঁচতে ১ সেকেন্ডে যেভাবে আসল-নকল চেক করবেন [Social Buzz & Consumer Safety], Critic: 83/100, Carousel: 3 slides, FirstComment: false",
+      "createdAt": "2026-10-06T15:26:52.932Z"
+    },
+    {
+      "id": "log_1791300392792",
+      "jobName": "CRITIC_AUDIT_FEED",
+      "status": "COMPLETED",
+      "details": "Topic: \"আপনার বিকাশ বা ব্যাংকের নামেই কি কল আসছে? জালিয়াতি থেকে বাঁচতে ১ সেকেন্ডে যেভাবে আসল-নকল চেক করবেন\", Score: 83/100, Revised: true, Feedback: The draft is good and addresses a very relevant issue, but it misses a crucial element promised in the headline: it doesn't actually explain how to check the real vs fake number in '1 second' (like using Truecaller or checking the official app/dialing directly). Also, the CTA mentions 'ভিডিওটি Save করে রাখুন' (Save the video) even though this is a text/image Facebook post, not a video. The Bengali tone can be made warmer and more conversational.",
+      "createdAt": "2026-10-06T15:26:32.792Z"
+    },
     {
       "id": "log_1791298373698",
       "jobName": "AUTONOMOUS_REEL_PUBLISHER",
@@ -877,20 +908,6 @@
       "status": "COMPLETED",
       "details": "Topic: \"r/ChatGPT-তে ভাইরাল হওয়া এই সিক্রেট প্রম্পট ফর্মুলা ব্যবহার করে চ্যাটজিপিটি থেকে একদম নিখুঁত এবং প্রফেশনাল উত্তর পাওয়ার উপায়!\", Score: 95/100, Revised: true, Feedback: The draft is strong, factual, and follows the ByteBangla style well. However, the hook can be made punchier to immediately grab attention in the Facebook feed, and the Bengali flow can be tightened to sound more native and energetic.",
       "createdAt": "2026-09-29T18:58:07.293Z"
-    },
-    {
-      "id": "log_1790707601073",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"Product Hunt-এ ট্রেন্ডিং ৩টি নতুন AI টুল\", Score: 95/100, Revised: true, Feedback: The draft is already well-structured, accurate, and engaging. Gamma, HeyGen, and Taskade are indeed trending tools. The Bengali is natural and conversational ('চোখের পলকে', 'একাই একশ'). Minor polish applied to enhance readability and smooth out the flow for maximum Facebook engagement.",
-      "createdAt": "2026-09-29T18:46:41.073Z"
-    },
-    {
-      "id": "log_1790707575615",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"Product Hunt-এ ট্রেন্ডিং ৩টি নতুন AI টুল\", Score: 83/100, Revised: true, Feedback: The draft is structured well with strong engagement loops. However, the 3 tools are described generically without mentioning their actual names (e.g., Gamma, Fireflies, Opus Clip), which lowers value delivery and credibility. The Bengali flow is mostly natural, but the hook can be punchier to stop the scroll completely.",
-      "createdAt": "2026-09-29T18:46:15.615Z"
     }
   ]
 }
