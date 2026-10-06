@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import puppeteer from 'puppeteer-core';
+import { Resvg } from '@resvg/resvg-js';
 import { env, isConfiguredForGemini } from '../config/env';
 
 /**
@@ -318,6 +319,139 @@ export function getChromeExecutablePath(): string {
 }
 
 /**
+ * Zero-dependency native SVG renderer using @resvg/resvg-js and local HindSiliguri font.
+ * Ensures 100% reliable rendering on cloud Linux containers (Render, Railway, Docker) where Chrome is not installed.
+ */
+export function renderInfographicWithResvg(
+  data: InfographicData,
+  width: number = 1080,
+  height: number = 1350
+): Buffer {
+  const escapeXml = (str: string) =>
+    (str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+
+  const category = escapeXml(data.category || '💡 স্মার্ট টিপস');
+  const headline = escapeXml(data.headline || '');
+  const subhead = escapeXml(data.subhead || 'দরকারি ও জরুরি তথ্য');
+  const cta = escapeXml(data.cta || 'দরকারি তথ্যটি বন্ধুদের সাথে Share করুন');
+
+  const headlineWords = headline.split(' ');
+  let line1 = headline;
+  let line2 = '';
+  if (headlineWords.length > 5) {
+    const mid = Math.ceil(headlineWords.length / 2);
+    line1 = headlineWords.slice(0, mid).join(' ');
+    line2 = headlineWords.slice(mid).join(' ');
+  }
+
+  const cardColors = [
+    { numBg: 'rgba(2, 132, 199, 0.25)', border: '#38bdf8', text: '#38bdf8' },
+    { numBg: 'rgba(250, 204, 21, 0.25)', border: '#facc15', text: '#facc15' },
+    { numBg: 'rgba(74, 222, 128, 0.25)', border: '#4ade80', text: '#4ade80' },
+  ];
+
+  const cardYStart = line2 ? 370 : 330;
+  const cardHeight = 220;
+  const cardGap = 32;
+
+  let cardsSvg = '';
+  data.steps.slice(0, 3).forEach((s, idx) => {
+    const y = cardYStart + idx * (cardHeight + cardGap);
+    const color = cardColors[idx % cardColors.length];
+    const sTitle = escapeXml(s.title);
+    const sDesc = escapeXml(s.desc);
+
+    cardsSvg += `
+      <g transform="translate(64, ${y})">
+        <rect width="952" height="${cardHeight}" rx="22" fill="#0f172a" fill-opacity="0.9" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1.5" />
+        <rect x="28" y="45" width="70" height="70" rx="18" fill="${color.numBg}" stroke="${color.border}" stroke-width="2" />
+        <text x="63" y="92" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="34" font-weight="bold" fill="${color.text}" text-anchor="middle">${s.num}</text>
+        <text x="125" y="75" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="30" font-weight="bold" fill="#f8fafc">${sTitle}</text>
+        <text x="125" y="125" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="24" fill="#cbd5e1">${sDesc}</text>
+      </g>
+    `;
+  });
+
+  const svg = `
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f1f38" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+    <radialGradient id="glow1" cx="20%" cy="10%" r="40%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glow2" cx="80%" cy="90%" r="40%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="${width}" height="${height}" fill="url(#bgGrad)" />
+  <rect width="${width}" height="${height}" fill="url(#glow1)" />
+  <rect width="${width}" height="${height}" fill="url(#glow2)" />
+
+  <!-- Top Header -->
+  <g transform="translate(64, 56)">
+    <rect width="280" height="52" rx="26" fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" stroke-width="1.5" />
+    <text x="140" y="34" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="22" font-weight="bold" fill="#38bdf8" text-anchor="middle">${category}</text>
+
+    <g transform="translate(732, 0)">
+      <rect width="220" height="52" rx="16" fill="rgba(15, 23, 42, 0.85)" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1" />
+      <circle cx="30" cy="26" r="5" fill="#38bdf8" />
+      <text x="120" y="34" font-family="sans-serif" font-size="20" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1.5">BYTEBANGLA</text>
+    </g>
+  </g>
+
+  <!-- Headline -->
+  <g transform="translate(64, 175)">
+    <text x="0" y="45" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="46" font-weight="bold" fill="#ffffff">${line1}</text>
+    ${line2 ? `<text x="0" y="105" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="46" font-weight="bold" fill="#ffffff">${line2}</text>` : ''}
+    <text x="0" y="${line2 ? 155 : 95}" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="24" fill="#94a3b8">${subhead}</text>
+  </g>
+
+  <!-- Cards -->
+  ${cardsSvg}
+
+  <!-- Footer CTA Bar -->
+  <g transform="translate(64, 1210)">
+    <rect width="952" height="74" rx="20" fill="#090d16" stroke="rgba(255, 255, 255, 0.16)" stroke-width="1.5" />
+    <text x="32" y="46" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="24" font-weight="bold" fill="#facc15">📌 ${cta}</text>
+    <text x="910" y="46" font-family="sans-serif" font-size="22" font-weight="bold" fill="#38bdf8" text-anchor="end">⚡ ByteBangla</text>
+  </g>
+</svg>
+`;
+
+  const fontCandidates = [
+    path.resolve(process.cwd(), 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+    path.resolve(__dirname, '..', '..', 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+  ];
+  const existingFont = fontCandidates.find((f) => fs.existsSync(f));
+
+  const resvgOptions: any = {
+    fitTo: { mode: 'width', value: width },
+  };
+
+  if (existingFont) {
+    resvgOptions.font = {
+      fontFiles: [existingFont],
+      defaultFontFamily: 'Hind Siliguri',
+      loadSystemFonts: true,
+    };
+  }
+
+  const resvg = new Resvg(svg, resvgOptions);
+  return Buffer.from(resvg.render().asPng());
+}
+
+/**
  * Renders a pixel-perfect Single High-Impact Master Infographic (1080x1350 Portrait / 1080x1080 Square)
  * Features zero code jargon, large 30px card titles, 24px descriptions, category pill, and ByteBangla footer.
  */
@@ -327,11 +461,12 @@ export async function renderInfographicToPng(
   height: number = 1350,
   chromePath: string = getChromeExecutablePath()
 ): Promise<Buffer> {
-  const browser = await puppeteer.launch({
-    executablePath: chromePath,
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
-  });
+  try {
+    const browser = await puppeteer.launch({
+      executablePath: chromePath,
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+    });
 
   try {
     const page = await browser.newPage();
@@ -607,6 +742,10 @@ export async function renderInfographicToPng(
   } finally {
     await browser.close();
   }
+} catch (browserError: any) {
+  console.warn(`[Media Service Warning] Puppeteer browser launch failed (${browserError.message}). Executing native SVG Resvg fallback...`);
+  return renderInfographicWithResvg(data, width, height);
+}
 }
 
 /**
