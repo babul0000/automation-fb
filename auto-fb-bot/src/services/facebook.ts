@@ -63,7 +63,8 @@ async function uploadSinglePhoto(
   caption?: string,
   published: boolean = true
 ): Promise<{ id: string; post_id?: string }> {
-  const endpoint = `https://graph.facebook.com/v21.0/${env.PAGE_ID}/photos`;
+  const targetId = env.PAGE_ID || 'me';
+  const endpoint = `https://graph.facebook.com/v21.0/${targetId}/photos`;
 
   if (imagePathOrUrl.startsWith('http://') || imagePathOrUrl.startsWith('https://')) {
     const res = await axios.post<{ id: string; post_id?: string }>(
@@ -82,11 +83,14 @@ async function uploadSinglePhoto(
     return res.data;
   }
 
-  // Handle local file upload via binary multipart
+  // Handle local file upload via binary multipart (/photos endpoint)
   if (fs.existsSync(imagePathOrUrl)) {
     const fileBuffer = fs.readFileSync(imagePathOrUrl);
+    const isJpg = imagePathOrUrl.toLowerCase().endsWith('.jpg') || imagePathOrUrl.toLowerCase().endsWith('.jpeg');
+    const mimeType = isJpg ? 'image/jpeg' : 'image/png';
+
     const form = new FormData();
-    form.append('source', new Blob([fileBuffer], { type: 'image/png' }), path.basename(imagePathOrUrl));
+    form.append('source', new Blob([fileBuffer], { type: mimeType }), path.basename(imagePathOrUrl));
     if (caption) {
       form.append('caption', caption.trim());
     }

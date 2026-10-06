@@ -3,9 +3,9 @@ import { env } from '../config/env';
 import { discoverTopTrendingTopic, DiscoveredTopic } from '../services/trends';
 import { generateBanglaPostBundle, BanglaPostBundle, ReelsScriptData } from '../services/ai';
 import { auditAndReflectPost, auditReelsScript, CriticAuditResult } from '../services/critic';
-import { generateCarouselSlides } from '../services/media';
+import { generateSingleMasterInfographic, generateCarouselSlides } from '../services/media';
 import { generateReelVideo } from '../services/video';
-import { publishMultiPhotoPost, publishReelToFacebookPage, addCommentToPost, pinCommentToPost } from '../services/facebook';
+import { publishPhotoToFacebookPage, publishMultiPhotoPost, publishReelToFacebookPage, addCommentToPost, pinCommentToPost } from '../services/facebook';
 import { savePost, saveJobLog, saveComment, saveReply, getAutomationSettings, updateSlotExecution, getRecentPosts } from '../services/db';
 import { collectAllRecentMetrics } from '../services/analytics';
 
@@ -142,10 +142,10 @@ export async function triggerManualPost(
 
     console.log(`[Autonomous Publisher] 🏆 Critic Evaluation: ${audit.overallScore}/100 (Revised: ${audit.wasRevised})`);
 
-    // 4. Generate Multi-Slide Branded Visual Carousel (Cover + Infographic Cheatsheet + Summary)
-    console.log(`[Autonomous Publisher] 🎨 Generating branded 3-slide visual tech carousel with ByteBangla watermark...`);
-    const slides = await generateCarouselSlides(selectedTopicTitle);
-    const imageUrls = slides.map((s) => s.imageUrl);
+    // 4. Generate Single High-Impact Master Infographic (1080x1350)
+    console.log(`[Autonomous Publisher] 🎨 Generating Single High-Impact Master Infographic (1080x1350) with zero code jargon...`);
+    const masterInfographic = await generateSingleMasterInfographic(selectedTopicTitle, topicCategory);
+    const imageUrls = [masterInfographic.imageUrl];
 
     // 5. If Dry-Run Mode is enabled, skip Facebook publishing
     if (dryRun) {
@@ -173,9 +173,9 @@ export async function triggerManualPost(
       };
     }
 
-    // 6. Publish Multi-Photo Post to Facebook Page
-    console.log(`[Autonomous Publisher] 📤 Uploading 3-slide Carousel Post to Meta Graph API...`);
-    const fbRes = await publishMultiPhotoPost(imageUrls, finalCaption);
+    // 6. Publish Single Master Infographic Post to Facebook Page (/me/photos)
+    console.log(`[Autonomous Publisher] 📤 Uploading Single Master Infographic Post to Meta Graph API (/me/photos)...`);
+    const fbRes = await publishPhotoToFacebookPage(masterInfographic.imagePath, finalCaption);
 
     // 7. First Comment Link Automation (Reach Hack - respect settings)
     const settings = getAutomationSettings();
@@ -190,7 +190,10 @@ export async function triggerManualPost(
         firstCommentId = commentRes.id;
 
         // Auto-pin the first comment to spark community conversation
-        await pinCommentToPost(fbRes.post_id, commentRes.id).catch(() => {});
+        console.log(`[Autonomous Publisher] 📌 Immediately pinning first engagement comment (${commentRes.id})...`);
+        await pinCommentToPost(fbRes.post_id, commentRes.id).catch((pinErr: any) => {
+          console.warn(`[Autonomous Publisher Warning] Pin comment notice: ${pinErr.message}`);
+        });
 
         await saveComment({
           facebookCommentId: commentRes.id,
@@ -221,7 +224,7 @@ export async function triggerManualPost(
     await saveJobLog(
       slotId ? `AUTONOMOUS_${slotId.toUpperCase()}` : 'AUTONOMOUS_PUBLISHER',
       'SUCCESS',
-      `Post ID: ${fbRes.post_id}, Topic: ${selectedTopicTitle} [${topicSource}], Critic: ${audit.overallScore}/100, Carousel: ${imageUrls.length} slides, FirstComment: ${Boolean(firstCommentId)}`
+      `Post ID: ${fbRes.post_id}, Topic: ${selectedTopicTitle} [${topicSource}], Critic: ${audit.overallScore}/100, Master Infographic: ${masterInfographic.imagePath}, FirstComment: ${Boolean(firstCommentId)}`
     );
 
     console.log(`[Autonomous Publisher] 🌟 PIPELINE COMPLETED! Post ID: ${fbRes.post_id}`);

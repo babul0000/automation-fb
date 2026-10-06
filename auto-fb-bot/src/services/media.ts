@@ -176,58 +176,62 @@ export function getBrandIconSvg(brand?: string, size: number = 28): string {
 }
 
 /**
- * Extracts structured 3-step cheat sheet data + code mockup snippet from Bengali topic
+ * Extracts structured 3-step actionable data from Bengali topic for Single Master Infographic
  */
-export async function extractInfographicDataWithAI(topicTitle: string): Promise<InfographicData> {
+export async function extractInfographicDataWithAI(
+  topicTitle: string,
+  categoryOverride?: string
+): Promise<InfographicData> {
   const fallback: InfographicData = {
-    category: 'এআই প্রোডাক্টিভিটি',
-    headline: topicTitle.slice(0, 50),
-    subhead: 'ঘণ্টার কাজ ৫ মিনিটে শেষ করার ৩টি প্র্যাকটিক্যাল টেকনিক',
-    toolBrand: 'chatgpt',
-    snippetType: 'PROMPT',
-    mockupSnippet: 'Act as a Senior Engineer: Analyze this code and optimize performance for production.',
+    category: categoryOverride || '💡 স্মার্ট টিপস',
+    headline: topicTitle.slice(0, 60),
+    subhead: 'নিজের ও পরিবারের সুরক্ষায় ৩টি অত্যন্ত জরুরি নিয়ম',
     steps: [
       {
-        num: '01',
-        title: 'প্রম্পট / কোড টেমপ্লেট কপি করুন',
-        desc: 'সরাসরি টুল ইন্টারফেসে পেস্ট করে প্যারামিটার সেট করুন',
+        num: '০১',
+        title: 'অচেনা কল বা বার্তায় সতর্ক থাকুন',
+        desc: 'অচেনা নম্বর থেকে পিন বা ওটিপি চাইলে কখনোই মুখে বলবেন না।',
       },
       {
-        num: '02',
-        title: 'অটোমেটেড রেজাল্ট এক্সিকিউট করুন',
-        desc: 'এআই নিজে থেকে সেরা আউটপুট ও সলিউশন জেনারেট করবে',
+        num: '০২',
+        title: 'তাৎক্ষণিকভাবে নম্বর যাচাই করুন',
+        desc: 'সরাসরি অফিশিয়াল কাস্টমার কেয়ার বা হেল্পলাইনে কল দিয়ে নিশ্চিত হোন।',
       },
       {
-        num: '03',
-        title: '১-ক্লিকে সেভ ও প্রোডাকশনে ব্যবহার',
-        desc: 'আপনার প্রজেক্টে সাথে সাথে এপ্লাই করে সময় বাঁচান',
+        num: '০৩',
+        title: 'প্রয়োজনে দ্রুত ব্যবস্থা নিন',
+        desc: 'সন্দেহ হলে অ্যাকাউন্ট সাময়িক ব্লক করুন এবং অভিযোগ দায়ের করুন।',
       },
     ],
-    cta: 'লিঙ্ক পেতে কমেন্টে "AI" লিখুন এবং পোস্টটি সেভ করুন!',
+    cta: 'দরকারি তথ্যটি বন্ধুদের সাথে Share করুন',
   };
 
   if (!isConfiguredForGemini()) {
     return fallback;
   }
 
-  const prompt = `You are the lead visual designer and infographic editor for "ByteBangla" (সহজ বাংলায় এআই ও টেক টিপস).
-Analyze this tech topic: "${topicTitle}".
-Create structured, authentic Bengali content for a 1080x1080 Facebook Infographic Cheat Sheet with a realistic macOS code/prompt mockup.
+  const prompt = `You are the lead visual infographic editor for "ByteBangla" (সহজ বাংলায় টেক টিপস ও ডিজিটাল সতর্কতা).
+Analyze this topic: "${topicTitle}".
+Create structured, high-value Bengali content for a Single High-Impact Master Infographic (1080x1350) for Facebook.
+
+CRITICAL RULES:
+1. ZERO CODE JARGON: Strictly NO programming code, NO terminal commands, NO "//", NO "git commit", NO developer syntax. Everything must be in crystal-clear, natural, everyday Bengali for general smartphone users (ages 15-50).
+2. Exactly 3 High-Impact Cards:
+   - Each card must have a punchy 4-7 word title in Bengali (for 30px bold display).
+   - Each card must have a clear, actionable 1-2 sentence description explaining exactly what to do (for 24px clean display).
+   - Focus on practical everyday utility (scam protection, mobile settings, useful web features, digital safety).
 
 Return ONLY a valid JSON object without markdown fences:
 {
-  "category": "ছোট ১-২ শব্দের ক্যাটাগরি (যেমন: এআই টুলস, কোডিং হ্যাক্স, ডাটা অটোমেশন)",
-  "headline": "বড় ও বোল্ড আকর্ষণীয় বাংলা শিরোনাম (ইউজারের পেইন পয়েন্ট ও সমাধান, সর্বোচ্চ ৮-১০ শব্দ)",
-  "subhead": "১ লাইনে বাস্তব সুফল (যেমন: ঘণ্টার কাজ শেষ করুন মাত্র ২ মিনিটে)",
-  "toolBrand": "chatgpt" or "vscode" or "github" or "sheets" or "notion" or "python",
-  "snippetType": "CODE" or "FORMULA" or "PROMPT" or "SHORTCUT",
-  "mockupSnippet": "A real, concrete 1-2 line copy-pasteable prompt, formula, or shortcut (e.g. '=AI.EXTRACT(A2, \\"Email\\")' or 'Ctrl + Shift + P > Format Document' or 'Act as a Senior React Engineer: [Task]...')",
+  "category": "ছোট ক্যাটাগরি ইমোজি সহ (যেমন: 🚨 সাইবার সতর্কতা, 💡 মোবাইল ট্রিকস, ⚡ লাইফ হ্যাক, 🛡️ ডিজিটাল নিরাপত্তা)",
+  "headline": "বড় ও বোল্ড আকর্ষণীয় বাংলা শিরোনাম (পেইন পয়েন্ট ও সমাধান, সর্বোচ্চ ৮-১২ শব্দ)",
+  "subhead": "১ লাইনের সহজ প্রেক্ষাপট (যেমন: নিজেকে সুরক্ষিত রাখতে ৩টি অত্যন্ত জরুরি নিয়ম)",
   "steps": [
-    { "num": "01", "title": "স্টেপ ১ শিরোনাম", "desc": "১ লাইনে বাস্তবসম্মত করণীয় ধাপ" },
-    { "num": "02", "title": "স্টেপ ২ শিরোনাম", "desc": "১ লাইনে বাস্তবসম্মত করণীয় ধাপ" },
-    { "num": "03", "title": "স্টেপ ৩ শিরোনাম", "desc": "১ লাইনে ফাইনাল রেজাল্ট" }
+    { "num": "০১", "title": "স্টেপ ১ এর স্পষ্ট শিরোনাম", "desc": "সহজ ভাষায় বাস্তবসম্মত নির্দেশিকা যা যে কেউ অনুসরণ করতে পারে" },
+    { "num": "০২", "title": "স্টেপ ২ এর স্পষ্ট শিরোনাম", "desc": "সহজ ভাষায় বাস্তবসম্মত নির্দেশিকা যা যে কেউ অনুসরণ করতে পারে" },
+    { "num": "০৩", "title": "স্টেপ ৩ এর স্পষ্ট শিরোনাম", "desc": "সহজ ভাষায় বাস্তবসম্মত নির্দেশিকা যা যে কেউ অনুসরণ করতে পারে" }
   ],
-  "cta": "লিঙ্ক পেতে কমেন্টে 'AI' লিখুন এবং পোস্টটি সেভ করুন!"
+  "cta": "দরকারি তথ্যটি বন্ধুদের সাথে Share করুন"
 }`;
 
   const modelsToTry = [
@@ -251,24 +255,21 @@ Return ONLY a valid JSON object without markdown fences:
       );
 
       const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (raw) {
-      const cleaned = raw.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
-      const parsed = JSON.parse(cleaned);
-      if (parsed.headline && Array.isArray(parsed.steps) && parsed.steps.length >= 3) {
-        return {
-          category: parsed.category || 'এআই ও টেক টিপস',
-          headline: parsed.headline,
-          subhead: parsed.subhead || 'সহজ ৩টি ধাপে শিখে নিন সেরা টেকনিক',
-          toolBrand: parsed.toolBrand || 'chatgpt',
-          snippetType: parsed.snippetType || 'PROMPT',
-          mockupSnippet: parsed.mockupSnippet || 'Act as a Senior Specialist: Explain this concept with 3 practical examples.',
-          steps: parsed.steps.slice(0, 3).map((s: any, idx: number) => ({
-            num: `0${idx + 1}`,
-            title: s.title,
-            desc: s.desc,
-          })),
-          cta: parsed.cta || 'লিঙ্ক পেতে কমেন্টে "AI" লিখুন এবং পোস্টটি সেভ করুন!',
-        };
+      if (raw) {
+        const cleaned = raw.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+        const parsed = JSON.parse(cleaned);
+        if (parsed.headline && Array.isArray(parsed.steps) && parsed.steps.length >= 3) {
+          return {
+            category: parsed.category || categoryOverride || '💡 স্মার্ট টিপস',
+            headline: parsed.headline,
+            subhead: parsed.subhead || 'নিজের ও পরিবারের সুরক্ষায় ৩টি জরুরি নিয়ম',
+            steps: parsed.steps.slice(0, 3).map((s: any, idx: number) => ({
+              num: `০${idx + 1}`,
+              title: s.title,
+              desc: s.desc,
+            })),
+            cta: parsed.cta || 'দরকারি তথ্যটি বন্ধুদের সাথে Share করুন',
+          };
         }
       }
     } catch (err: any) {
@@ -279,15 +280,52 @@ Return ONLY a valid JSON object without markdown fences:
   return fallback;
 }
 
+
 /**
- * Renders a pixel-perfect 1080x1080 (Square) or 1080x1350 (Portrait) Infographic Cheat Sheet PNG
- * featuring realistic macOS UI window dots, brand vector badge, and syntax-highlighted code/prompt box.
+ * Dynamically resolves Chrome/Chromium executable path across Windows and Linux (Render/Cloud)
+ */
+export function getChromeExecutablePath(): string {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  const isWindows = process.platform === 'win32';
+  if (isWindows) {
+    const winPaths = [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      `${process.env.LOCALAPPDATA || ''}\\Google\\Chrome\\Application\\chrome.exe`,
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    ];
+    for (const p of winPaths) {
+      if (p && fs.existsSync(p)) return p;
+    }
+    return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  } else {
+    // Linux / Render / Docker
+    const linuxPaths = [
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/snap/bin/chromium',
+    ];
+    for (const p of linuxPaths) {
+      if (fs.existsSync(p)) return p;
+    }
+    return process.env.CHROME_PATH || '/usr/bin/google-chrome-stable';
+  }
+}
+
+/**
+ * Renders a pixel-perfect Single High-Impact Master Infographic (1080x1350 Portrait / 1080x1080 Square)
+ * Features zero code jargon, large 30px card titles, 24px descriptions, category pill, and ByteBangla footer.
  */
 export async function renderInfographicToPng(
   data: InfographicData,
   width: number = 1080,
-  height: number = 1080,
-  chromePath: string = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+  height: number = 1350,
+  chromePath: string = getChromeExecutablePath()
 ): Promise<Buffer> {
   const browser = await puppeteer.launch({
     executablePath: chromePath,
@@ -299,26 +337,22 @@ export async function renderInfographicToPng(
     const page = await browser.newPage();
     await page.setViewport({ width, height });
 
-    const brandIconSvg = getBrandIconSvg(data.toolBrand);
-    const snippet = data.mockupSnippet || 'Act as a Senior Engineer: Analyze this code and optimize performance.';
-    const snippetLabel = data.snippetType || 'PROMPT';
-
     const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600&family=Hind+Siliguri:wght@500;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600;700;800&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       width: ${width}px;
       height: ${height}px;
-      background: radial-gradient(circle at 18% 12%, #0b1329 0%, #030712 100%);
+      background: radial-gradient(circle at 50% 6%, #0f1f38 0%, #030712 100%);
       font-family: 'Hind Siliguri', 'Kalpurush', sans-serif;
       color: #FFFFFF;
       overflow: hidden;
-      padding: 50px 60px;
+      padding: 56px 64px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -326,223 +360,179 @@ export async function renderInfographicToPng(
     }
     .glow-blob-1 {
       position: absolute;
-      width: 550px;
-      height: 550px;
+      width: 650px;
+      height: 650px;
       border-radius: 50%;
       background: #0284c7;
-      filter: blur(150px);
-      opacity: 0.16;
+      filter: blur(180px);
+      opacity: 0.22;
       top: -120px;
       left: -100px;
       pointer-events: none;
     }
     .glow-blob-2 {
       position: absolute;
-      width: 550px;
-      height: 550px;
+      width: 650px;
+      height: 650px;
       border-radius: 50%;
       background: #8b5cf6;
-      filter: blur(160px);
-      opacity: 0.14;
-      bottom: -120px;
+      filter: blur(190px);
+      opacity: 0.18;
+      bottom: -100px;
       right: -100px;
       pointer-events: none;
     }
-    /* macOS Window Header Bar */
-    .macos-bar {
+
+    /* Top Branding & Category Header */
+    .header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(17, 24, 39, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 10px 20px;
-      border-radius: 16px;
       position: relative;
       z-index: 10;
+      margin-bottom: 22px;
     }
-    .macos-dots {
-      display: flex;
+    .category-pill {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      color: #38bdf8;
+      padding: 10px 24px;
+      border-radius: 9999px;
+      font-size: 24px;
+      font-weight: 700;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2);
     }
-    .macos-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-    .dot-red { background: #FF5F56; }
-    .dot-yellow { background: #FFBD2E; }
-    .dot-green { background: #27C93F; }
-    .window-title {
-      font-family: 'Fira Code', monospace;
-      font-size: 14px;
-      color: #94a3b8;
-      letter-spacing: 0.5px;
-    }
-    .brand-group {
+    .brand-badge {
       display: flex;
       align-items: center;
       gap: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 10px 22px;
+      border-radius: 16px;
     }
-    .brand-title {
+    .brand-badge-dot {
+      width: 10px;
+      height: 10px;
+      background: #38bdf8;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #38bdf8;
+    }
+    .brand-name {
       font-family: 'Outfit', sans-serif;
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 800;
-      color: #38bdf8;
-      letter-spacing: 0.5px;
+      color: #f8fafc;
+      letter-spacing: 1.5px;
     }
 
-    /* Hero Section */
+    /* Headline Section */
     .hero {
       position: relative;
       z-index: 10;
-      margin-top: 4px;
-    }
-    .hero-top-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .hero-accent {
-      width: 60px;
-      height: 4px;
-      background: linear-gradient(90deg, #38bdf8, #818cf8);
-      border-radius: 2px;
-    }
-    .category-badge {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 18px;
-      font-weight: 600;
-      color: #cbd5e1;
+      margin-bottom: 26px;
     }
     .headline {
-      font-size: 46px;
-      font-weight: 700;
+      font-size: 48px;
+      font-weight: 800;
       line-height: 1.25;
-      color: #FFFFFF;
-      text-shadow: 0 2px 20px rgba(0,0,0,0.8);
-      margin-bottom: 6px;
+      color: #ffffff;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.75);
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
     }
     .subhead {
-      font-size: 24px;
+      font-size: 25px;
       color: #94a3b8;
       font-weight: 500;
+      line-height: 1.35;
     }
 
-    /* Code / Formula / Prompt Mockup Box */
-    .mockup-container {
-      position: relative;
-      z-index: 10;
-      background: #090d16;
-      border: 1.5px solid #1e293b;
-      border-radius: 16px;
-      padding: 16px 22px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-    }
-    .mockup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      font-family: 'Fira Code', monospace;
-      font-size: 12px;
-      color: #64748b;
-    }
-    .copy-pill {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 11px;
-    }
-    .mockup-code {
-      font-family: 'Fira Code', 'Consolas', monospace;
-      font-size: 20px;
-      line-height: 1.4;
-      color: #e2e8f0;
-      word-break: break-all;
-    }
-    .mockup-code .syntax-kw { color: #f472b6; font-weight: 600; }
-    .mockup-code .syntax-fn { color: #60a5fa; font-weight: 600; }
-    .mockup-code .syntax-str { color: #4ade80; }
-
-    /* 3 Actionable Steps Cards */
+    /* 3 Actionable Step Cards (Zero Code Jargon) */
     .cards-container {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 20px;
       position: relative;
       z-index: 10;
+      flex: 1;
+      justify-content: center;
+      margin-bottom: 26px;
     }
     .card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.13);
+      border-radius: 22px;
+      padding: 26px 30px;
       display: flex;
-      align-items: center;
-      gap: 20px;
-      background: rgba(17, 24, 39, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1.5px solid rgba(255, 255, 255, 0.08);
-      border-left: 5px solid #38bdf8;
-      padding: 18px 24px;
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      align-items: flex-start;
+      gap: 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
     }
-    .card:nth-child(2) { border-left-color: #facc15; }
-    .card:nth-child(3) { border-left-color: #4ade80; }
     .card-num {
-      width: 54px;
-      height: 54px;
-      border-radius: 16px;
-      background: rgba(2, 132, 199, 0.15);
-      border: 1.5px solid #38bdf8;
-      color: #38bdf8;
+      width: 68px;
+      height: 68px;
+      min-width: 68px;
+      border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
+      font-family: 'Hind Siliguri', 'Outfit', sans-serif;
+      font-size: 32px;
       font-weight: 800;
       flex-shrink: 0;
     }
+    .card:nth-child(1) .card-num {
+      background: rgba(2, 132, 199, 0.18);
+      border: 2px solid #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.25);
+    }
     .card:nth-child(2) .card-num {
-      background: rgba(250, 204, 21, 0.15);
-      border-color: #facc15;
+      background: rgba(250, 204, 21, 0.18);
+      border: 2px solid #facc15;
       color: #facc15;
+      box-shadow: 0 0 18px rgba(250, 204, 21, 0.25);
     }
     .card:nth-child(3) .card-num {
-      background: rgba(74, 222, 128, 0.15);
-      border-color: #4ade80;
+      background: rgba(74, 222, 128, 0.18);
+      border: 2px solid #4ade80;
       color: #4ade80;
+      box-shadow: 0 0 18px rgba(74, 222, 128, 0.25);
+    }
+    .card-content {
+      flex: 1;
     }
     .card-content h3 {
-      font-size: 28px;
+      font-size: 30px;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
       color: #f8fafc;
+      line-height: 1.25;
     }
     .card-content p {
-      font-size: 21px;
+      font-size: 24px;
       color: #cbd5e1;
       font-weight: 400;
-      line-height: 1.3;
+      line-height: 1.4;
     }
 
-    /* CTA Bar */
+    /* Footer Bar */
     .cta-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #0f172a;
-      border: 1.5px solid #334155;
-      padding: 16px 28px;
+      background: #090d16;
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      padding: 20px 32px;
       border-radius: 20px;
       position: relative;
       z-index: 10;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
     .cta-left {
       display: flex;
@@ -552,21 +542,15 @@ export async function renderInfographicToPng(
       font-weight: 700;
       color: #facc15;
     }
-    .cta-left .badge-icon {
-      background: rgba(250, 204, 21, 0.2);
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
+    .cta-badge-icon {
+      font-size: 24px;
     }
     .tag {
       font-family: 'Outfit', sans-serif;
-      font-size: 20px;
-      font-weight: 700;
-      color: #64748b;
+      font-size: 22px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
     }
   </style>
 </head>
@@ -574,42 +558,22 @@ export async function renderInfographicToPng(
   <div class="glow-blob-1"></div>
   <div class="glow-blob-2"></div>
 
-  <!-- macOS Window Bar with Brand Icon -->
-  <div class="macos-bar">
-    <div class="macos-dots">
-      <span class="macos-dot dot-red"></span>
-      <span class="macos-dot dot-yellow"></span>
-      <span class="macos-dot dot-green"></span>
-      <span class="window-title">bytebangla-${(data.toolBrand || 'ai-tools')}.config</span>
-    </div>
-    <div class="brand-group">
-      ${brandIconSvg}
-      <span class="brand-title">BYTEBANGLA</span>
+  <!-- Header: Category Pill & Brand Badge -->
+  <div class="header-row">
+    <div class="category-pill">${data.category}</div>
+    <div class="brand-badge">
+      <div class="brand-badge-dot"></div>
+      <span class="brand-name">BYTEBANGLA</span>
     </div>
   </div>
 
   <!-- Hero Section -->
   <div class="hero">
-    <div class="hero-top-row">
-      <div class="hero-accent"></div>
-      <div class="category-badge">${data.category}</div>
-    </div>
     <h1 class="headline">${data.headline}</h1>
     <p class="subhead">${data.subhead}</p>
   </div>
 
-  <!-- Real Code / Formula / Prompt Mockup Box -->
-  <div class="mockup-container">
-    <div class="mockup-header">
-      <span>// COPY-PASTEABLE ${snippetLabel}</span>
-      <span class="copy-pill">⚡ 60s HACK</span>
-    </div>
-    <div class="mockup-code">
-      <span class="syntax-kw">&gt; </span><span class="syntax-str">"${snippet}"</span>
-    </div>
-  </div>
-
-  <!-- 3 Actionable Step Cards -->
+  <!-- 3 High-Impact Cards (Zero Code Jargon) -->
   <div class="cards-container">
     ${data.steps
       .map(
@@ -625,13 +589,13 @@ export async function renderInfographicToPng(
       .join('')}
   </div>
 
-  <!-- Bottom CTA Bar -->
+  <!-- Footer CTA Bar -->
   <div class="cta-bar">
     <div class="cta-left">
-      <div class="badge-icon">⚡</div>
-      <span>${data.cta}</span>
+      <span class="cta-badge-icon">📌</span>
+      <span>${data.cta || 'দরকারি তথ্যটি বন্ধুদের সাথে Share করুন'}</span>
     </div>
-    <div class="tag">#ByteBangla</div>
+    <div class="tag">⚡ ByteBangla</div>
   </div>
 </body>
 </html>
@@ -646,95 +610,57 @@ export async function renderInfographicToPng(
 }
 
 /**
- * Generates a high-converting, branded 1080x1080 Infographic Cheat Sheet banner for a Facebook post
+ * Generates strictly ONE Single High-Impact Master Infographic (1080x1350)
+ * Saves to output/single_post.png and data/posts/
  */
-export async function generatePostBanner(topicTitle: string): Promise<BannerResult> {
+export async function generateSingleMasterInfographic(
+  topicTitle: string,
+  categoryOverride?: string
+): Promise<BannerResult> {
   const seed = Math.floor(Math.random() * 1000000);
-  console.log(`[Media Service] 🎨 Crafting 1080x1080 authentic Bengali infographic for: "${topicTitle}"...`);
+  console.log(`[Media Service] 🎨 Crafting Single Master Infographic (1080x1350) for: "${topicTitle}"...`);
 
-  const infographicData = await extractInfographicDataWithAI(topicTitle);
-  const buffer = await renderInfographicToPng(infographicData, 1080, 1080);
+  const infographicData = await extractInfographicDataWithAI(topicTitle, categoryOverride);
+  const buffer = await renderInfographicToPng(infographicData, 1080, 1350);
 
+  // 1. Save strictly to output/single_post.png as requested
+  const outputDir = path.resolve(process.cwd(), 'output');
+  ensureDir(outputDir);
+  const singlePostPath = path.join(outputDir, 'single_post.png');
+  fs.writeFileSync(singlePostPath, buffer);
+
+  // 2. Also archive into data/posts for database history
   const postsDir = path.resolve(process.cwd(), 'data', 'posts');
   ensureDir(postsDir);
-  const filename = `post_banner_${Date.now()}_${seed}.png`;
-  const filePath = path.join(postsDir, filename);
-  fs.writeFileSync(filePath, buffer);
+  const archivedFilename = `single_master_${Date.now()}_${seed}.png`;
+  const archivedFilePath = path.join(postsDir, archivedFilename);
+  fs.writeFileSync(archivedFilePath, buffer);
 
-  console.log(`[Media Service] ✅ Authentic 1080x1080 Infographic generated: ${filePath}`);
+  console.log(`[Media Service] ✅ Single High-Impact Master Infographic generated: ${singlePostPath}`);
 
   return {
-    imageUrl: filePath,
-    imagePath: filePath,
+    imageUrl: singlePostPath,
+    imagePath: singlePostPath,
     imageBuffer: buffer,
-    prompt: `ByteBangla 1080x1080 Infographic: ${topicTitle}`,
+    prompt: `ByteBangla Single Master Infographic: ${topicTitle}`,
     seed,
-    slideType: 'cover',
+    slideType: 'master_infographic',
   };
 }
 
 /**
- * Generates a branded 3-slide visual carousel with 1080x1080 resolution
+ * Generates a high-converting, branded single Master Infographic banner for a Facebook post
+ */
+export async function generatePostBanner(topicTitle: string): Promise<BannerResult> {
+  return generateSingleMasterInfographic(topicTitle);
+}
+
+/**
+ * Compatibility wrapper: returns single high-impact master infographic as 1-element array
  */
 export async function generateCarouselSlides(topicTitle: string): Promise<BannerResult[]> {
-  console.log(`[Media Service] 🎠 Generating branded 3-slide 1080x1080 carousel for: "${topicTitle}"...`);
-
-  const baseSeed = Math.floor(Math.random() * 900000);
-  const postsDir = path.resolve(process.cwd(), 'data', 'posts');
-  ensureDir(postsDir);
-
-  const mainData = await extractInfographicDataWithAI(topicTitle);
-
-  // Slide 1: Main 3-Step Infographic Cheat Sheet
-  const s1Buffer = await renderInfographicToPng(mainData, 1080, 1080);
-  const s1Path = path.join(postsDir, `carousel_${Date.now()}_1.png`);
-  fs.writeFileSync(s1Path, s1Buffer);
-
-  // Slide 2: Workflow & Deep Dive
-  const slide2Data: InfographicData = {
-    category: 'ওয়ার্কফ্লো হ্যাক্স',
-    headline: 'কীভাবে দ্রুত কাজ শেষ করবেন?',
-    subhead: 'বাইট বাংলা প্র্যাকটিক্যাল টেকনিক ও প্রো টিপস',
-    toolBrand: mainData.toolBrand || 'vscode',
-    snippetType: 'SHORTCUT',
-    mockupSnippet: 'Ctrl + Shift + P > Format Document (Auto-Indent & Clean Code)',
-    steps: [
-      { num: '01', title: 'টুলের সঠিক টেমপ্লেট বাছুন', desc: 'রেডিমেড প্রম্পট বা টেমপ্লেট বেছে নিলে ৫০% সময় বাঁচে' },
-      { num: '02', title: 'কাস্টমাইজ ও রিফাইন করুন', desc: 'নিজের প্রয়োজন অনুযায়ী সেটিংস ও রেজোলিউশন এডজাস্ট করুন' },
-      { num: '03', title: 'অটো সেভ ও ক্লাউড সিঙ্ক', desc: 'ক্লাউডে সেভ রাখুন যাতে যেকোনো ডিভাইস থেকে কাজ করা যায়' },
-    ],
-    cta: 'আপনার প্রিয় এআই টুল কোনটি? কমেন্টে জানান!',
-  };
-  const s2Buffer = await renderInfographicToPng(slide2Data, 1080, 1080);
-  const s2Path = path.join(postsDir, `carousel_${Date.now()}_2.png`);
-  fs.writeFileSync(s2Path, s2Buffer);
-
-  // Slide 3: Checklist & Summary
-  const slide3Data: InfographicData = {
-    category: 'চেকলিস্ট ও সামারি',
-    headline: 'আজকের পোস্টের মূল সারসংক্ষেপ',
-    subhead: 'পরবর্তীতে সহজে খুঁজে পেতে পোস্টটি এখনই সেভ রাখুন',
-    toolBrand: 'github',
-    snippetType: 'FORMULA',
-    mockupSnippet: 'git commit -m "feat: 3x faster productivity workflow implemented"',
-    steps: [
-      { num: '01', title: 'ফ্রি রিসোর্স ও লিংক', desc: 'কমেন্ট সেকশনে চেক করুন অফিশিয়াল সাইটের ডিরেক্ট লিঙ্ক' },
-      { num: '02', title: 'সহকর্মীদের মেনশন করুন', desc: 'যাদের এই ট্রিকস কাজে লাগবে তাদের পোস্টটি শেয়ার করুন' },
-      { num: '03', title: 'ডেইলি টেক আপডেটস', desc: 'প্রতিদিন সহজ বাংলায় এমন দরকারি টিপস পেতে বাইট বাংলায় ফলো রাখুন' },
-    ],
-    cta: 'লিঙ্ক পেতে কমেন্টে "AI" লিখুন এবং ফলো করুন!',
-  };
-  const s3Buffer = await renderInfographicToPng(slide3Data, 1080, 1080);
-  const s3Path = path.join(postsDir, `carousel_${Date.now()}_3.png`);
-  fs.writeFileSync(s3Path, s3Buffer);
-
-  console.log(`[Media Service] ✅ 3 Branded 1080x1080 Carousel slides generated successfully.`);
-
-  return [
-    { imageUrl: s1Path, imagePath: s1Path, imageBuffer: s1Buffer, prompt: 'Slide 1: Hero Cheat Sheet', seed: baseSeed, slideType: 'cover' },
-    { imageUrl: s2Path, imagePath: s2Path, imageBuffer: s2Buffer, prompt: 'Slide 2: Workflow Deep Dive', seed: baseSeed + 1, slideType: 'features' },
-    { imageUrl: s3Path, imagePath: s3Path, imageBuffer: s3Buffer, prompt: 'Slide 3: Summary Checklist', seed: baseSeed + 2, slideType: 'summary' },
-  ];
+  const single = await generateSingleMasterInfographic(topicTitle);
+  return [single];
 }
 
 /**
@@ -1421,7 +1347,7 @@ function buildScene4CtaHtml(data: DynamicReelSceneData): string {
 export async function renderDynamicReelScenes(
   data: DynamicReelSceneData,
   outputDir: string,
-  chromePath: string = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+  chromePath: string = getChromeExecutablePath()
 ): Promise<DynamicReelSceneFrames> {
   ensureDir(outputDir);
   const scene1Path = path.join(outputDir, 'scene1_problem.png');
@@ -1486,7 +1412,7 @@ export async function renderDynamicReelScenes(
 export async function renderTopGlassBadge(
   badgeText: string = '🔥 আজকের ভাইরাল ট্রেন্ড',
   outPngPath: string,
-  chromePath: string = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+  chromePath: string = getChromeExecutablePath()
 ): Promise<string> {
   const browser = await puppeteer.launch({
     executablePath: chromePath,
@@ -1594,7 +1520,7 @@ export interface ReelCoverOptions {
  */
 export async function renderReelCoverThumbnail(
   options: ReelCoverOptions,
-  chromePath: string = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+  chromePath: string = getChromeExecutablePath()
 ): Promise<string> {
   const finalOutPath = options.outputPath || path.resolve(process.cwd(), 'output', 'cover.jpg');
   const outDir = path.dirname(finalOutPath);
