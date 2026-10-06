@@ -5,8 +5,8 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import { EdgeTTS } from 'node-edge-tts';
+import { renderTopGlassBadge, renderReelCoverThumbnail } from './media';
 import { env, isConfiguredForGemini } from '../config/env';
-import { renderDynamicReelScenes, DynamicReelSceneData } from './media';
 
 // Configure FFMPEG & FFPROBE binaries
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
@@ -48,6 +48,8 @@ export interface GeneratedReel {
   videoBuffer: Buffer;
   durationSeconds: number;
   voiceModel: string;
+  coverThumbnailPath?: string;
+  coverThumbnailBuffer?: Buffer;
   cleanup: () => void;
 }
 
@@ -86,9 +88,10 @@ function formatAssTimestamp(ms: number): string {
 }
 
 /**
- * Builds non-overlapping, center-safe zone ASS subtitles displaying 3-5 words at a time.
- * Position: Y: ~920px (MarginV: 1000 from bottom in 1080x1920).
- * Style: Large bold Hind Siliguri, vibrant yellow text with 4.5px black outline.
+ * Builds non-overlapping, center-safe zone ASS subtitles displaying 3-4 words at a time.
+ * Position: Center Safe Zone (MarginV: 920 in 1080x1920 canvas).
+ * Style: Large bold Hind Siliguri, 65px, vibrant yellow text with 4px black outline.
+ * Maximum 3-4 words per line with zero text collision.
  */
 export function buildSyncedWordSubtitlesAss(
   cues: WordCue[],
@@ -103,20 +106,23 @@ export function buildSyncedWordSubtitlesAss(
     const wordText = cues[i].part.trim();
     const hasPunctuation = /[।?!,]$/.test(wordText);
     const nextCue = cues[i + 1];
-    const isLongPause = nextCue && nextCue.start - cues[i].end > 350;
+    const isLongPause = nextCue && nextCue.start - cues[i].end > 250;
     const isLast = i === cues.length - 1;
 
-    // Group into 3 to 5 words
+    const charCount = currentGroup.reduce((acc, c) => acc + c.part.trim().length, 0);
+
+    // Strictly maximum 2 to 3 words per line for large 90px font with zero collision
     if (
-      currentGroup.length >= 4 ||
-      (currentGroup.length >= 3 && hasPunctuation) ||
-      isLongPause ||
+      currentGroup.length >= 3 ||
+      charCount >= 18 ||
+      (currentGroup.length >= 2 && (hasPunctuation || isLongPause)) ||
       isLast
     ) {
       const phraseText = currentGroup
         .map((c) => c.part.trim())
         .join(' ')
         .replace(/\s+/g, ' ')
+        .replace(/[।?!,]+/g, '')
         .trim();
       const startMs = currentGroup[0].start;
       const endMs = Math.min(totalDurationSec * 1000, currentGroup[currentGroup.length - 1].end);
@@ -135,17 +141,17 @@ export function buildSyncedWordSubtitlesAss(
     const next = phrases[i + 1];
     if (next) {
       if (cur.endMs >= next.startMs) {
-        cur.endMs = Math.max(cur.startMs + 200, next.startMs - 50);
-      } else if (next.startMs - cur.endMs < 120) {
-        cur.endMs = next.startMs - 50;
+        cur.endMs = Math.max(cur.startMs + 150, next.startMs - 40);
+      } else if (next.startMs - cur.endMs < 60) {
+        cur.endMs = next.startMs - 40;
       }
     } else {
-      cur.endMs = Math.min(totalDurationSec * 1000, cur.endMs + 250);
+      cur.endMs = Math.min(totalDurationSec * 1000, cur.endMs + 150);
     }
   }
 
   const assHeader = `[Script Info]
-Title: ByteBangla Synced Reel Subtitles
+Title: ByteBangla Synced Kinetic Reel Subtitles
 ScriptType: v4.00+
 WrapStyle: 0
 ScaledBorderAndShadow: yes
@@ -155,7 +161,7 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: ReelSubtitle,Hind Siliguri,62,&H0000FFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,4.5,2.5,2,40,40,920,1
+Style: ReelSubtitle,Hind Siliguri,90,&H0000FFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,5.5,2.5,2,40,40,960,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -177,7 +183,7 @@ export async function generateHumanBengaliVoiceover(
   fullSpeech: string,
   outputAudioPath: string,
   voice: string = 'bn-BD-PradeepNeural',
-  rate: string = '+6%'
+  rate: string = '+8%'
 ): Promise<{ duration: number; model: string; wordCues: WordCue[] }> {
   // 1. Aggressively sanitize speech text
   let clean = fullSpeech
@@ -549,6 +555,70 @@ export function selectMediaBackgroundVideo(toolBrand?: string, topic?: string): 
 }
 
 /**
+ * Selects background music track matching the detected topic category and mood:
+ * - bgm_curious.mp3 (curiosity, mysteries, scams, and hidden facts)
+ * - bgm_inspiring.mp3 (biographical, motivational, and true inspirational stories)
+ * - bgm_upbeat.mp3 (smartphone hacks, daily life tips, consumer rights, viral tools)
+ * Fallback: ambient_tech_bg.mp3 (or data/bg_music.mp3)
+ */
+export function selectBackgroundMusicByMood(category?: string, topic?: string): string {
+  const audioDir = path.resolve(process.cwd(), 'assets', 'audio');
+  const query = `${category || ''} ${topic || ''}`.toLowerCase();
+
+  let targetFileName = 'bgm_upbeat.mp3';
+
+  if (
+    query.includes('গল্প') ||
+    query.includes('story') ||
+    query.includes('inspiring') ||
+    query.includes('inspirational') ||
+    query.includes('জীবনী') ||
+    query.includes('কালাম') ||
+    query.includes('নজরুল') ||
+    query.includes('অনুপ্রেরণা')
+  ) {
+    targetFileName = 'bgm_inspiring.mp3';
+  } else if (
+    query.includes('রহস্য') ||
+    query.includes('হ্যাক') ||
+    query.includes('scam') ||
+    query.includes('সিকিউরিটি') ||
+    query.includes('security') ||
+    query.includes('সুরক্ষা') ||
+    query.includes('curious') ||
+    query.includes('গোপন') ||
+    query.includes('সত্য') ||
+    query.includes('ফাঁস')
+  ) {
+    targetFileName = 'bgm_curious.mp3';
+  } else {
+    // Smartphone hacks, consumer tips, everyday life tips, viral trends
+    targetFileName = 'bgm_upbeat.mp3';
+  }
+
+  const preferredPath = path.join(audioDir, targetFileName);
+  if (fs.existsSync(preferredPath)) {
+    console.log(`[Video Engine] 🎵 Selected Mood BGM track: "${targetFileName}" for topic.`);
+    return preferredPath;
+  }
+
+  const fallbackCandidates = [
+    path.join(audioDir, 'ambient_tech_bg.mp3'),
+    path.resolve(process.cwd(), 'data', 'bg_music.mp3'),
+    path.resolve(process.cwd(), '..', 'data', 'bg_music.mp3'),
+  ];
+
+  for (const candidate of fallbackCandidates) {
+    if (fs.existsSync(candidate)) {
+      console.log(`[Video Engine] 🎵 Mood track "${targetFileName}" not found; smoothly falling back to "${path.basename(candidate)}"`);
+      return candidate;
+    }
+  }
+
+  return preferredPath;
+}
+
+/**
  * Probes whether the selected media video contains an audio track
  */
 function hasAudioStream(videoPath: string): Promise<boolean> {
@@ -602,10 +672,10 @@ function renderMotionSceneWithOverlay(
 /**
  * Generates a polished, high-converting 9:16 vertical Facebook Reel (MP4)
  * Powered by:
- * 1. True 30fps Video Motion Loops (Pexels / Curated Local MP4s)
- * 2. Transparent Dynamic Glassmorphism UI Cards (Puppeteer)
- * 3. 3-5 Word Non-Overlapping Single-Line Subtitles in Center Safe Zone
- * 4. Human Bengali Voiceover + Ambient Audio Mixing
+ * 1. 100% Real High-Quality Moving Background Video dynamically picked from ./media/ (ZERO static image cards)
+ * 2. Top-center: Single sleek floating glass badge indicating the trend / topic
+ * 3. Center Safe Zone (MarginV: 920): Large, bold, single-line kinetic subtitles (Hind Siliguri Bold, 65px, vibrant yellow with 4px black outline)
+ * 4. Microsoft Edge Neural Voiceover (bn-BD-PradeepNeural at +8% speed) with ambient background music (-22dB)
  */
 export async function generateReelVideo(input: ReelGenerationInput): Promise<GeneratedReel> {
   const tempDir = path.resolve(process.cwd(), 'data', 'temp_reels', `reel_${Date.now()}`);
@@ -614,7 +684,7 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   const audioPath = path.join(tempDir, 'voiceover.mp3');
   const outputPath = path.join(tempDir, 'output_reel.mp4');
 
-  console.log(`[Video Engine] 🎬 Initiating 100% Synced Motion-Reel for: "${input.topic}"...`);
+  console.log(`[Video Engine] 🎬 Initiating 100% Kinetic Moving-Reel for: "${input.topic}"...`);
 
   // 1. Synthesize Human Neural Voiceover with Word Timestamp Cues
   let speechText = '';
@@ -628,8 +698,8 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     speechText = [p1, p2, p3, p4].filter(Boolean).join('। ').replace(/।+/g, '।');
   }
 
-  const voiceSelection = input.voice || 'Puck';
-  const voiceRate = input.rate || '+6%';
+  const voiceSelection = input.voice || 'bn-BD-PradeepNeural';
+  const voiceRate = input.rate || '+8%';
 
   const {
     duration: exactDuration,
@@ -637,111 +707,144 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     wordCues,
   } = await generateHumanBengaliVoiceover(speechText, audioPath, voiceSelection, voiceRate);
 
-  // 2. Dynamic 4-Scene Pacing Breakdown Synchronized to Voice Duration
-  const D = exactDuration;
-  const dur1 = Math.max(3.5, Math.round(D * 0.17 * 10) / 10);
-  const dur2 = Math.max(4.5, Math.round(D * 0.23 * 10) / 10);
-  const dur3 = Math.max(7.0, Math.round(D * 0.33 * 10) / 10);
-  const dur4 = Number((D - dur1 - dur2 - dur3).toFixed(2));
+  console.log(`[Video Engine] 🎙️ Voiceover generated (${exactDuration.toFixed(1)}s, ${wordCues.length} word cues, model: ${voiceModel})`);
 
-  console.log(
-    `[Video Engine] 🎞️ 4-Scene Synced Pacing: Scene 1 Problem (${dur1}s) | Scene 2 Tool Reveal (${dur2}s) | Scene 3 Live Solution (${dur3}s) | Scene 4 Save/CTA (${dur4}s) [Total: ${exactDuration.toFixed(1)}s]`
-  );
-
-  // 3. Generate Synced Non-Overlapping ASS Subtitles in Center Safe Zone
+  // 2. Generate Synced Non-Overlapping ASS Subtitles in Center Safe Zone (MarginV: 920, 65px, 4px outline, max 3-4 words)
   const subtitlesPath = path.join(tempDir, 'subtitles.ass');
   buildSyncedWordSubtitlesAss(wordCues, exactDuration, subtitlesPath);
 
-  // 4. Render 4 Distinct Transparent 1080x1920 UI Frames with Puppeteer
-  const sceneFrames = await renderDynamicReelScenes(
-    {
-      topic: input.topic,
-      toolBrand: input.toolBrand,
-      toolName: input.toolName,
-      practicalSnippet: input.practicalSnippet,
-      snippetType: input.snippetType,
-      targetAudience: input.targetAudience,
-      phase1Hook: input.phase1Hook || input.hookText,
-      phase2Solution:
-        input.phase2Solution ||
-        (input.bodyText ? input.bodyText.slice(0, 65) : 'এই স্মার্ট নিয়মটি আজই জেনে রাখুন'),
-      phase3Steps:
-        input.phase3Steps ||
-        (input.bodyText ? input.bodyText.slice(65, 150) : 'সহজ নিয়ম মেনে চললেই সবসময় নিরাপদ থাকবেন'),
-      phase4Cta: input.phase4Cta || input.ctaText || '📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!',
-      pillarCategory: input.pillarCategory,
-      twoWordHook: input.twoWordHook,
-      actionKeycap: input.actionKeycap,
-      actionLabel: input.actionLabel,
-    },
-    tempDir
-  );
+  // 3. Render ONLY the Single Sleek Top Floating Glass Badge (Zero ugly static cards)
+  let badgeText = '🔥 আজকের ভাইরাল ট্রেন্ড';
+  const topicLower = `${input.pillarCategory || ''} ${input.topic} ${input.headlineEn || ''}`.toLowerCase();
+  if (
+    topicLower.includes('সুরক্ষা') ||
+    topicLower.includes('হ্যাক') ||
+    topicLower.includes('বিকাশ') ||
+    topicLower.includes('scam') ||
+    topicLower.includes('security')
+  ) {
+    badgeText = '🛡️ অনলাইন নিরাপত্তা ও সতর্কতা';
+  } else if (
+    topicLower.includes('গল্প') ||
+    topicLower.includes('story') ||
+    topicLower.includes('কালাম') ||
+    topicLower.includes('নজরুল')
+  ) {
+    badgeText = '📖 জীবন বদলে দেওয়া গল্প';
+  } else if (
+    topicLower.includes('সাইকোলজি') ||
+    topicLower.includes('মনস্তত্ত্ব')
+  ) {
+    badgeText = '🧠 মনস্তত্ত্ব ও জীবনজ্ঞান';
+  } else if (
+    topicLower.includes('হ্যাক') ||
+    topicLower.includes('লাইফ') ||
+    topicLower.includes('মোবাইল')
+  ) {
+    badgeText = '💡 দরকারি লাইফ হ্যাক';
+  } else if (input.actionLabel) {
+    badgeText = `🔥 ${input.actionLabel}`;
+  }
 
-  // 5. Select Local Moving Background Video from ./media/
+  const badgeOverlayPath = path.join(tempDir, 'badge_overlay.png');
+  await renderTopGlassBadge(badgeText, badgeOverlayPath);
+
+  // 4. Select Local Moving Background Video from ./media/
   const motionBgPath = selectMediaBackgroundVideo(input.toolBrand, input.topic);
 
-  // 6. Composite Transparent UI Frames onto Moving 30fps Video Clips from ./media/
-  console.log(`[Video Engine] 🎥 Compositing transparent UI cards over moving background video from ./media/...`);
-  const v1 = path.join(tempDir, 'scene1.mp4');
-  const v2 = path.join(tempDir, 'scene2.mp4');
-  const v3 = path.join(tempDir, 'scene3.mp4');
-  const v4 = path.join(tempDir, 'scene4.mp4');
+  // 5. Extract background frame from video at t=0.5s to generate custom cover
+  const bgFramePath = path.join(tempDir, 'bg_frame.jpg');
+  await new Promise<void>((resolve) => {
+    ffmpeg(motionBgPath)
+      .seekInput(0.5)
+      .frames(1)
+      .outputOptions(['-q:v 2'])
+      .save(bgFramePath)
+      .on('end', () => resolve())
+      .on('error', () => resolve());
+  });
 
-  await renderMotionSceneWithOverlay(motionBgPath, sceneFrames.scene1Path, 0, dur1, v1);
-  await renderMotionSceneWithOverlay(motionBgPath, sceneFrames.scene2Path, 5, dur2, v2);
-  await renderMotionSceneWithOverlay(motionBgPath, sceneFrames.scene3Path, 11, dur3, v3);
-  await renderMotionSceneWithOverlay(motionBgPath, sceneFrames.scene4Path, 18, dur4, v4);
+  // 6. Enforce High-Impact Dedicated Reel Cover Thumbnail (output/cover.jpg)
+  const outputCoverDir = path.resolve(process.cwd(), 'output');
+  ensureDir(outputCoverDir);
+  const dedicatedCoverPath = path.join(outputCoverDir, 'cover.jpg');
+  const legacyCoverPath = path.join(outputCoverDir, 'cover_thumb.jpg');
+  const coverHeadline = input.twoWordHook || input.hookText || input.topic;
 
-  const concatListPath = path.join(tempDir, 'motion_concat.txt');
-  fs.writeFileSync(
-    concatListPath,
-    [
-      `file '${v1.replace(/\\/g, '/')}'`,
-      `file '${v2.replace(/\\/g, '/')}'`,
-      `file '${v3.replace(/\\/g, '/')}'`,
-      `file '${v4.replace(/\\/g, '/')}'`,
-    ].join('\n')
-  );
+  try {
+    console.log(`[Video Engine] 🎨 Rendering High-Impact Dedicated Reel Cover Image (output/cover.jpg)...`);
+    await renderReelCoverThumbnail({
+      headline: coverHeadline,
+      category: badgeText,
+      bgFramePath: fs.existsSync(bgFramePath) ? bgFramePath : undefined,
+      outputPath: dedicatedCoverPath,
+    });
+    if (fs.existsSync(dedicatedCoverPath)) {
+      try {
+        fs.copyFileSync(dedicatedCoverPath, legacyCoverPath);
+      } catch {}
+    }
+  } catch (coverErr: any) {
+    console.warn(`[Video Engine Warning] Dedicated cover rendering notice: ${coverErr.message}`);
+    if (fs.existsSync(bgFramePath)) {
+      try {
+        fs.copyFileSync(bgFramePath, dedicatedCoverPath);
+        fs.copyFileSync(bgFramePath, legacyCoverPath);
+      } catch {}
+    }
+  }
 
-  // 7. Multiplex 4-Scene Motion Video with Word Subtitles, Voiceover and Ambient Audio
-  const bgMusicPath = path.resolve(process.cwd(), 'assets', 'audio', 'ambient_tech_bg.mp3');
-  const hasBgMusic = fs.existsSync(bgMusicPath);
+  // 7. Dynamic Multi-Mood Background Music setup (-22dB / linear volume 0.08)
+  const bgMusicPath = selectBackgroundMusicByMood(input.pillarCategory, input.topic);
   const videoHasAudio = await hasAudioStream(motionBgPath);
 
-  // Use relative path to avoid any Windows colon escaping issues in FFmpeg filter
+  // Relative paths for Windows FFmpeg filter compatibility
   const relAss = path.relative(process.cwd(), subtitlesPath).replace(/\\/g, '/');
   const relFonts = path.relative(process.cwd(), path.resolve(process.cwd(), 'assets', 'fonts')).replace(/\\/g, '/');
+  const relBadge = path.relative(process.cwd(), badgeOverlayPath).replace(/\\/g, '/');
+  const relCover = path.relative(process.cwd(), dedicatedCoverPath).replace(/\\/g, '/');
 
-  console.log(`[Video Engine] 🚀 Compiling 1080x1920 MP4 Video with Center Subtitles & Audio Mix...`);
+  console.log(`[Video Engine] 🚀 Compiling 1080x1920 Clean Kinetic MP4 Reel (Frame 0 Cover Baked + 90px Subs + Mood BGM)...`);
 
   await new Promise<void>((resolve, reject) => {
     let command = ffmpeg()
-      .input(concatListPath)
-      .inputOptions(['-f concat', '-safe 0'])
+      .input(motionBgPath)
+      .inputOptions(['-stream_loop -1'])
+      .input(relBadge)
+      .input(relCover)
       .input(audioPath);
 
+    // Video filter:
+    // 1. Scale/crop moving video to 1080x1920
+    // 2. Micro-Punch Cuts (scale 1.07x) every ~6.7s at phase transitions
+    // 3. Overlay sleek top glass badge (Y:140px, 32px font)
+    // 4. Overlay center safe kinetic subtitles (90px, vibrant yellow, 5.5px outline)
+    // 5. GUARANTEE FRAME 0 COVER: Overlay dedicated high-impact cover at t=0 to 0.45s so Facebook Reels preview FORCES the cover thumbnail!
     const filterGraph: string[] = [
-      `[0:v]subtitles=${relAss}:fontsdir=${relFonts}[vout]`,
+      `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[base]`,
+      `[base]zoompan=z='if(between(mod(on,400),200,400),1.07,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30[bg]`,
+      `[bg][1:v]overlay=0:0[vbadge]`,
+      `[vbadge]subtitles=${relAss}:fontsdir=${relFonts}[vsub]`,
+      `[2:v]scale=1080:1920[vcover]`,
+      `[vsub][vcover]overlay=0:0:enable='between(t,0,0.45)'[vout]`,
     ];
 
-    if (videoHasAudio) {
-      // Mix the video's original ambient sound smoothly with voiceover
-      command = command.input(motionBgPath).inputOptions(['-stream_loop -1']);
+    // Audio filter: Voiceover (input 3) mixed with dynamic mood BGM (input 4)
+    if (bgMusicPath && fs.existsSync(bgMusicPath)) {
+      command = command.input(bgMusicPath).inputOptions(['-stream_loop -1']);
       filterGraph.push(
-        `[1:a]volume=1.35[voice]`,
-        `[2:a]volume=0.08[bg]`,
-        `[voice][bg]amix=inputs=2:duration=first:dropout_transition=2[aout]`
+        `[3:a]volume=1.35[voice]`,
+        `[4:a]volume=0.08[bgmusic]`,
+        `[voice][bgmusic]amix=inputs=2:duration=first:dropout_transition=2[aout]`
       );
-    } else if (hasBgMusic) {
-      // Fallback ambient tech BGM
-      command = command.input(bgMusicPath);
+    } else if (videoHasAudio) {
       filterGraph.push(
-        `[1:a]volume=1.35[voice]`,
-        `[2:a]volume=0.08[bg]`,
-        `[voice][bg]amix=inputs=2:duration=first:dropout_transition=2[aout]`
+        `[3:a]volume=1.35[voice]`,
+        `[0:a]volume=0.08[bgmusic]`,
+        `[voice][bgmusic]amix=inputs=2:duration=first:dropout_transition=2[aout]`
       );
     } else {
-      filterGraph.push(`[1:a]volume=1.35[aout]`);
+      filterGraph.push(`[3:a]volume=1.35[aout]`);
     }
 
     command
@@ -754,15 +857,24 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
         '-c:a aac',
         '-b:a 192k',
         `-t ${exactDuration}`,
+        '-movflags +faststart',
       ])
       .save(outputPath)
       .on('end', () => resolve())
       .on('error', (err: any) => reject(err));
   });
 
+  let coverThumbnailBuffer: Buffer | undefined;
+  const effectiveCover = fs.existsSync(dedicatedCoverPath) ? dedicatedCoverPath : legacyCoverPath;
+  if (fs.existsSync(effectiveCover)) {
+    try {
+      coverThumbnailBuffer = fs.readFileSync(effectiveCover);
+    } catch {}
+  }
+
   const videoBuffer = fs.readFileSync(outputPath);
   console.log(
-    `[Video Engine] ✅ 1080x1920 30FPS True-Motion Reel synthesized successfully! (${(videoBuffer.length / (1024 * 1024)).toFixed(2)} MB)`
+    `[Video Engine] ✅ 1080x1920 30FPS Clean Kinetic Reel synthesized successfully! (${(videoBuffer.length / (1024 * 1024)).toFixed(2)} MB, Duration: ${exactDuration.toFixed(1)}s)`
   );
 
   const cleanup = () => {
@@ -778,6 +890,8 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     videoBuffer,
     durationSeconds: exactDuration,
     voiceModel,
+    coverThumbnailPath: effectiveCover,
+    coverThumbnailBuffer,
     cleanup,
   };
 }

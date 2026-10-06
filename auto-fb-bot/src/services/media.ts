@@ -836,6 +836,16 @@ export const PILLAR_THEMES: Record<string, PillarTheme> = {
     defaultActionLabel: 'অবিশ্বাস্য সত্য',
     iconSvg: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#EC4899"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="#FFFFFF" stroke-width="2"/></svg>`,
   },
+  viral_trend: {
+    id: 'viral_trend',
+    badge: '🔥 আজকের ভাইরাল ট্রেন্ড',
+    accentColor: '#F97316', // Orange
+    glowColor: '#EA580C',
+    defaultHook: 'ভাইরাল ট্রেন্ড!',
+    defaultActionKeycap: '১ মিনিটে সমাধান',
+    defaultActionLabel: 'নতুন ভাইরাল ফিচার',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2c1.1 0 2 .9 2 2v1.1C17.6 8.5 20 12 20 16c0 4.4-3.6 8-8 8s-8-3.6-8-8c0-4 2.4-7.5 6-8.9V4c0-1.1.9-2 2-2z" fill="#F97316"/></svg>`,
+  },
 };
 
 /**
@@ -1467,4 +1477,392 @@ export async function renderDynamicReelScenes(
     await browser.close();
   }
 }
+
+/**
+ * Renders a single sleek floating glass badge for the top-center of vertical Reels.
+ * Pure transparent 1080x1920 canvas with ONLY the glass badge at Y=140px.
+ * Zero ugly cards or blocking UI.
+ */
+export async function renderTopGlassBadge(
+  badgeText: string = '🔥 আজকের ভাইরাল ট্রেন্ড',
+  outPngPath: string,
+  chromePath: string = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+): Promise<string> {
+  const browser = await puppeteer.launch({
+    executablePath: chromePath,
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@700&family=Outfit:wght@800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 1080px;
+      height: 1920px;
+      background: transparent;
+      overflow: hidden;
+      position: relative;
+    }
+    .top-floating-badge {
+      position: absolute;
+      top: 140px;
+      left: 0;
+      width: 1080px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .glass-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 2px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 30px rgba(249, 115, 22, 0.3);
+      padding: 14px 28px;
+      border-radius: 9999px;
+    }
+    .badge-text {
+      font-family: 'Hind Siliguri', 'Kalpurush', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+    .brand-tag {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: #f97316;
+      background: rgba(249, 115, 22, 0.18);
+      border: 1.5px solid rgba(249, 115, 22, 0.5);
+      padding: 3px 12px;
+      border-radius: 12px;
+      margin-left: 4px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-floating-badge">
+    <div class="glass-pill">
+      <span class="badge-text">${badgeText}</span>
+      <span class="brand-tag">BYTEBANGLA</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    const buffer = await page.screenshot({ type: 'png', omitBackground: true });
+    fs.writeFileSync(outPngPath, buffer);
+    console.log(`[Media Service] ✨ Rendered sleek top floating glass badge: "${badgeText}"`);
+    return outPngPath;
+  } finally {
+    await browser.close();
+  }
+}
+
+export interface ReelCoverOptions {
+  headline: string;
+  category?: string;
+  bgFramePath?: string;
+  outputPath?: string;
+}
+
+/**
+ * Renders a dedicated 1080x1920 Viral Reel Cover Thumbnail (output/cover.jpg)
+ * Features:
+ * 1. Video background frame at t=2.5s with cinematic dark vignette
+ * 2. Massive, bold Bengali headline in the middle (88px, vibrant yellow)
+ * 3. Official ByteBangla brand badge at the bottom
+ */
+export async function renderReelCoverThumbnail(
+  options: ReelCoverOptions,
+  chromePath: string = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+): Promise<string> {
+  const finalOutPath = options.outputPath || path.resolve(process.cwd(), 'output', 'cover.jpg');
+  const outDir = path.dirname(finalOutPath);
+  if (!fs.existsSync(outDir)) {
+    fs.mkdirSync(outDir, { recursive: true });
+  }
+
+  let bgDataUri = '';
+  if (options.bgFramePath && fs.existsSync(options.bgFramePath)) {
+    try {
+      const buf = fs.readFileSync(options.bgFramePath);
+      bgDataUri = `data:image/jpeg;base64,${buf.toString('base64')}`;
+    } catch {}
+  }
+
+  // Shorten headline to punchy 5-7 words so it stays massive (88px) on mobile screens
+  let cleanHeadline = (options.headline || 'আজকের ভাইরাল ট্রেন্ড ও টেক হ্যাক!')
+    .replace(/[\"\'`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (cleanHeadline.length > 40) {
+    const parts = cleanHeadline.split(/[।?!,]/).map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 0 && parts[0].length >= 10 && parts[0].length <= 40) {
+      cleanHeadline = parts[0] + '!';
+    } else {
+      cleanHeadline = cleanHeadline.split(' ').slice(0, 6).join(' ') + '...';
+    }
+  }
+
+  const badgeCategory = options.category || '🔥 আজকের ভাইরাল ট্রেন্ড';
+
+  const browser = await puppeteer.launch({
+    executablePath: chromePath,
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@700;800&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 1080px;
+      height: 1920px;
+      background: #090d16;
+      overflow: hidden;
+      position: relative;
+      font-family: 'Hind Siliguri', sans-serif;
+    }
+    .bg-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1080px;
+      height: 1920px;
+      object-fit: cover;
+      z-index: 1;
+      filter: brightness(0.65) contrast(1.15);
+    }
+    .vignette-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1080px;
+      height: 1920px;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.85) 80%, rgba(5, 8, 16, 0.98) 100%),
+                  linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, transparent 25%, transparent 65%, rgba(5, 8, 16, 0.95) 100%);
+      z-index: 2;
+    }
+    .content-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 1080px;
+      height: 1920px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 140px 60px 100px 60px;
+    }
+    /* Top Category Badge */
+    .top-badge-container {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+    .glass-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(24px);
+      border: 2px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 30px rgba(249, 115, 22, 0.3);
+      padding: 14px 28px;
+      border-radius: 9999px;
+    }
+    .badge-text {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+    .brand-tag {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: #f97316;
+      background: rgba(249, 115, 22, 0.22);
+      border: 1.5px solid rgba(249, 115, 22, 0.6);
+      padding: 3px 12px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+    }
+    /* Center Stage Massive Hook Card */
+    .hero-box {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 3px solid rgba(250, 204, 21, 0.45);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 50px rgba(250, 204, 21, 0.2);
+      border-radius: 40px;
+      padding: 60px 45px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .curiosity-pill {
+      display: inline-block;
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: #ffffff;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      padding: 8px 24px;
+      border-radius: 9999px;
+      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+    .headline-text {
+      font-size: 88px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #facc15;
+      text-shadow: 0 6px 25px rgba(0, 0, 0, 0.95), 0 0 40px rgba(250, 204, 21, 0.35);
+      margin-bottom: 24px;
+      word-break: break-word;
+    }
+    .action-sub {
+      font-size: 32px;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
+    }
+    /* Bottom Brand Bar */
+    .bottom-bar {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 28px;
+      padding: 20px 35px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+    }
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .brand-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #f97316, #e11d48);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+    }
+    .brand-col {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 1.5px;
+    }
+    .brand-slogan {
+      font-size: 20px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .watch-pill {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      background: rgba(250, 204, 21, 0.18);
+      color: #facc15;
+      border: 2px solid rgba(250, 204, 21, 0.5);
+      padding: 10px 24px;
+      border-radius: 9999px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  ${bgDataUri ? `<img class="bg-layer" src="${bgDataUri}" />` : ''}
+  <div class="vignette-overlay"></div>
+
+  <div class="content-wrapper">
+    <div class="top-badge-container">
+      <div class="glass-pill">
+        <span class="badge-text">${badgeCategory}</span>
+        <span class="brand-tag">BYTEBANGLA</span>
+      </div>
+    </div>
+
+    <div class="hero-box">
+      <div class="curiosity-pill">⚡ ১ মিনিটে সমাধান</div>
+      <h1 class="headline-text">${cleanHeadline}</h1>
+      <div class="action-sub">👉 এখনই পুরো ভিডিওটি দেখুন</div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="brand-left">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-col">
+          <span class="brand-title">BYTEBANGLA</span>
+          <span class="brand-slogan">সহজ বাংলায় ভাইরাল টেক ও লাইফ হ্যাকস</span>
+        </div>
+      </div>
+      <div class="watch-pill">▶️ REEL</div>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    const buffer = await page.screenshot({ type: 'jpeg', quality: 95 });
+    fs.writeFileSync(finalOutPath, buffer);
+    console.log(`[Media Service] 🌟 High-Impact Reel Cover rendered to: ${finalOutPath}`);
+    return finalOutPath;
+  } finally {
+    await browser.close();
+  }
+}
+
 

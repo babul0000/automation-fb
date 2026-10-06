@@ -114,12 +114,12 @@ AUDIT RULES & RUBRIC (Score 1 to 10 each):
    - DEDUCT 5 points for robotic words: "চলুন জেনে নেওয়া যাক", "যুগান্তকারী", "অতএব", "বিস্তারিত আলোচনা"
 3. Hook Strength (0-4s): Does the opening sentence trigger intense curiosity, story suspense, reality warning, or direct value? (1-10)
 4. Actionable Takeaway / Moral (10-22s): Is there a crisp, clear, practical solution, setting, or inspiring life lesson? (1-10)
-5. Mandatory Save & Share CTA: Does it end with:
-   "📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!"? (Must be present)
+5. Mandatory Save & Share CTA: Does it end with the Save & Share trigger and signature:
+   "📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!"? (Must be present)
 
 TASK:
 - If ANY developer jargon or banned placeholder phrase is found: set overallScore = 0 and needsRevision = true.
-- If score is under 85%, provide an improved 25-35s script in "improvedScript" strictly following the 4-phase mass-market formula with mandatory CTA.
+- If score is under 85%, provide an improved 25-30s script in "improvedScript" strictly following the 4-phase viral formula with mandatory CTA.
 
 Return ONLY a valid JSON object:
 {
@@ -129,14 +129,14 @@ Return ONLY a valid JSON object:
   "valueDelivery": 9,
   "feedback": "Concise critique explaining strengths and weaknesses",
   "needsRevision": false,
-  "improvedScript": "Full 25-35s revised script if needed"
+  "improvedScript": "Full 25-30s revised script if needed"
 }`;
 
   const modelsToTry = [
-    process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-    'gemini-3.5-flash-lite',
+    process.env.GEMINI_MODEL || 'gemini-flash-lite-latest',
     'gemini-flash-lite-latest',
     'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite',
     'gemini-3.5-flash',
   ];
 

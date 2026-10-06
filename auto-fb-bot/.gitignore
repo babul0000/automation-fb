@@ -39,4 +39,5 @@ data/*.pcm
 *.wav
 *.pcm
 !assets/audio/**
+output/
 

@@ -5,7 +5,7 @@ import { generateBanglaPostBundle, BanglaPostBundle, ReelsScriptData } from '../
 import { auditAndReflectPost, auditReelsScript, CriticAuditResult } from '../services/critic';
 import { generateCarouselSlides } from '../services/media';
 import { generateReelVideo } from '../services/video';
-import { publishMultiPhotoPost, publishReelToFacebookPage, addCommentToPost } from '../services/facebook';
+import { publishMultiPhotoPost, publishReelToFacebookPage, addCommentToPost, pinCommentToPost } from '../services/facebook';
 import { savePost, saveJobLog, saveComment, saveReply, getAutomationSettings, updateSlotExecution, getRecentPosts } from '../services/db';
 import { collectAllRecentMetrics } from '../services/analytics';
 
@@ -188,6 +188,9 @@ export async function triggerManualPost(
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const commentRes = await addCommentToPost(fbRes.post_id, bundle.firstComment);
         firstCommentId = commentRes.id;
+
+        // Auto-pin the first comment to spark community conversation
+        await pinCommentToPost(fbRes.post_id, commentRes.id).catch(() => {});
 
         await saveComment({
           facebookCommentId: commentRes.id,
@@ -539,10 +542,14 @@ export async function triggerAutonomousReelPost(
       };
     }
 
-    // 5. Upload & Publish Reel to Meta Graph API
+    // 5. Upload & Publish Reel to Meta Graph API (with High-Impact Hook Cover Thumbnail)
     console.log(`[Reel Publisher] 🚀 Uploading Reel to Facebook Page via Meta Graph API...`);
     const caption = `${finalReelsScript.hook}\n\n${finalReelsScript.body}\n\n👉 ${finalReelsScript.cta}\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD`;
-    const reelRes = await publishReelToFacebookPage(generatedReel.videoBuffer, caption);
+    const reelRes = await publishReelToFacebookPage(
+      generatedReel.videoBuffer,
+      caption,
+      generatedReel.coverThumbnailBuffer || generatedReel.coverThumbnailPath
+    );
 
     // Clean up temporary files
     generatedReel.cleanup();
@@ -552,7 +559,11 @@ export async function triggerAutonomousReelPost(
     if (settings.autoFirstComment && bundle.firstComment) {
       try {
         await new Promise((resolve) => setTimeout(resolve, 3000));
-        await addCommentToPost(reelRes.video_id, bundle.firstComment);
+        const cRes = await addCommentToPost(reelRes.video_id, bundle.firstComment);
+        if (cRes?.id) {
+          // Auto-pin the first comment to spark community conversation
+          await pinCommentToPost(reelRes.video_id, cRes.id).catch(() => {});
+        }
       } catch (cErr: any) {
         console.warn(`[Reel Publisher Warning] Reel first comment notice: ${cErr.message}`);
       }

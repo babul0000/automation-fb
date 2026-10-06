@@ -86,14 +86,21 @@ export async function analyzeCommentWithAI(
 ): Promise<CommentAnalysisResult> {
   const cleanName = senderName || 'ভাই';
 
-  // 1. Instant Lead Magnet Keyword Trigger
+  // 1. Instant Lead Magnet / Link Keyword Trigger
   if (isLeadMagnetKeyword(commentText)) {
     console.log(`[Comment Intelligence] 🎯 Lead Magnet Keyword Trigger matched in comment: "${commentText}"`);
+
+    // Extract link from parent post if available
+    const urlMatches = postContext ? postContext.match(/https?:\/\/[^\s\)\"\'<>]+/g) : null;
+    const directLink = urlMatches && urlMatches.length > 0 ? urlMatches[0] : 'https://facebook.com/bytebanglabd';
+
+    const highConversionDm = `স্যার, এই নিন আপনার কাঙ্ক্ষিত ডিরেক্ট লিংক: ${directLink}।\n\nএমন দরকারি প্রতিদিনের ট্রেন্ডিং টিপস যেন মিস না হয়, সেজন্য আমাদের ByteBangla পেজটিতে একটি ফলো দিয়ে রাখতে পারেন! 💡`;
+
     return {
       category: 'LEAD_MAGNET',
       shouldReply: true,
       replyText: `ধন্যবাদ ${cleanName}! আপনার অনুরোধ অনুযায়ী প্রয়োজনীয় রিসোর্স ও ডিরেক্ট লিংক আপনার মেসেঞ্জার ইনবক্সে পাঠিয়ে দেওয়া হয়েছে 🚀 চেক করে নিন!`,
-      privateMessage: `হ্যালো ${cleanName}! বাইট বাংলার সাথে থাকার জন্য ধন্যবাদ। পোস্টে উল্লেখিত টুলস ও প্রম্পটের ডিরেক্ট লিংকসমূহ:\n\n১. ChatGPT: https://chatgpt.com\n২. Claude AI: https://claude.ai\n৩. Perplexity AI: https://perplexity.ai\n\n📌 পেজটি ফলো করে রাখুন এমন নিয়মিত টেক টিপস পেতে! 💙`,
+      privateMessage: highConversionDm,
       isFlagged: false,
     };
   }
@@ -146,9 +153,9 @@ Return ONLY valid JSON without backticks:
 }`;
 
   const modelsToTry = [
-    process.env.GEMINI_MODEL || 'gemini-3.5-flash',
-    'gemini-3.5-flash-lite',
+    process.env.GEMINI_MODEL || 'gemini-flash-lite-latest',
     'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite',
   ];
 
   for (const model of modelsToTry) {
@@ -168,11 +175,21 @@ Return ONLY valid JSON without backticks:
         const cleaned = raw.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
         const parsed = JSON.parse(cleaned);
 
+        const category = parsed.category || 'NORMAL';
+        let privateMessage: string | undefined;
+
+        if (category === 'SOURCE_REQUEST' || category === 'LEAD_MAGNET') {
+          const urlMatches = postContext ? postContext.match(/https?:\/\/[^\s\)\"\'<>]+/g) : null;
+          const directLink = urlMatches && urlMatches.length > 0 ? urlMatches[0] : 'https://facebook.com/bytebanglabd';
+          privateMessage = `স্যার, এই নিন আপনার কাঙ্ক্ষিত ডিরেক্ট লিংক: ${directLink}।\n\nএমন দরকারি প্রতিদিনের ট্রেন্ডিং টিপস যেন মিস না হয়, সেজন্য আমাদের ByteBangla পেজটিতে একটি ফলো দিয়ে রাখতে পারেন! 💡`;
+        }
+
         return {
-          category: parsed.category || 'NORMAL',
+          category,
           shouldReply: Boolean(parsed.shouldReply),
           replyText: parsed.replyText || '',
-          isFlagged: Boolean(parsed.isFlagged) || parsed.category === 'SENSITIVE' || parsed.category === 'ABUSIVE',
+          privateMessage,
+          isFlagged: Boolean(parsed.isFlagged) || category === 'SENSITIVE' || category === 'ABUSIVE',
         };
       }
     } catch (err: any) {

@@ -33,6 +33,16 @@ export interface ContentPillar {
  */
 export const CONTENT_PILLARS: ContentPillar[] = [
   {
+    id: 'viral_trend',
+    nameEn: 'Viral Bangladesh Trend',
+    nameBn: 'আজকের ভাইরাল ট্রেন্ড ও টেক আপডেট',
+    badge: '🔥 আজকের ভাইরাল ট্রেন্ড',
+    accentColor: '#F97316', // Orange
+    glowColor: '#EA580C',
+    hookStyle: 'Viral Trend Hook / Instant Curiosity',
+    niche: 'সোশ্যাল মিডিয়ায় ভাইরাল ট্রেন্ড (যেমন: বাংলাদেশ ভ্রমণ ম্যাপ, ভাইরাল ফটো এডিটিং), মোবাইলের নতুন ভাইরাল ফিচার, দৈনন্দিন ট্রেন্ডিং টেক ও কনজিউমার নিউজ',
+  },
+  {
     id: 'smart_life_hacks',
     nameEn: 'Smart Mobile & Life Hacks',
     nameBn: 'দরকারি মোবাইল ও লাইফ হ্যাক',
@@ -245,53 +255,117 @@ export async function isDuplicateInLast30Days(
 }
 
 /**
- * Discovers and ranks trending mass-market topics adhering to:
- * 1. Strict 5-pillar rotation across universal categories
- * 2. Strict 30-day de-duplication check (<20% keyword overlap)
- * 3. 100% elimination of programming/IDE jargon
+ * Fetches real-time trending search queries from Google Trends Bangladesh RSS feed
+ */
+export async function fetchGoogleTrendsBD(): Promise<string[]> {
+  try {
+    const res = await axios.get('https://trends.google.com/trending/rss?geo=BD', {
+      timeout: 7000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+    });
+    if (res.data) {
+      const titles = [...res.data.matchAll(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/gi)]
+        .map((m) => m[1]?.trim())
+        .filter((t) => t && t.length > 2 && !t.includes('Daily Search Trends'))
+        .slice(0, 15);
+      if (titles.length > 0) {
+        console.log(`[Trend Engine] 📡 Fetched ${titles.length} live Google Trends for Bangladesh:`, titles.slice(0, 4));
+        return titles;
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[Trend Engine Notice] Google Trends BD RSS fetch notice: ${err.message}`);
+  }
+  return [];
+}
+
+/**
+ * Fetches real-time headlines from Google News Bangladesh RSS feed
+ */
+export async function fetchGoogleNewsBD(): Promise<string[]> {
+  try {
+    const res = await axios.get('https://news.google.com/rss?hl=bn&gl=BD&ceid=BD:bn', {
+      timeout: 7000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+    });
+    if (res.data) {
+      const titles = [...res.data.matchAll(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/gi)]
+        .map((m) => m[1]?.trim())
+        .filter((t) => t && t.length > 5 && !t.includes('Google News'))
+        .map((t) => t.split(' - ')[0].trim())
+        .slice(0, 15);
+      if (titles.length > 0) {
+        console.log(`[Trend Engine] 📰 Fetched ${titles.length} live Google News headlines for Bangladesh:`, titles.slice(0, 4));
+        return titles;
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[Trend Engine Notice] Google News BD RSS fetch notice: ${err.message}`);
+  }
+  return [];
+}
+
+/**
+ * Discovers and ranks trending topics adhering to:
+ * 1. REAL-TIME VIRAL DISCOVERY: Queries live Google Trends BD & news signals to discover what Bangladesh is talking about today
+ * 2. Strict 30-day de-duplication check (<20% keyword overlap) & hash anti-repetition
+ * 3. 100% elimination of programming/IDE jargon, targeting ordinary Bangladeshis (aged 15-50)
+ * 4. Fallback ONLY if live trends fail: Rotate to high-demand evergreen life hacks (storage cleanup, caller ID, bKash scam)
  */
 export async function discoverTopTrendingTopic(requestedCategory?: string): Promise<DiscoveredTopic> {
   const categoryToUse = requestedCategory || (await getNextRotatedCategory());
   const pillar = CONTENT_PILLARS.find((p) => p.nameEn === categoryToUse) || CONTENT_PILLARS[0];
 
-  console.log(`[Trend Engine] 🔍 Researching fresh topic for Pillar: "${pillar.nameEn}" (${pillar.nameBn})...`);
+  console.log(`\n[Trend Engine] 🚀 Initiating Live Viral Bangladesh Trend Discovery (Pillar: "${pillar.nameEn}")...`);
+
+  // 1. Fetch real-time live signals from Google Trends BD and Google News BD
+  const [googleTrends, googleNews] = await Promise.all([
+    fetchGoogleTrendsBD(),
+    fetchGoogleNewsBD(),
+  ]);
+  const liveSignals = [...googleTrends, ...googleNews];
 
   if (isConfiguredForGemini()) {
     const learningMemory = await getLearningFeedbackPrompt();
 
+    const liveSignalsContext = liveSignals.length > 0
+      ? `LIVE REAL-TIME SIGNALS & HEADLINES FROM BANGLADESH RIGHT NOW:\n${liveSignals.slice(0, 15).map((s) => `- ${s}`).join('\n')}`
+      : `LIVE CONTEXT: Current viral sensations in Bangladesh include interactive Bangladesh travel map generator, viral photo editing, smartphone storage cleanup, bKash/Nagad security updates, train e-ticketing tricks, and new mobile features.`;
+
     const prompt = `You are the Lead Content Strategist and Viral Growth Specialist for "ByteBangla".
 ${learningMemory}
 
-MANDATORY CONTENT PILLAR FOR THIS POST:
-Pillar: "${pillar.nameEn}" (${pillar.nameBn})
-Focus Niche: ${pillar.niche}
-Hook Style to target: ${pillar.hookStyle}
+CORE DIRECTIVE:
+The bot must NEVER pick boring, generic topics. It must ALWAYS identify and create content on what is CURRENTLY TRENDING and VIRAL in Bangladesh today that general people (ages 15–50) are talking about right now.
 
-Target audience: General population of Bangladesh aged 15 to 50 (students, job seekers, homemakers, professionals, and elders).
+${liveSignalsContext}
 
-STRICT MASS-MARKET RULES:
+MANDATORY CONTENT GUIDELINES:
+- Target Audience: Ordinary people across Dhaka and Bangladesh aged 15 to 50 (students, job seekers, homemakers, professionals, elders).
+- Focus Areas:
+  * Viral social media trends (e.g. Unseen Bangladesh travel map generator, viral photo styling trick, Facebook new privacy/algorithm update)
+  * Hot consumer tech & mobile features (e.g. secret caller ID, storage cleanup without deleting photos, train ticket booking server tricks, WhatsApp/Messenger features)
+  * Digital safety alerts (e.g. bKash/Nagad OTP fraud prevention, Facebook account hack prevention)
 - ❌ STRICTLY BAN all software developer, coding, and IDE jargon: NO "TypeScript", NO "Regex", NO "VS Code", NO "Terminal", NO "API", NO "Syntax", NO "npm", NO "git".
-- Focus 100% on everyday human life, smartphone utilities, digital security, inspiring real stories, human psychology, and exciting mysteries.
-- Provide 5 fresh, high-retention, curiosity-driven topics in Bengali.
-- Topics MUST be universally relatable to ordinary people in Dhaka and across Bangladesh.
+- Tone: High public curiosity, daily life utility, or social buzz right now in Dhaka Bengali.
 
-Return ONLY a valid JSON array of 5 objects without markdown backticks:
+Return ONLY a valid JSON array of 5 candidate topics:
 [
   {
-    "title": "বাংলায় আকর্ষণীয় ও সুনির্দিষ্ট টপিকের নাম",
+    "title": "আকর্ষণীয় ও সুনির্দিষ্ট বাংলা শিরোনাম (যেমন: ফেসবুকে ভাইরাল বাংলাদেশ ভ্রমণ ম্যাপ মাত্র ১ মিনিটে কীভাবে বানাবেন)",
     "category": "${pillar.nameEn}",
-    "source": "Viral Web Trend" or "Real Life Hacks" or "History Archive",
-    "utilityScore": 85 to 100,
-    "recencyScore": 85 to 100,
-    "shareabilityScore": 85 to 100
+    "source": "Google Trends BD & Social Buzz",
+    "utilityScore": 90 to 100,
+    "recencyScore": 95 to 100,
+    "shareabilityScore": 90 to 100
   }
 ]`;
 
     const modelsToTry = [
-      process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-      'gemini-3.5-flash-lite',
+      process.env.GEMINI_MODEL || 'gemini-flash-lite-latest',
       'gemini-flash-lite-latest',
       'gemini-3.1-flash-lite',
+      'gemini-3.5-flash-lite',
       'gemini-3.5-flash',
     ];
 
@@ -315,18 +389,18 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
           if (Array.isArray(items) && items.length > 0) {
             const candidates: DiscoveredTopic[] = items.map((item) => {
               const finalScore = calculateTopicScore(
-                item.utilityScore || 85,
-                item.recencyScore || 90,
-                item.shareabilityScore || 85
+                item.utilityScore || 90,
+                item.recencyScore || 95,
+                item.shareabilityScore || 90
               );
               return {
                 title: item.title,
-                category: pillar.nameEn,
+                category: item.category || pillar.nameEn,
                 pillarId: pillar.id,
-                source: item.source || 'Viral Web Trend',
-                utilityScore: item.utilityScore || 85,
-                recencyScore: item.recencyScore || 90,
-                shareabilityScore: item.shareabilityScore || 85,
+                source: item.source || 'Google Trends BD & Social Buzz',
+                utilityScore: item.utilityScore || 90,
+                recencyScore: item.recencyScore || 95,
+                shareabilityScore: item.shareabilityScore || 90,
                 finalScore,
                 hash: generateTopicHash(item.title),
               };
@@ -334,7 +408,7 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
 
             candidates.sort((a, b) => b.finalScore - a.finalScore);
 
-            // Check against both hash store AND 30-day history
+            // Check against both hash store AND 30-day anti-repetition history
             for (const cand of candidates) {
               const isRecentDuplicate = await isDuplicateInLast30Days(cand.title);
               const isHashDup = isTopicDuplicate(cand.title);
@@ -348,10 +422,10 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
                   score: cand.finalScore,
                   status: 'DISCOVERED',
                 });
-                console.log(`[Trend Engine] 🏆 Selected Top Fresh Topic [${cand.category}] (Score: ${cand.finalScore}): "${cand.title}"`);
+                console.log(`[Trend Engine] 🏆 Selected Top Viral Topic [${cand.category}] (Score: ${cand.finalScore}): "${cand.title}"`);
                 return cand;
               }
-              console.log(`[Trend Engine] ⏭️ Skipping duplicate candidate: "${cand.title}"`);
+              console.log(`[Trend Engine] ⏭️ Skipping duplicate candidate within 30 days: "${cand.title}"`);
             }
           }
         }
@@ -361,9 +435,9 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
     }
   }
 
-  // Fallback to curated topics within the rotated pillar
+  // Fallback ONLY if live trends fail: Rotate to high-demand evergreen life hacks
+  console.log(`[Trend Engine] ⚠️ Live trends unavailable. Rotating to high-demand evergreen life hacks (caller ID, storage cleanup, bKash scam)...`);
   const fallbackList = FALLBACK_CURATED_TOPICS_BY_CATEGORY[pillar.nameEn] || FALLBACK_CURATED_TOPICS_BY_CATEGORY['Smart Mobile & Life Hacks'];
-  console.log(`[Trend Engine] 💡 Selecting evergreen fallback from pillar: "${pillar.nameEn}"...`);
 
   for (const topic of fallbackList) {
     const isRecentDuplicate = await isDuplicateInLast30Days(topic);
@@ -373,7 +447,7 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
         title: topic,
         category: pillar.nameEn,
         pillarId: pillar.id,
-        source: 'Curated 5-Pillar Evergreen',
+        source: 'Evergreen High-Demand Fallback',
         utilityScore: 94,
         recencyScore: 90,
         shareabilityScore: 95,
@@ -387,17 +461,18 @@ Return ONLY a valid JSON array of 5 objects without markdown backticks:
         score: fallbackTopic.finalScore,
         status: 'DISCOVERED',
       });
+      console.log(`[Trend Engine] 💡 Selected Evergreen Fallback: "${topic}"`);
       return fallbackTopic;
     }
   }
 
-  // If all are exhausted, take first non-duplicate or rotate
+  // If all are exhausted, pick first non-duplicate or rotational item
   const chosen = fallbackList[Math.floor(Math.random() * fallbackList.length)];
   return {
     title: chosen,
     category: pillar.nameEn,
     pillarId: pillar.id,
-    source: 'Curated 5-Pillar Evergreen',
+    source: 'Evergreen Fallback',
     utilityScore: 90,
     recencyScore: 85,
     shareabilityScore: 90,
