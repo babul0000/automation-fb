@@ -666,7 +666,8 @@ function renderMotionSceneWithOverlay(
         '-pix_fmt yuv420p',
         '-c:v libx264',
         '-r 30',
-        '-preset fast',
+        '-preset ultrafast',
+        '-threads 2',
       ])
       .save(outPath)
       .on('end', () => resolve(outPath))
@@ -821,13 +822,11 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
 
     // Video filter:
     // 1. Scale/crop moving video to 1080x1920
-    // 2. Micro-Punch Cuts (scale 1.07x) every ~6.7s at phase transitions
-    // 3. Overlay sleek top glass badge (Y:140px, 32px font)
-    // 4. Overlay center safe kinetic subtitles (90px, vibrant yellow, 5.5px outline)
-    // 5. GUARANTEE FRAME 0 COVER: Overlay dedicated high-impact cover at t=0 to 0.45s so Facebook Reels preview FORCES the cover thumbnail!
+    // 2. Overlay sleek top glass badge (Y:140px, 32px font)
+    // 3. Overlay center safe kinetic subtitles (90px, vibrant yellow, 5.5px outline)
+    // 4. GUARANTEE FRAME 0 COVER: Overlay dedicated high-impact cover at t=0 to 0.45s so Facebook Reels preview FORCES the cover thumbnail!
     const filterGraph: string[] = [
-      `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[base]`,
-      `[base]zoompan=z='if(between(mod(on,400),200,400),1.07,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30[bg]`,
+      `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[bg]`,
       `[bg][1:v]overlay=0:0[vbadge]`,
       `[vbadge]subtitles=${relAss}:fontsdir=${relFonts}[vsub]`,
       `[2:v]scale=1080:1920[vcover]`,
@@ -858,7 +857,8 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
         '-c:v libx264',
         '-pix_fmt yuv420p',
         '-r 30',
-        '-preset fast',
+        '-preset ultrafast',
+        '-threads 2',
         '-c:a aac',
         '-b:a 192k',
         `-t ${exactDuration}`,
