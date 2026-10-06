@@ -1496,50 +1496,109 @@ export async function renderDynamicReelScenes(
 
   console.log(`[Media Service] 🎨 Rendering 4-Scene Synced 1080x1920 Frames for: "${data.topic}"...`);
 
-  const browser = await puppeteer.launch({
-    executablePath: chromePath,
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
-  });
-
   try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1080, height: 1920 });
+    const browser = await puppeteer.launch({
+      executablePath: chromePath,
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+    });
 
-    // Scene 1: The Problem State (0s – 5s)
-    const html1 = buildScene1ProblemHtml(data);
-    await page.setContent(html1, { waitUntil: 'domcontentloaded' });
-    const buf1 = await page.screenshot({ type: 'png', omitBackground: true });
-    fs.writeFileSync(scene1Path, buf1);
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1080, height: 1920 });
 
-    // Scene 2: The Tool Reveal (5s – 12s)
-    const html2 = buildScene2RevealHtml(data);
-    await page.setContent(html2, { waitUntil: 'domcontentloaded' });
-    const buf2 = await page.screenshot({ type: 'png', omitBackground: true });
-    fs.writeFileSync(scene2Path, buf2);
+      // Scene 1: The Problem State (0s – 5s)
+      const html1 = buildScene1ProblemHtml(data);
+      await page.setContent(html1, { waitUntil: 'domcontentloaded' });
+      const buf1 = await page.screenshot({ type: 'png', omitBackground: true });
+      fs.writeFileSync(scene1Path, buf1);
 
-    // Scene 3: The Live Solution & Shortcut (12s – 22s)
-    const html3 = buildScene3SolutionHtml(data);
-    await page.setContent(html3, { waitUntil: 'domcontentloaded' });
-    const buf3 = await page.screenshot({ type: 'png', omitBackground: true });
-    fs.writeFileSync(scene3Path, buf3);
+      // Scene 2: The Tool Reveal (5s – 12s)
+      const html2 = buildScene2RevealHtml(data);
+      await page.setContent(html2, { waitUntil: 'domcontentloaded' });
+      const buf2 = await page.screenshot({ type: 'png', omitBackground: true });
+      fs.writeFileSync(scene2Path, buf2);
 
-    // Scene 4: Viral Save & CTA State (22s – 30s)
-    const html4 = buildScene4CtaHtml(data);
-    await page.setContent(html4, { waitUntil: 'domcontentloaded' });
-    const buf4 = await page.screenshot({ type: 'png', omitBackground: true });
-    fs.writeFileSync(scene4Path, buf4);
+      // Scene 3: The Live Solution & Shortcut (12s – 22s)
+      const html3 = buildScene3SolutionHtml(data);
+      await page.setContent(html3, { waitUntil: 'domcontentloaded' });
+      const buf3 = await page.screenshot({ type: 'png', omitBackground: true });
+      fs.writeFileSync(scene3Path, buf3);
 
-    console.log(`[Media Service] ✅ All 4 dynamic synced scenes rendered to disk.`);
+      // Scene 4: Viral Save & CTA State (22s – 30s)
+      const html4 = buildScene4CtaHtml(data);
+      await page.setContent(html4, { waitUntil: 'domcontentloaded' });
+      const buf4 = await page.screenshot({ type: 'png', omitBackground: true });
+      fs.writeFileSync(scene4Path, buf4);
 
-    return {
-      scene1Path,
-      scene2Path,
-      scene3Path,
-      scene4Path,
-    };
-  } finally {
-    await browser.close();
+      console.log(`[Media Service] ✅ All 4 dynamic synced scenes rendered to disk.`);
+
+      return {
+        scene1Path,
+        scene2Path,
+        scene3Path,
+        scene4Path,
+      };
+    } finally {
+      await browser.close();
+    }
+  } catch (launchErr: any) {
+    console.warn(`[Media Service Warning] Dynamic Reel Scenes Puppeteer launch failed (${launchErr.message}). Using native SVG fallback...`);
+    const fontCandidates = [
+      path.resolve(process.cwd(), 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+      path.resolve(__dirname, '..', '..', 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+    ];
+    const existingFont = fontCandidates.find((f) => fs.existsSync(f));
+    const resvgOpts: any = existingFont ? { font: { fontFiles: [existingFont], defaultFontFamily: 'Hind Siliguri' } } : undefined;
+
+    const escapeXml = (str: string) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const hook = escapeXml(data.phase1Hook || data.topic);
+    const solution = escapeXml(data.phase2Solution || data.phase3Steps || 'সহজ সমাধান');
+    const cta = escapeXml(data.phase4Cta || 'ভিডিওটি লাইক ও শেয়ার করুন');
+    const toolName = escapeXml(data.toolName || 'স্মার্ট টেক টিপস');
+
+    const svg1 = `<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(60, 600)">
+        <rect width="960" height="450" rx="36" fill="#0f172a" fill-opacity="0.9" stroke="#ef4444" stroke-width="2.5" />
+        <rect x="360" y="40" width="240" height="50" rx="25" fill="#ef4444" />
+        <text x="480" y="73" font-family="sans-serif" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">⚠️ সতর্কবার্তা</text>
+        <text x="480" y="240" font-family="'Hind Siliguri', sans-serif" font-size="44" font-weight="bold" fill="#ffffff" text-anchor="middle">${hook}</text>
+      </g>
+    </svg>`;
+    fs.writeFileSync(scene1Path, new Resvg(svg1, resvgOpts).render().asPng());
+
+    const svg2 = `<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(60, 600)">
+        <rect width="960" height="450" rx="36" fill="#0f172a" fill-opacity="0.9" stroke="#38bdf8" stroke-width="2.5" />
+        <rect x="340" y="40" width="280" height="50" rx="25" fill="#0284c7" />
+        <text x="480" y="73" font-family="sans-serif" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">⚡ সমাধান পেয়ে গেছি!</text>
+        <text x="480" y="240" font-family="'Hind Siliguri', sans-serif" font-size="48" font-weight="bold" fill="#38bdf8" text-anchor="middle">${toolName}</text>
+      </g>
+    </svg>`;
+    fs.writeFileSync(scene2Path, new Resvg(svg2, resvgOpts).render().asPng());
+
+    const svg3 = `<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(60, 600)">
+        <rect width="960" height="450" rx="36" fill="#0f172a" fill-opacity="0.9" stroke="#10b981" stroke-width="2.5" />
+        <rect x="360" y="40" width="240" height="50" rx="25" fill="#10b981" />
+        <text x="480" y="73" font-family="sans-serif" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">✅ কাজের নিয়ম</text>
+        <text x="480" y="240" font-family="'Hind Siliguri', sans-serif" font-size="42" font-weight="bold" fill="#ffffff" text-anchor="middle">${solution}</text>
+      </g>
+    </svg>`;
+    fs.writeFileSync(scene3Path, new Resvg(svg3, resvgOpts).render().asPng());
+
+    const svg4 = `<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(60, 600)">
+        <rect width="960" height="450" rx="36" fill="#0f172a" fill-opacity="0.9" stroke="#facc15" stroke-width="2.5" />
+        <rect x="340" y="40" width="280" height="50" rx="25" fill="#facc15" />
+        <text x="480" y="73" font-family="sans-serif" font-size="22" font-weight="bold" fill="#090d16" text-anchor="middle">📌 এখনই Save করুন</text>
+        <text x="480" y="240" font-family="'Hind Siliguri', sans-serif" font-size="40" font-weight="bold" fill="#facc15" text-anchor="middle">${cta}</text>
+      </g>
+    </svg>`;
+    fs.writeFileSync(scene4Path, new Resvg(svg4, resvgOpts).render().asPng());
+
+    console.log(`[Media Service] ✅ All 4 dynamic synced scenes rendered via native Resvg.`);
+    return { scene1Path, scene2Path, scene3Path, scene4Path };
   }
 }
 
@@ -1553,17 +1612,18 @@ export async function renderTopGlassBadge(
   outPngPath: string,
   chromePath: string = getChromeExecutablePath()
 ): Promise<string> {
-  const browser = await puppeteer.launch({
-    executablePath: chromePath,
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
-  });
-
   try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+    const browser = await puppeteer.launch({
+      executablePath: chromePath,
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+    });
 
-    const html = `
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+
+      const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -1633,13 +1693,35 @@ export async function renderTopGlassBadge(
 </html>
 `;
 
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
-    const buffer = await page.screenshot({ type: 'png', omitBackground: true });
-    fs.writeFileSync(outPngPath, buffer);
-    console.log(`[Media Service] ✨ Rendered sleek top floating glass badge: "${badgeText}"`);
+      await page.setContent(html, { waitUntil: 'domcontentloaded' });
+      const buffer = await page.screenshot({ type: 'png', omitBackground: true });
+      fs.writeFileSync(outPngPath, buffer);
+      console.log(`[Media Service] ✨ Rendered sleek top floating glass badge: "${badgeText}"`);
+      return outPngPath;
+    } finally {
+      await browser.close();
+    }
+  } catch (err: any) {
+    console.warn(`[Media Service Warning] Top glass badge Puppeteer failed (${err.message}). Using native SVG fallback...`);
+    const svg = `
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(290, 140)">
+    <rect width="500" height="70" rx="35" fill="#0f172a" fill-opacity="0.85" stroke="rgba(255, 255, 255, 0.28)" stroke-width="2" />
+    <text x="230" y="47" font-family="'Hind Siliguri', sans-serif" font-size="32" font-weight="bold" fill="#ffffff" text-anchor="middle">${badgeText}</text>
+    <rect x="370" y="18" width="105" height="34" rx="10" fill="rgba(249, 115, 22, 0.25)" stroke="#f97316" stroke-width="1.5" />
+    <text x="422" y="41" font-family="sans-serif" font-size="15" font-weight="bold" fill="#f97316" text-anchor="middle">BYTEBANGLA</text>
+  </g>
+</svg>`;
+    const fontCandidates = [
+      path.resolve(process.cwd(), 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+      path.resolve(__dirname, '..', '..', 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+    ];
+    const existingFont = fontCandidates.find((f) => fs.existsSync(f));
+    const resvgOpts: any = existingFont ? { font: { fontFiles: [existingFont], defaultFontFamily: 'Hind Siliguri' } } : undefined;
+    const resvg = new Resvg(svg, resvgOpts);
+    const png = resvg.render().asPng();
+    fs.writeFileSync(outPngPath, png);
     return outPngPath;
-  } finally {
-    await browser.close();
   }
 }
 
@@ -1692,11 +1774,12 @@ export async function renderReelCoverThumbnail(
 
   const badgeCategory = options.category || '🔥 আজকের ভাইরাল ট্রেন্ড';
 
-  const browser = await puppeteer.launch({
-    executablePath: chromePath,
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
-  });
+  try {
+    const browser = await puppeteer.launch({
+      executablePath: chromePath,
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+    });
 
   try {
     const page = await browser.newPage();
@@ -1928,6 +2011,61 @@ export async function renderReelCoverThumbnail(
   } finally {
     await browser.close();
   }
+} catch (err: any) {
+  console.warn(`[Media Service Warning] Reel Cover Puppeteer failed (${err.message}). Using native Resvg fallback...`);
+  const escapeXml = (str: string) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const safeHeadline = escapeXml(cleanHeadline);
+  const safeCategory = escapeXml(badgeCategory);
+
+  const svg = `
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="coverGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#020617" />
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#coverGlow)" />
+
+  <!-- Top Badge -->
+  <g transform="translate(290, 140)">
+    <rect width="500" height="70" rx="35" fill="#0f172a" fill-opacity="0.9" stroke="rgba(255, 255, 255, 0.28)" stroke-width="2" />
+    <text x="230" y="47" font-family="'Hind Siliguri', sans-serif" font-size="30" font-weight="bold" fill="#ffffff" text-anchor="middle">${safeCategory}</text>
+    <rect x="370" y="18" width="105" height="34" rx="10" fill="rgba(249, 115, 22, 0.25)" stroke="#f97316" stroke-width="1.5" />
+    <text x="422" y="41" font-family="sans-serif" font-size="15" font-weight="bold" fill="#f97316" text-anchor="middle">BYTEBANGLA</text>
+  </g>
+
+  <!-- Center Stage Headline Box -->
+  <g transform="translate(80, 680)">
+    <rect width="920" height="520" rx="40" fill="#0f172a" fill-opacity="0.88" stroke="#facc15" stroke-width="3" />
+    <rect x="340" y="50" width="240" height="50" rx="25" fill="#ef4444" />
+    <text x="460" y="83" font-family="sans-serif" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">⚡ ১ মিনিটে সমাধান</text>
+    <text x="460" y="270" font-family="'Hind Siliguri', sans-serif" font-size="64" font-weight="bold" fill="#facc15" text-anchor="middle">${safeHeadline}</text>
+    <text x="460" y="420" font-family="'Hind Siliguri', sans-serif" font-size="32" font-weight="bold" fill="#38bdf8" text-anchor="middle">👉 এখনই পুরো ভিডিওটি দেখুন</text>
+  </g>
+
+  <!-- Bottom Brand Bar -->
+  <g transform="translate(80, 1680)">
+    <rect width="920" height="110" rx="28" fill="#0f172a" fill-opacity="0.95" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1.5" />
+    <text x="50" y="65" font-family="sans-serif" font-size="30" font-weight="900" fill="#ffffff">⚡ BYTEBANGLA</text>
+    <text x="320" y="65" font-family="'Hind Siliguri', sans-serif" font-size="22" fill="#94a3b8">সহজ বাংলায় ভাইরাল টেক ও লাইফ হ্যাকস</text>
+    <rect x="760" y="30" width="120" height="50" rx="25" fill="rgba(250, 204, 21, 0.18)" stroke="#facc15" stroke-width="2" />
+    <text x="820" y="63" font-family="sans-serif" font-size="22" font-weight="bold" fill="#facc15" text-anchor="middle">▶️ REEL</text>
+  </g>
+</svg>`;
+
+  const fontCandidates = [
+    path.resolve(process.cwd(), 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+    path.resolve(__dirname, '..', '..', 'assets', 'fonts', 'HindSiliguri-Bold.ttf'),
+  ];
+  const existingFont = fontCandidates.find((f) => fs.existsSync(f));
+  const resvgOpts: any = existingFont ? { font: { fontFiles: [existingFont], defaultFontFamily: 'Hind Siliguri' } } : undefined;
+  const resvg = new Resvg(svg, resvgOpts);
+  const png = resvg.render().asPng();
+  fs.writeFileSync(finalOutPath, png);
+  console.log(`[Media Service] 🌟 Native Resvg Reel Cover rendered to: ${finalOutPath}`);
+  return finalOutPath;
+}
 }
 
 
