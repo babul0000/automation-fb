@@ -504,8 +504,8 @@ export function getAvailableMediaVideos(): string[] {
           if (seen.has(base)) continue;
           try {
             const stats = fs.statSync(file);
-            // Must be genuine realistic B-roll footage (> 1.5 MB to avoid tiny dummy clips)
-            if (stats.size > 1.5 * 1024 * 1024) {
+            // Must be genuine realistic B-roll footage (> 500 KB to avoid corrupt/empty clips)
+            if (stats.size > 500 * 1024) {
               seen.add(base);
               validVideos.push(file);
             }
