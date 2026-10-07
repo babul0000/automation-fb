@@ -5,7 +5,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import { EdgeTTS } from 'node-edge-tts';
-import { renderTopGlassBadge, renderReelCoverThumbnail } from './media';
+import { renderTopGlassBadge, renderReelCoverThumbnail, renderReelSubtitleCards, SubtitleCardPhrase } from './media';
 import { env, isConfiguredForGemini } from '../config/env';
 
 // Configure FFMPEG & FFPROBE binaries
@@ -88,17 +88,16 @@ function formatAssTimestamp(ms: number): string {
 }
 
 /**
- * Builds non-overlapping, center-safe zone ASS subtitles displaying 3-4 words at a time.
- * Position: Center Safe Zone (MarginV: 920 in 1080x1920 canvas).
- * Style: Large bold Hind Siliguri, 65px, vibrant yellow text with 4px black outline.
- * Maximum 3-4 words per line with zero text collision.
+ * Builds non-overlapping, center-safe zone subtitle phrases displaying 2-3 words at a time.
+ * Position: Center Safe Zone (1080x1920 canvas).
+ * Style: Large bold single line, 75px, bright yellow (#FFE600) with solid black outline.
+ * Maximum 2-3 words per line with zero text collision.
  */
-export function buildSyncedWordSubtitlesAss(
+export function buildSyncedSubtitlePhrases(
   cues: WordCue[],
-  totalDurationSec: number,
-  outputAssPath: string
-): void {
-  const phrases: { text: string; startMs: number; endMs: number }[] = [];
+  totalDurationSec: number
+): SubtitleCardPhrase[] {
+  const phrases: SubtitleCardPhrase[] = [];
   let currentGroup: WordCue[] = [];
 
   for (let i = 0; i < cues.length; i++) {
@@ -111,7 +110,7 @@ export function buildSyncedWordSubtitlesAss(
 
     const charCount = currentGroup.reduce((acc, c) => acc + c.part.trim().length, 0);
 
-    // Strictly maximum 2 to 3 words per line for large 90px font with zero collision
+    // Strictly maximum 2 to 3 words per line for large 75px font with zero collision (single line)
     if (
       currentGroup.length >= 3 ||
       charCount >= 18 ||
@@ -150,6 +149,19 @@ export function buildSyncedWordSubtitlesAss(
     }
   }
 
+  return phrases;
+}
+
+/**
+ * Builds non-overlapping ASS subtitles (legacy fallback)
+ */
+export function buildSyncedWordSubtitlesAss(
+  cues: WordCue[],
+  totalDurationSec: number,
+  outputAssPath: string
+): void {
+  const phrases = buildSyncedSubtitlePhrases(cues, totalDurationSec);
+
   const assHeader = `[Script Info]
 Title: ByteBangla Synced Kinetic Reel Subtitles
 ScriptType: v4.00+
@@ -161,7 +173,7 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: ReelSubtitle,Hind Siliguri,90,&H0000FFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,5.5,2.5,2,40,40,960,1
+Style: ReelSubtitle,Hind Siliguri,75,&H0000FFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,5.5,2.5,2,40,40,960,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -459,12 +471,13 @@ export async function generateHumanBengaliVoiceover(
 }
 
 /**
- * Scans the project's `./media/` directory for all available video files (.mp4, .mov, .webm)
+ * Scans candidate directories for realistic, cinematic B-roll video files (.mp4, .mov, .webm).
+ * Strictly excludes any abstract color-bars, rainbow stripes, cartoonish patterns, or synthetic test loops.
  */
 export function getAvailableMediaVideos(): string[] {
   const candidateDirs = [
-    path.resolve(__dirname, '..', '..', 'assets', 'videos'),
     path.resolve(process.cwd(), 'assets', 'videos'),
+    path.resolve(__dirname, '..', '..', 'assets', 'videos'),
     path.resolve(process.cwd(), 'auto-fb-bot', 'assets', 'videos'),
     path.resolve(process.cwd(), '..', 'media'),
     path.resolve(process.cwd(), 'media'),
@@ -473,21 +486,36 @@ export function getAvailableMediaVideos(): string[] {
     path.resolve(__dirname, '../../../media'),
   ];
 
+  const blacklistedPattern = /color|rainbow|stripe|test|loop|smpte|bars|abstract|cartoon|dummy|synthetic/i;
+  const seen = new Set<string>();
+  const validVideos: string[] = [];
+
   for (const dir of candidateDirs) {
     if (fs.existsSync(dir)) {
       try {
         const files = fs
           .readdirSync(dir)
           .filter((f) => /\.(mp4|mov|webm)$/i.test(f))
+          .filter((f) => !blacklistedPattern.test(f))
           .map((f) => path.join(dir, f));
-        if (files.length > 0) {
-          return files;
+
+        for (const file of files) {
+          const base = path.basename(file).toLowerCase();
+          if (seen.has(base)) continue;
+          try {
+            const stats = fs.statSync(file);
+            // Must be genuine realistic B-roll footage (> 1.5 MB to avoid tiny dummy clips)
+            if (stats.size > 1.5 * 1024 * 1024) {
+              seen.add(base);
+              validVideos.push(file);
+            }
+          } catch {}
         }
       } catch {}
     }
   }
 
-  return [];
+  return validVideos;
 }
 
 let lastSelectedVideoIndex = 0;
@@ -502,7 +530,7 @@ let lastSelectedVideoPath = '';
 export function selectMediaBackgroundVideo(toolBrand?: string, topic?: string): string {
   let videos = getAvailableMediaVideos();
   if (videos.length === 0) {
-    console.warn(`[Video Engine Warning] No background video files found. Generating dynamic 1080x1920 fallback video...`);
+    console.warn(`[Video Engine Warning] No realistic background video files found. Generating dynamic 1080x1920 fallback video...`);
     const fallbackDir = path.resolve(process.cwd(), 'data', 'temp_reels');
     if (!fs.existsSync(fallbackDir)) fs.mkdirSync(fallbackDir, { recursive: true });
     const fallbackPath = path.join(fallbackDir, 'synthetic_bg.mp4');
@@ -518,7 +546,7 @@ export function selectMediaBackgroundVideo(toolBrand?: string, topic?: string): 
     if (fs.existsSync(fallbackPath)) {
       return fallbackPath;
     }
-    throw new Error('No background video files found in ./media/ directory.');
+    throw new Error('No realistic background video files found in media directories.');
   }
 
   // Exclude last used video to strictly guarantee no consecutive repetitions
@@ -539,7 +567,7 @@ export function selectMediaBackgroundVideo(toolBrand?: string, topic?: string): 
   if (keywordMatches.length > 0) {
     const picked = keywordMatches[Math.floor(Math.random() * keywordMatches.length)];
     lastSelectedVideoPath = picked;
-    console.log(`[Video Engine] 🎯 Matched keyword video from ./media/: "${path.basename(picked)}"`);
+    console.log(`[Video Engine] 🎯 Matched keyword realistic video: "${path.basename(picked)}"`);
     return picked;
   }
 
@@ -555,7 +583,7 @@ export function selectMediaBackgroundVideo(toolBrand?: string, topic?: string): 
   const picked = pool[lastSelectedVideoIndex % pool.length];
   lastSelectedVideoIndex = (lastSelectedVideoIndex + 1) % pool.length;
   lastSelectedVideoPath = picked;
-  console.log(`[Video Engine] 🎬 Selected background video from ./media/: "${path.basename(picked)}"`);
+  console.log(`[Video Engine] 🎬 Selected realistic cinematic B-roll: "${path.basename(picked)}"`);
   return picked;
 }
 
@@ -715,9 +743,12 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
 
   console.log(`[Video Engine] 🎙️ Voiceover generated (${exactDuration.toFixed(1)}s, ${wordCues.length} word cues, model: ${voiceModel})`);
 
-  // 2. Generate Synced Non-Overlapping ASS Subtitles in Center Safe Zone (MarginV: 920, 65px, 4px outline, max 3-4 words)
-  const subtitlesPath = path.join(tempDir, 'subtitles.ass');
-  buildSyncedWordSubtitlesAss(wordCues, exactDuration, subtitlesPath);
+  // 2. Render Synced High-Resolution 100% Unbroken Bengali Subtitle Cards via Puppeteer
+  // Native OpenType text shaping guarantees ZERO broken ligatures (যুক্তাক্ষর, রেফ, য-ফলা)
+  const phrases = buildSyncedSubtitlePhrases(wordCues, exactDuration);
+  const subsDir = path.join(tempDir, 'subs');
+  console.log(`[Video Engine] ✍️ Rendering ${phrases.length} Bengali Subtitle Cards (100% unbroken ligatures, 75px, bright yellow)...`);
+  const { concatPath: subsConcatPath } = await renderReelSubtitleCards(phrases, exactDuration, subsDir);
 
   // 3. Render ONLY the Single Sleek Top Floating Glass Badge (Zero ugly static cards)
   let badgeText = '🔥 আজকের ভাইরাল ট্রেন্ড';
@@ -805,50 +836,51 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   const videoHasAudio = await hasAudioStream(motionBgPath);
 
   // Relative paths for Windows FFmpeg filter compatibility
-  const relAss = path.relative(process.cwd(), subtitlesPath).replace(/\\/g, '/');
-  const relFonts = path.relative(process.cwd(), path.resolve(process.cwd(), 'assets', 'fonts')).replace(/\\/g, '/');
+  const relConcat = path.relative(process.cwd(), subsConcatPath).replace(/\\/g, '/');
   const relBadge = path.relative(process.cwd(), badgeOverlayPath).replace(/\\/g, '/');
   const relCover = path.relative(process.cwd(), dedicatedCoverPath).replace(/\\/g, '/');
 
-  console.log(`[Video Engine] 🚀 Compiling 1080x1920 Clean Kinetic MP4 Reel (Frame 0 Cover Baked + 90px Subs + Mood BGM)...`);
+  console.log(`[Video Engine] 🚀 Compiling 1080x1920 Clean Kinetic MP4 Reel (Frame 0 Cover Baked + 75px Unbroken Bengali Subs + Mood BGM)...`);
 
   await new Promise<void>((resolve, reject) => {
     let command = ffmpeg()
       .input(motionBgPath)
       .inputOptions(['-stream_loop -1'])
       .input(relBadge)
+      .input(relConcat)
+      .inputOptions(['-f concat', '-safe 0'])
       .input(relCover)
       .input(audioPath);
 
     // Video filter:
     // 1. Scale/crop moving video to 1080x1920
     // 2. Overlay sleek top glass badge (Y:140px, 32px font)
-    // 3. Overlay center safe kinetic subtitles (90px, vibrant yellow, 5.5px outline)
+    // 3. Overlay center safe kinetic subtitles (75px, bright yellow, solid black outline, 100% native Bengali shaping)
     // 4. GUARANTEE FRAME 0 COVER: Overlay dedicated high-impact cover at t=0 to 0.45s so Facebook Reels preview FORCES the cover thumbnail!
     const filterGraph: string[] = [
       `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30[bg]`,
       `[bg][1:v]overlay=0:0[vbadge]`,
-      `[vbadge]subtitles=${relAss}:fontsdir=${relFonts}[vsub]`,
-      `[2:v]scale=1080:1920[vcover]`,
+      `[vbadge][2:v]overlay=0:0[vsub]`,
+      `[3:v]scale=1080:1920[vcover]`,
       `[vsub][vcover]overlay=0:0:enable='between(t,0,0.45)'[vout]`,
     ];
 
-    // Audio filter: Voiceover (input 3) mixed with dynamic mood BGM (input 4)
+    // Audio filter: Voiceover (input 4) mixed with dynamic mood BGM (input 5)
     if (bgMusicPath && fs.existsSync(bgMusicPath)) {
       command = command.input(bgMusicPath).inputOptions(['-stream_loop -1']);
       filterGraph.push(
-        `[3:a]volume=1.35[voice]`,
-        `[4:a]volume=0.08[bgmusic]`,
+        `[4:a]volume=1.35[voice]`,
+        `[5:a]volume=0.08[bgmusic]`,
         `[voice][bgmusic]amix=inputs=2:duration=first:dropout_transition=2[aout]`
       );
     } else if (videoHasAudio) {
       filterGraph.push(
-        `[3:a]volume=1.35[voice]`,
+        `[4:a]volume=1.35[voice]`,
         `[0:a]volume=0.08[bgmusic]`,
         `[voice][bgmusic]amix=inputs=2:duration=first:dropout_transition=2[aout]`
       );
     } else {
-      filterGraph.push(`[3:a]volume=1.35[aout]`);
+      filterGraph.push(`[4:a]volume=1.35[aout]`);
     }
 
     command

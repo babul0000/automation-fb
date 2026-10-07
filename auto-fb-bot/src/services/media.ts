@@ -2068,4 +2068,256 @@ export async function renderReelCoverThumbnail(
 }
 }
 
+/**
+ * Resolves local Bengali font paths (Hind Siliguri Bold and Kalpurush)
+ */
+export function getAvailableBengaliFonts(): { hindSiliguri?: string; kalpurush?: string } {
+  const candidateDirs = [
+    path.resolve(process.cwd(), 'assets', 'fonts'),
+    path.resolve(__dirname, '..', '..', 'assets', 'fonts'),
+    path.resolve(__dirname, '../../../assets/fonts'),
+    'C:\\Windows\\Fonts',
+  ];
+
+  let hindSiliguri: string | undefined;
+  let kalpurush: string | undefined;
+
+  for (const dir of candidateDirs) {
+    if (!fs.existsSync(dir)) continue;
+    const hs = path.join(dir, 'HindSiliguri-Bold.ttf');
+    if (!hindSiliguri && fs.existsSync(hs)) hindSiliguri = hs;
+    const kp = path.join(dir, 'Kalpurush.ttf');
+    const kpWin = path.join(dir, 'kalpurush.ttf');
+    if (!kalpurush && fs.existsSync(kp)) kalpurush = kp;
+    else if (!kalpurush && fs.existsSync(kpWin)) kalpurush = kpWin;
+  }
+
+  return { hindSiliguri, kalpurush };
+}
+
+export interface SubtitleCardPhrase {
+  text: string;
+  startMs: number;
+  endMs: number;
+}
+
+export interface SubtitleRenderResult {
+  concatPath: string;
+  count: number;
+}
+
+/**
+ * Resvg Fallback for Subtitle Cards
+ */
+export function renderReelSubtitleCardsWithResvg(
+  phrases: SubtitleCardPhrase[],
+  totalDurationSec: number,
+  outputDir: string,
+  fonts: { hindSiliguri?: string; kalpurush?: string }
+): SubtitleRenderResult {
+  ensureDir(outputDir);
+  const fontFile = fonts.hindSiliguri || fonts.kalpurush;
+  const resvgOpts: any = fontFile
+    ? { font: { fontFiles: [fontFile], defaultFontFamily: 'Hind Siliguri' } }
+    : undefined;
+
+  // 1. Transparent empty PNG
+  const emptySvg = `<svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg"></svg>`;
+  const emptyPng = new Resvg(emptySvg, resvgOpts).render().asPng();
+  fs.writeFileSync(path.join(outputDir, 'empty.png'), emptyPng);
+
+  // 2. Render each subtitle phrase
+  for (let i = 0; i < phrases.length; i++) {
+    const rawText = phrases[i].text.normalize('NFC').trim();
+    const escapeXml = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const safeText = escapeXml(rawText);
+    const fontSize = rawText.length > 24 ? 62 : rawText.length > 18 ? 68 : 75;
+
+    const svg = `<svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
+      <text x="540" y="960" font-family="'Hind Siliguri', 'Kalpurush', sans-serif" font-size="${fontSize}" font-weight="bold" fill="#FFE600" stroke="#000000" stroke-width="8" paint-order="stroke fill" text-anchor="middle" dominant-baseline="central">${safeText}</text>
+    </svg>`;
+    const png = new Resvg(svg, resvgOpts).render().asPng();
+    fs.writeFileSync(path.join(outputDir, `sub_${i}.png`), png);
+  }
+
+  // 3. Concat file
+  const concatLines: string[] = ['ffconcat version 1.0'];
+  let lastEndSec = 0;
+
+  for (let i = 0; i < phrases.length; i++) {
+    const p = phrases[i];
+    const startSec = Math.max(0, p.startMs / 1000);
+    const endSec = Math.min(totalDurationSec, p.endMs / 1000);
+
+    if (startSec > lastEndSec + 0.05) {
+      concatLines.push(`file 'empty.png'`);
+      concatLines.push(`duration ${(startSec - lastEndSec).toFixed(3)}`);
+    }
+
+    const duration = Math.max(0.15, endSec - startSec);
+    concatLines.push(`file 'sub_${i}.png'`);
+    concatLines.push(`duration ${duration.toFixed(3)}`);
+    lastEndSec = startSec + duration;
+  }
+
+  if (totalDurationSec > lastEndSec + 0.05) {
+    concatLines.push(`file 'empty.png'`);
+    concatLines.push(`duration ${(totalDurationSec - lastEndSec).toFixed(3)}`);
+  }
+  concatLines.push(`file 'empty.png'`);
+
+  const concatPath = path.join(outputDir, 'subs.concat');
+  fs.writeFileSync(concatPath, concatLines.join('\n'), 'utf8');
+  return { concatPath, count: phrases.length };
+}
+
+/**
+ * Renders Facebook Reels Subtitle Cards via Puppeteer/Chrome canvas.
+ * Guarantees ZERO BROKEN BENGALI LIGATURES (100% native complex OpenType text shaping).
+ * Style: Single line, 75px, centered, bright yellow (#FFE600) with solid black outline.
+ */
+export async function renderReelSubtitleCards(
+  phrases: SubtitleCardPhrase[],
+  totalDurationSec: number,
+  outputDir: string,
+  chromePath: string = getChromeExecutablePath()
+): Promise<SubtitleRenderResult> {
+  ensureDir(outputDir);
+
+  const fonts = getAvailableBengaliFonts();
+  const hsFontUrl = fonts.hindSiliguri ? `file:///${fonts.hindSiliguri.replace(/\\/g, '/')}` : '';
+  const kpFontUrl = fonts.kalpurush ? `file:///${fonts.kalpurush.replace(/\\/g, '/')}` : '';
+
+  try {
+    const browser = await puppeteer.launch({
+      executablePath: chromePath,
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 });
+
+      const fontFaceCss = `
+        ${hsFontUrl ? `@font-face { font-family: 'Hind Siliguri Local'; src: url('${hsFontUrl}') format('truetype'); font-weight: 700; font-style: normal; }` : ''}
+        ${kpFontUrl ? `@font-face { font-family: 'Kalpurush Local'; src: url('${kpFontUrl}') format('truetype'); font-weight: normal; font-style: normal; }` : ''}
+      `;
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@700&display=swap" rel="stylesheet">
+  <style>
+    ${fontFaceCss}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      margin: 0;
+      width: 1080px;
+      height: 1920px;
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Hind Siliguri Local', 'Kalpurush Local', 'Hind Siliguri', 'Kalpurush', sans-serif;
+      overflow: hidden;
+    }
+    #sub-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 1000px;
+      padding: 0 40px;
+      text-align: center;
+    }
+    #sub-text {
+      font-size: 75px;
+      font-weight: 700;
+      color: #FFE600; /* Vibrant bright yellow */
+      -webkit-text-stroke: 8px #000000; /* Solid black outline */
+      paint-order: stroke fill;
+      text-shadow: 0 4px 14px rgba(0, 0, 0, 0.9);
+      text-align: center;
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="sub-wrap"><span id="sub-text"></span></div>
+</body>
+</html>`;
+
+      await page.setContent(html);
+
+      // Render 1080x1920 transparent empty slide
+      const emptyPngPath = path.join(outputDir, 'empty.png');
+      const emptyBuffer = await page.screenshot({ type: 'png', omitBackground: true });
+      fs.writeFileSync(emptyPngPath, emptyBuffer);
+
+      for (let i = 0; i < phrases.length; i++) {
+        const text = phrases[i].text.normalize('NFC').trim();
+        await page.evaluate((t) => {
+          const el = document.getElementById('sub-text');
+          if (el) {
+            el.innerText = t;
+            // Single line guard: dynamically adjust font-size if string is long
+            if (t.length > 24) {
+              el.style.fontSize = '62px';
+            } else if (t.length > 18) {
+              el.style.fontSize = '68px';
+            } else {
+              el.style.fontSize = '75px';
+            }
+          }
+        }, text);
+
+        const subPngPath = path.join(outputDir, `sub_${i}.png`);
+        const subBuffer = await page.screenshot({ type: 'png', omitBackground: true });
+        fs.writeFileSync(subPngPath, subBuffer);
+      }
+
+      // Build ffconcat file
+      const concatLines: string[] = ['ffconcat version 1.0'];
+      let lastEndSec = 0;
+
+      for (let i = 0; i < phrases.length; i++) {
+        const p = phrases[i];
+        const startSec = Math.max(0, p.startMs / 1000);
+        const endSec = Math.min(totalDurationSec, p.endMs / 1000);
+
+        if (startSec > lastEndSec + 0.05) {
+          concatLines.push(`file 'empty.png'`);
+          concatLines.push(`duration ${(startSec - lastEndSec).toFixed(3)}`);
+        }
+
+        const duration = Math.max(0.15, endSec - startSec);
+        concatLines.push(`file 'sub_${i}.png'`);
+        concatLines.push(`duration ${duration.toFixed(3)}`);
+        lastEndSec = startSec + duration;
+      }
+
+      if (totalDurationSec > lastEndSec + 0.05) {
+        concatLines.push(`file 'empty.png'`);
+        concatLines.push(`duration ${(totalDurationSec - lastEndSec).toFixed(3)}`);
+      }
+      // Concat demuxer EOF terminator
+      concatLines.push(`file 'empty.png'`);
+
+      const concatPath = path.join(outputDir, 'subs.concat');
+      fs.writeFileSync(concatPath, concatLines.join('\n'), 'utf8');
+
+      console.log(`[Media Service] ✨ Rendered ${phrases.length} 100% native unbroken Bengali subtitle cards via Puppeteer.`);
+      return { concatPath, count: phrases.length };
+    } finally {
+      await browser.close();
+    }
+  } catch (err: any) {
+    console.warn(`[Media Service Warning] Subtitle Puppeteer rendering notice: ${err.message}. Generating SVG/Resvg fallback cards...`);
+    return renderReelSubtitleCardsWithResvg(phrases, totalDurationSec, outputDir, fonts);
+  }
+}
+
 

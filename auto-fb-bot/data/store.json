@@ -264,6 +264,13 @@
   ],
   "posts": [
     {
+      "facebookPostId": "2328467881340476",
+      "caption": "আজকে আমরা জানবো মোবাইলের স্টোরেজ দ্রুত খালি করার সহজ উপায় নিয়ে অত্যন্ত দরকারি ও গুরুত্বপূর্ণ কিছু তথ্য, যা আপনার প্রতিদিনের কাজে লাগবে!\n\nআমরা প্রতিদিন টেকনোলজি ব্যবহার করলেও এমন অনেক গোপন কৌশল ও সেটিংস রয়েছে যা আমাদের সময় বাঁচায় ও কাজকে সহজ করে তোলে। এই কৌশলটি সঠিকভাবে কাজে লাগাতে ফোনের সেটিংস বা সংশ্লিষ্ট অপশনটি ওপেন করুন, ফিচারটি সক্রিয় করুন এবং নিজের কাজকে দ্বিগুণ দ্রুত করুন।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1791385922648_4gfn1",
+      "publishedAt": "2026-10-07T15:12:02.648Z"
+    },
+    {
       "facebookPostId": "1248686841665823_122116853463444051",
       "caption": "বিকাশ বা ব্যাংক থেকে ফোন দিয়ে কেউ কি আপনার অ্যাকাউন্ট নিয়ে ভয় দেখাচ্ছে? সাবধান! আসল নম্বরের হুবহু নকল করে এখন সর্বস্বান্ত করছে প্রতারকরা।\n\nমাথায় রাখবেন, ব্যাংক বা বিকাশ থেকে কখনো আপনার কাছে গোপন পিন, ওটিপি বা পাসওয়ার্ড জানতে চাওয়া হয় না। অচেনা নম্বর থেকে এমন কল আসলে যা করবেন:\n\n১. এক সেকেন্ডেই আসল-নকল যাচাই করতে কল আসা নম্বরটি Truecaller অ্যাপে সার্চ করুন বা সাথে সাথে ফোন কেটে অফিশিয়াল অ্যাপ থেকে হেল্পলাইন নম্বর মিলিয়ে নিন।\n২. যত বড় বিপদের ভয়ই দেখাক না কেন, ভুলেও কখনো আপনার পিন নম্বর বা ওটিপি মুখে বলবেন না।\n৩. সন্দেহ হলে ফোন কেটে দিয়ে সরাসরি আপনার কাছের ব্যাংকের শাখায় যোগাযোগ করুন বা অফিশিয়াল নম্বরে কল দিন।\n\n📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই পোস্টটি এখনই Save করে রাখুন আর প্রিয়জনদের সাথে Share করে তাদের সতর্ক করুন! এমন প্রতিদিনের চমৎকার সব টিপসের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #ScamAlert #DigitalSecurity #OnlineSafety #BanglaTips #Bangladesh",
       "imageUrl": "C:\\project file\\FACEBOOK-AUTOMATION\\auto-fb-bot\\data\\posts\\carousel_1791300395904_1.png",
@@ -559,6 +566,20 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1791385922660",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 2328467881340476, Topic: মোবাইলের স্টোরেজ দ্রুত খালি করার সহজ উপায়, Critic: 88/100, Duration: 28.728s",
+      "createdAt": "2026-10-07T15:12:02.660Z"
+    },
+    {
+      "id": "log_1791385844156",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"মোবাইলের স্টোরেজ দ্রুত খালি করার সহজ উপায়\", Score: 88/100, Revised: true, Feedback: Audit Failure: The script violates the strict Casual Human Tone rule by using banned abstract placeholders like 'এই সেটিংসটি' and 'এই কৌশলটি'. Additionally, the hook is extremely generic ('আজকে আমরা জানবো...'), and the middle section lacks any actual actionable steps on *how* to clear storage, remaining entirely vague.",
+      "createdAt": "2026-10-07T15:10:44.156Z"
+    },
     {
       "id": "log_1791300412932",
       "jobName": "AUTONOMOUS_SLOT_FEED",
@@ -894,20 +915,6 @@
       "status": "SUCCESS",
       "details": "Post ID: 1248686841665823_122115469701444051, Topic: Product Hunt-এর ১ নম্বরে থাকা এই ফ্রি AI টুল দিয়ে ১ ক্লিকে যেকোনো বড় PDF থেকে বানিয়ে নিন মাস্টারনোট! [Product Hunt], Critic: 93/100, Carousel: 3 slides, FirstComment: false",
       "createdAt": "2026-09-30T14:30:51.895Z"
-    },
-    {
-      "id": "log_1790778613446",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"Product Hunt-এর ১ নম্বরে থাকা এই ফ্রি AI টুল দিয়ে ১ ক্লিকে যেকোনো বড় PDF থেকে বানিয়ে নিন মাস্টারনোট!\", Score: 93/100, Revised: true, Feedback: The draft is extremely engaging and fits the ByteBangla tone well. The hook is punchy, the 3 steps are clear, and the CTA utilizes automated DM tactics effectively. Minor tweaks in the phrasing make it sound even more native and conversational.",
-      "createdAt": "2026-09-30T14:30:13.446Z"
-    },
-    {
-      "id": "log_1790708287293",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"r/ChatGPT-তে ভাইরাল হওয়া এই সিক্রেট প্রম্পট ফর্মুলা ব্যবহার করে চ্যাটজিপিটি থেকে একদম নিখুঁত এবং প্রফেশনাল উত্তর পাওয়ার উপায়!\", Score: 95/100, Revised: true, Feedback: The draft is strong, factual, and follows the ByteBangla style well. However, the hook can be made punchier to immediately grab attention in the Facebook feed, and the Bengali flow can be tightened to sound more native and energetic.",
-      "createdAt": "2026-09-29T18:58:07.293Z"
     }
   ]
 }
