@@ -7,33 +7,35 @@
   "autoDm": true,
   "slots": [
     {
-      "id": "slot_feed",
-      "name": "Daily Mid-Day Infographic Cheat Sheet",
-      "nameBn": "দুপুরের ইনফোগ্রাফিক চিটশিট",
-      "time": "13:00",
+      "id": "slot_post_morning",
+      "name": "Daily Morning Tech & Info Post",
+      "nameBn": "সকালের এআই ও টেক পোস্ট",
+      "time": "07:00",
       "type": "POST",
-      "category": "Viral Bangladesh Trend",
-      "categoryBn": "আজকের ভাইরাল ট্রেন্ড ও লাইফ হ্যাক",
-      "enabled": true,
-      "lastRun": "2026-10-06T15:26:52.929Z",
-      "lastStatus": "SUCCESS",
-      "lastPostId": "1248686841665823_122116853463444051",
-      "lastTopic": "আপনার বিকাশ বা ব্যাংকের নামেই কি কল আসছে? জালিয়াতি থেকে বাঁচতে ১ সেকেন্ডে যেভাবে আসল-নকল চেক করবেন"
+      "category": "Smart Mobile & Life Hacks",
+      "categoryBn": "দরকারি মোবাইল টিপস ও লাইফ হ্যাক",
+      "enabled": true
     },
     {
-      "id": "slot_reel",
-      "name": "Daily Prime Viral Facebook Reel",
-      "nameBn": "সন্ধ্যার ভাইরাল ফেসবুক রিল (ভিডিও)",
-      "time": "19:30",
+      "id": "slot_reel_noon",
+      "name": "Daily Mid-Day Viral Reel",
+      "nameBn": "দুপুরের ভাইরাল ফেসবুক রিল (ভিডিও ১)",
+      "time": "12:10",
       "type": "REEL",
       "category": "Viral Bangladesh Trend",
-      "categoryBn": "আজকের ভাইরাল ফেসবুক রিল",
-      "enabled": true,
-      "lastRun": "2026-10-08T15:43:15.020Z",
-      "lastStatus": "SUCCESS",
-      "lastPostId": "1788056832316663",
-      "lastTopic": "পুলিশ কর্মকর্তা পরিচয়ে প্রতারণা ও বিয়ের ফাঁদ: আপনার অজান্তেই এমন বড় প্রতারণা থেকে বাঁচতে এখনই এই সেটিংসগুলো করুন"
+      "categoryBn": "আজকের ভাইরাল লাইফ হ্যাক ও এআই",
+      "enabled": true
+    },
+    {
+      "id": "slot_reel_evening",
+      "name": "Daily Evening Prime Viral Reel",
+      "nameBn": "সন্ধ্যার প্রাইম টাইম ফেসবুক রিল (ভিডিও ২)",
+      "time": "19:10",
+      "type": "REEL",
+      "category": "Scam Alert & Tech Security",
+      "categoryBn": "সাইবার সিকিউরিটি ও বিকাশ সতর্কতা",
+      "enabled": true
     }
   ],
-  "updatedAt": "2026-10-08T15:43:15.020Z"
+  "updatedAt": "2026-10-08T16:10:00.000Z"
 }

@@ -1669,11 +1669,11 @@ export function renderDashboardHtml(props: DashboardProps): string {
             <div>
               <div class="timeline-card-header">
                 <span style="font-size: 1.25rem;">🌅</span>
-                <span class="badge badge-logged">13:00 PM</span>
+                <span class="badge badge-post">07:00 AM</span>
               </div>
-              <strong style="font-size: 0.825rem; color: #fff; display: block;">দুপুরের লাইফ হ্যাক ও চিটশিট</strong>
+              <strong style="font-size: 0.825rem; color: #fff; display: block;">সকালের এআই ও টেক পোস্ট</strong>
               <p style="font-size: 0.725rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4;">
-                দরকারি টিপস ও ইনফোগ্রাফিক চিটশিট পোস্ট।
+                মোবাইল ট্রিকস, দরকারি টিপস ও ইনফোগ্রাফিক চিটশিট পোস্ট।
               </p>
             </div>
           </div>
@@ -1682,11 +1682,11 @@ export function renderDashboardHtml(props: DashboardProps): string {
             <div>
               <div class="timeline-card-header">
                 <span style="font-size: 1.25rem;">🎬</span>
-                <span class="badge badge-reel">19:30 PM</span>
+                <span class="badge badge-reel">12:10 PM</span>
               </div>
-              <strong style="font-size: 0.825rem; color: #fff; display: block;">সন্ধ্যার প্রাইম টাইম রিল</strong>
+              <strong style="font-size: 0.825rem; color: #fff; display: block;">দুপুরের ১ম ভাইরাল রিল</strong>
               <p style="font-size: 0.725rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4;">
-                ৯:১৬ এইচডি ভিডিও, হিউম্যান ভয়েস ও সাবটাইটেলসহ ভাইরাল রিল।
+                ৯:১৬ এইচডি ভিডিও, হিউম্যান ভয়েসওভার ও কাইনেটিক সাবটাইটেল।
               </p>
             </div>
           </div>
@@ -1694,12 +1694,12 @@ export function renderDashboardHtml(props: DashboardProps): string {
           <div class="timeline-card">
             <div>
               <div class="timeline-card-header">
-                <span style="font-size: 1.25rem;">💬</span>
-                <span class="badge badge-ai">২৪ ঘণ্টা লাইভ</span>
+                <span style="font-size: 1.25rem;">🎬</span>
+                <span class="badge badge-reel">19:10 PM</span>
               </div>
-              <strong style="font-size: 0.825rem; color: #fff; display: block;">কমেন্ট ও ডিএম রেসপন্ডার</strong>
+              <strong style="font-size: 0.825rem; color: #fff; display: block;">সন্ধ্যার ২য় প্রাইম টাইম রিল</strong>
               <p style="font-size: 0.725rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4;">
-                ইউজারের প্রশ্নের সঠিক বাংলা উত্তর ও মেসেঞ্জারে লিংক পাঠানো।
+                সাইবার সিকিউরিটি, বিকাশ সতর্কতা ও ট্রেন্ডিং এআই টেক রিল।
               </p>
             </div>
           </div>
@@ -1708,7 +1708,7 @@ export function renderDashboardHtml(props: DashboardProps): string {
             <div>
               <div class="timeline-card-header">
                 <span style="font-size: 1.25rem;">📊</span>
-                <span class="badge badge-post">12:00 AM</span>
+                <span class="badge badge-ai">12:00 AM</span>
               </div>
               <strong style="font-size: 0.825rem; color: #fff; display: block;">অ্যানালিটিক্স ও সেলফ লার্নিং</strong>
               <p style="font-size: 0.725rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4;">

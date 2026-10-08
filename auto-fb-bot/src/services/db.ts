@@ -365,30 +365,40 @@ function getSettingsFilePath(): string {
 
 export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
   autoPilotEnabled: true,
-  approvalRequired: false, // 100% autonomous by default as requested
+  approvalRequired: false, // 100% autonomous by default
   timezone: 'Asia/Dhaka',
   autoFirstComment: true,
   autoCommentReply: true,
   autoDm: true,
   slots: [
     {
-      id: 'slot_feed',
-      name: 'Daily Mid-Day Visual Life Hack',
-      nameBn: 'দুপুরের দরকারি লাইফ হ্যাক ও তথ্য',
-      time: '13:00',
+      id: 'slot_post_morning',
+      name: 'Daily Morning Tech & Info Post',
+      nameBn: 'সকালের এআই ও টেক পোস্ট',
+      time: '07:00',
       type: 'POST',
-      category: 'Viral Bangladesh Trend',
-      categoryBn: 'আজকের ভাইরাল ট্রেন্ড ও দরকারি তথ্য',
+      category: 'Smart Mobile & Life Hacks',
+      categoryBn: 'দরকারি মোবাইল টিপস ও লাইফ হ্যাক',
       enabled: true,
     },
     {
-      id: 'slot_reel',
-      name: 'Daily Prime Viral Facebook Reel',
-      nameBn: 'সন্ধ্যার ভাইরাল ফেসবুক রিল (ভিডিও)',
-      time: '19:30',
+      id: 'slot_reel_noon',
+      name: 'Daily Mid-Day Viral Reel',
+      nameBn: 'দুপুরের ভাইরাল ফেসবুক রিল (ভিডিও ১)',
+      time: '12:10',
       type: 'REEL',
       category: 'Viral Bangladesh Trend',
-      categoryBn: 'আজকের ভাইরাল রিল ভিডিও',
+      categoryBn: 'আজকের ভাইরাল লাইফ হ্যাক ও এআই',
+      enabled: true,
+    },
+    {
+      id: 'slot_reel_evening',
+      name: 'Daily Evening Prime Viral Reel',
+      nameBn: 'সন্ধ্যার প্রাইম টাইম ফেসবুক রিল (ভিডিও ২)',
+      time: '19:10',
+      type: 'REEL',
+      category: 'Scam Alert & Tech Security',
+      categoryBn: 'সাইবার সিকিউরিটি ও বিকাশ সতর্কতা',
       enabled: true,
     },
   ],
@@ -405,14 +415,30 @@ export function getAutomationSettings(): AutomationSettings {
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, 'utf-8');
       const parsed = JSON.parse(raw);
-      // Merge with defaults to ensure all required fields are present
+      
+      // Flexible slot merge: preserve custom slots while ensuring defaults
+      const loadedSlots: SlotConfig[] = Array.isArray(parsed.slots) ? parsed.slots : [];
+      let resolvedSlots: SlotConfig[] = [];
+
+      if (loadedSlots.length > 0) {
+        resolvedSlots = loadedSlots.map((s: SlotConfig) => {
+          const def = DEFAULT_AUTOMATION_SETTINGS.slots.find((d) => d.id === s.id);
+          return def ? { ...def, ...s } : s;
+        });
+        // Append missing defaults if not present
+        for (const def of DEFAULT_AUTOMATION_SETTINGS.slots) {
+          if (!resolvedSlots.some((s) => s.id === def.id)) {
+            resolvedSlots.push(def);
+          }
+        }
+      } else {
+        resolvedSlots = [...DEFAULT_AUTOMATION_SETTINGS.slots];
+      }
+
       cachedSettings = {
         ...DEFAULT_AUTOMATION_SETTINGS,
         ...parsed,
-        slots: DEFAULT_AUTOMATION_SETTINGS.slots.map((defaultSlot) => {
-          const found = (parsed.slots || []).find((s: SlotConfig) => s.id === defaultSlot.id);
-          return found ? { ...defaultSlot, ...found } : defaultSlot;
-        }),
+        slots: resolvedSlots,
       };
       return JSON.parse(JSON.stringify(cachedSettings));
     }
