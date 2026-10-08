@@ -300,6 +300,14 @@
   ],
   "posts": [
     {
+      "facebookPostId": "1248686841665823_122117283657444051",
+      "caption": "আজকাল ফেসবুক আর মেসেঞ্জারে অচেনা নম্বর থেকে কল আর লিংকের ফাঁদ নিয়ে যা শুরু হয়েছে, ভাইরে ভাই! একটু ভুলেই সব শেষ।\n\nহঠাৎ কোনো অপরিচিত নম্বর থেকে কল বা লোভনীয় লিংকের ফাঁদে পড়ে অনেকেরই ফেসবুক আইডি হ্যাক হয়ে যাচ্ছে, আবার ব্যাংক অ্যাকাউন্টও খালি হচ্ছে। আপনার আর আপনার পরিবারের একটুখানি নিরাপত্তা নিশ্চিত করতে এখনই এই সেটিংসটা ঠিক করে ফেলুন।\n\n১. আপনার ফোনের সেটিংস থেকে 'কলার আইডি অ্যান্ড স্প্যাম প্রটেকশন' বা কল সিকিউরিটি অপশনটা অন করে দিন।\n২. কোনো অচেনা নম্বর থেকে বিরক্তিকর কল বা স্প্যাম আসলে সাথে সাথে সেটা ব্লক করে দিন।\n৩. মেসেঞ্জারে অচেনা কেউ কোনো লোভনীয় বা সন্দেহজনক লিংক পাঠালে ভুলেও তাতে ক্লিক করবেন না।\n\n📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই পোস্টটি এখনই Save করে রাখুন আর আপনার প্রিয়জনদের সাথে Share করে সতর্ক করুন! এমন প্রতিদিনের দরকারি সব টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #DigitalSecurity #ScamAlert #BanglaTips #Bangladesh #TechBangla",
+      "imageUrl": "C:\\project file\\FACEBOOK-AUTOMATION\\auto-fb-bot\\output\\single_post.png",
+      "status": "PUBLISHED",
+      "id": "post_1791476765198_4v9bn",
+      "publishedAt": "2026-10-08T16:26:05.199Z"
+    },
+    {
       "facebookPostId": "2199764067614577",
       "caption": "বিকাশ বা ব্যাংকের আসল কর্মকর্তা সেজে যেভাবে প্রতারণা করা হচ্ছে, এই ৫টি লক্ষণ দেখলেই সাথে সাথে ফোন কেটে দিন!\n\nপ্রতিদিন শত শত মানুষ এই প্রতারক চক্রের ফাঁদে পড়ে সর্বস্বান্ত হচ্ছেন, তাই নিজের কষ্টের টাকা নিরাপদ রাখতে বিষয়টি এখনই জেনে রাখা ভীষণ জরুরি। প্রথমত, ফোন করে কখনো পিন নম্বর বা ওটিপি চাইবে না আসল ব্যাংক। দ্বিতীয়ত, অ্যাকাউন্ট ব্লক হওয়ার ভয় দেখালেই বুঝবেন এটা বড় কোনো প্রতারণার ফাঁদ।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
       "status": "PUBLISHED_REEL",
@@ -616,6 +624,13 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1791476765208",
+      "jobName": "AUTONOMOUS_SLOT_POST_MORNING",
+      "status": "SUCCESS",
+      "details": "Post ID: 1248686841665823_122117283657444051, Topic: ফেসবুক বা মেসেঞ্জারে অচেনা নম্বর থেকে আসা কল ও লিংকের ফাঁদ থেকে বাঁচার এই সেটিংসটি আজই আপনার ফোনে অন করে রাখুন! [Social Media Privacy Buzz BD], Critic: 85/100, Master Infographic: C:\\project file\\FACEBOOK-AUTOMATION\\auto-fb-bot\\output\\single_post.png, FirstComment: false",
+      "createdAt": "2026-10-08T16:26:05.209Z"
+    },
     {
       "id": "log_1791476748766",
       "jobName": "CRITIC_AUDIT_FEED",
@@ -958,13 +973,6 @@
       "status": "SUCCESS",
       "details": "Reel ID: 1450514027017602, Topic: লং-ভিডিও থেকে সেরা অংশ কেটে অটোমেটিক ভাইরাল শর্টস বানিয়ে দিচ্ছে ওপেন-সোর্সের এই ট্রেন্ডিং AI টুলটি! 🔥, Critic: 88/100, Duration: 13.512s",
       "createdAt": "2026-10-01T17:10:05.059Z"
-    },
-    {
-      "id": "log_1790874548894",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"লং-ভিডিও থেকে সেরা অংশ কেটে অটোমেটিক ভাইরাল শর্টস বানিয়ে দিচ্ছে ওপেন-সোর্সের এই ট্রেন্ডিং AI টুলটি! 🔥\", Score: 88/100, Revised: true, Feedback: The original draft is strong, clear, and follows ByteBangla's content style. However, the hook can be slightly punchier and the Bengali flow can be polished to sound more native and engaging for social media users.",
-      "createdAt": "2026-10-01T17:09:08.894Z"
     }
   ]
 }

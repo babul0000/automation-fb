@@ -14,7 +14,11 @@
       "type": "POST",
       "category": "Smart Mobile & Life Hacks",
       "categoryBn": "দরকারি মোবাইল টিপস ও লাইফ হ্যাক",
-      "enabled": true
+      "enabled": true,
+      "lastRun": "2026-10-08T16:26:05.205Z",
+      "lastStatus": "SUCCESS",
+      "lastPostId": "1248686841665823_122117283657444051",
+      "lastTopic": "ফেসবুক বা মেসেঞ্জারে অচেনা নম্বর থেকে আসা কল ও লিংকের ফাঁদ থেকে বাঁচার এই সেটিংসটি আজই আপনার ফোনে অন করে রাখুন!"
     },
     {
       "id": "slot_reel_noon",
@@ -41,5 +45,5 @@
       "enabled": true
     }
   ],
-  "updatedAt": "2026-10-08T16:23:19.325Z"
+  "updatedAt": "2026-10-08T16:26:05.205Z"
 }
