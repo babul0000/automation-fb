@@ -1,6 +1,24 @@
 {
   "topics": [
     {
+      "title": "বিকাশ বা ব্যাংকের নামে আসা ফেক কল ধরবেন না! প্রতারকদের আসল নম্বর চেনার গোপন ট্রিক",
+      "titleHash": "92e24d3f622b62d2120f26cefa132422bc2819191920900d718c816bc18eb163",
+      "category": "Consumer Tech & Fraud Prevention",
+      "score": 99,
+      "status": "DISCOVERED",
+      "id": "topic_1791474340625_cyh3f",
+      "createdAt": "2026-10-08T15:45:40.625Z"
+    },
+    {
+      "title": "পুলিশ কর্মকর্তা পরিচয়ে প্রতারণা ও বিয়ের ফাঁদ: আপনার অজান্তেই এমন বড় প্রতারণা থেকে বাঁচতে এখনই এই সেটিংসগুলো করুন",
+      "titleHash": "39d1549a5360309a6f03cab32141f6ca2f516e15e64c58c94ff5f975ec1ce670",
+      "category": "Digital Safety & Fraud Alert",
+      "score": 96,
+      "status": "DISCOVERED",
+      "id": "topic_1791473963819_1h122",
+      "createdAt": "2026-10-08T15:39:23.820Z"
+    },
+    {
       "title": "আপনার বিকাশ বা ব্যাংকের নামেই কি কল আসছে? জালিয়াতি থেকে বাঁচতে ১ সেকেন্ডে যেভাবে আসল-নকল চেক করবেন",
       "titleHash": "c7344f9892f3bfb4896a1d83d1c5b388f3bd3c6fde17eb63342494ce027714e2",
       "category": "Digital Safety Alert",
@@ -263,6 +281,13 @@
     }
   ],
   "posts": [
+    {
+      "facebookPostId": "1788056832316663",
+      "caption": "আজকে ফেসবুক জুড়ে ভুয়া পুলিশ কর্মকর্তা সেজে প্রতারণা ও বিয়ের ফাঁদের যে ভয়ঙ্কর খবর ছড়িয়েছে, তা থেকে বাঁচতে ভিডিওটি শেষ পর্যন্ত দেখুন!\n\nঅপরিচিত কেউ হুট করে পুলিশ বা সরকারি কর্মকর্তা পরিচয়ে ভুয়া আইডি থেকে নক করলে আমাদের অনেকেরই বুঝতে ভুল হয় যে এটি একটি বড় প্রতারণার ফাঁদ। তাই এখনই আপনার ফেসবুকের প্রোফাইল লক করুন, অচেনা মানুষের ফ্রেন্ড রিকোয়েস্ট ব্লক করুন এবং ব্যক্তিগত তথ্য কখনোই মেসেঞ্জারে শেয়ার করবেন না।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1791474195014_vodei",
+      "publishedAt": "2026-10-08T15:43:15.014Z"
+    },
     {
       "facebookPostId": "2328467881340476",
       "caption": "আজকে আমরা জানবো মোবাইলের স্টোরেজ দ্রুত খালি করার সহজ উপায় নিয়ে অত্যন্ত দরকারি ও গুরুত্বপূর্ণ কিছু তথ্য, যা আপনার প্রতিদিনের কাজে লাগবে!\n\nআমরা প্রতিদিন টেকনোলজি ব্যবহার করলেও এমন অনেক গোপন কৌশল ও সেটিংস রয়েছে যা আমাদের সময় বাঁচায় ও কাজকে সহজ করে তোলে। এই কৌশলটি সঠিকভাবে কাজে লাগাতে ফোনের সেটিংস বা সংশ্লিষ্ট অপশনটি ওপেন করুন, ফিচারটি সক্রিয় করুন এবং নিজের কাজকে দ্বিগুণ দ্রুত করুন।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
@@ -566,6 +591,27 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1791474346254",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"বিকাশ বা ব্যাংকের নামে আসা ফেক কল ধরবেন না! প্রতারকদের আসল নম্বর চেনার গোপন ট্রিক\", Score: 88/100, Revised: true, Feedback: The script addresses a very important topic and includes the mandatory CTA, but the flow sounds a bit textbook and robotic (e.g., 'আজই জেনে নিন!', 'অত্যন্ত জরুরি'). It lacks the warm, natural Dhaka conversational mentor tone required by the rubric. Also, the promised 'secret trick to recognize fake numbers' in the hook isn't clearly delivered in the body (it just says turn on caller ID and don't share PIN).",
+      "createdAt": "2026-10-08T15:45:46.254Z"
+    },
+    {
+      "id": "log_1791474195023",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 1788056832316663, Topic: পুলিশ কর্মকর্তা পরিচয়ে প্রতারণা ও বিয়ের ফাঁদ: আপনার অজান্তেই এমন বড় প্রতারণা থেকে বাঁচতে এখনই এই সেটিংসগুলো করুন, Critic: 88/100, Duration: 34.2s",
+      "createdAt": "2026-10-08T15:43:15.023Z"
+    },
+    {
+      "id": "log_1791473969283",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"পুলিশ কর্মকর্তা পরিচয়ে প্রতারণা ও বিয়ের ফাঁদ: আপনার অজান্তেই এমন বড় প্রতারণা থেকে বাঁচতে এখনই এই সেটিংসগুলো করুন\", Score: 88/100, Revised: true, Feedback: The script addresses a very relevant and timely safety issue. However, the hook can be made punchier to immediately grab attention in the first 3 seconds, and the transition into settings/actions needs to feel more like a friendly mentor giving urgent advice.",
+      "createdAt": "2026-10-08T15:39:29.283Z"
+    },
     {
       "id": "log_1791385922660",
       "jobName": "AUTONOMOUS_REEL_PUBLISHER",
@@ -894,27 +940,6 @@
       "status": "COMPLETED",
       "details": "Topic: \"ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান! Product Hunt-এ ট্রেন্ডিং এই ফ্রি AI টুলটি বদলে দেবে আপনার কন্টেন্ট তৈরির অভিজ্ঞতা\", Score: 90/100, Revised: true, Feedback: The draft is already strong with a punchy hook, clear steps, and effective engagement bait (comment 'AI'). Minor polish makes the Bengali flow even more native and conversational for the ByteBangla audience.",
       "createdAt": "2026-10-01T16:44:21.735Z"
-    },
-    {
-      "id": "log_1790872208084",
-      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
-      "status": "SUCCESS",
-      "details": "Reel ID: 1808664333811688, Topic: ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান: Product Hunt-এর ১ নম্বর এই ফ্রি AI টুলটি এখন ধামাকা তুলছে!, Critic: 93/100, Duration: 32s",
-      "createdAt": "2026-10-01T16:30:08.084Z"
-    },
-    {
-      "id": "log_1790872171074",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান: Product Hunt-এর ১ নম্বর এই ফ্রি AI টুলটি এখন ধামাকা তুলছে!\", Score: 93/100, Revised: true, Feedback: The draft is already strong, highly engaging, and follows ByteBangla's brand voice. However, to maximize the scroll-stopping power of the hook and make the Bengali flow even more native and conversational, a slight polish was applied. The structure remains intact with a punchy hook, 3 actionable points, a clear engagement CTA, and precise hashtags.",
-      "createdAt": "2026-10-01T16:29:31.074Z"
-    },
-    {
-      "id": "log_1790778651895",
-      "jobName": "AUTONOMOUS_SLOT_3",
-      "status": "SUCCESS",
-      "details": "Post ID: 1248686841665823_122115469701444051, Topic: Product Hunt-এর ১ নম্বরে থাকা এই ফ্রি AI টুল দিয়ে ১ ক্লিকে যেকোনো বড় PDF থেকে বানিয়ে নিন মাস্টারনোট! [Product Hunt], Critic: 93/100, Carousel: 3 slides, FirstComment: false",
-      "createdAt": "2026-09-30T14:30:51.895Z"
     }
   ]
 }

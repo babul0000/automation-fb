@@ -522,7 +522,367 @@ let lastSelectedVideoIndex = 0;
 let lastSelectedVideoPath = '';
 
 /**
- * Dynamically picks a video from `./media/`:
+ * Curated 4K vertical photography themes for instant fallback
+ */
+export const CURATED_THEMES: Record<string, string[]> = {
+  security: [
+    'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1080&h=1920&fit=crop&q=85',
+  ],
+  mobile: [
+    'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=1080&h=1920&fit=crop&q=85',
+  ],
+  lifestyle: [
+    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1080&h=1920&fit=crop&q=85',
+  ],
+  story: [
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1080&h=1920&fit=crop&q=85',
+  ],
+  tech: [
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1080&h=1920&fit=crop&q=85',
+  ],
+  default: [
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1080&h=1920&fit=crop&q=85',
+    'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1080&h=1920&fit=crop&q=85',
+  ],
+};
+
+export function getThemeByTopic(topic: string, pillarCategory?: string): string[] {
+  const lower = `${topic} ${pillarCategory || ''}`.toLowerCase();
+  if (
+    lower.includes('বিকাশ') ||
+    lower.includes('ব্যাংক') ||
+    lower.includes('scam') ||
+    lower.includes('সিকিউরিটি') ||
+    lower.includes('security') ||
+    lower.includes('হ্যাক') ||
+    lower.includes('জালিয়াতি')
+  ) {
+    return CURATED_THEMES.security;
+  }
+  if (
+    lower.includes('মোবাইল') ||
+    lower.includes('স্টোরেজ') ||
+    lower.includes('ফোন') ||
+    lower.includes('মেমোরি') ||
+    lower.includes('phone') ||
+    lower.includes('storage')
+  ) {
+    return CURATED_THEMES.mobile;
+  }
+  if (
+    lower.includes('ট্রেন') ||
+    lower.includes('টিকিট') ||
+    lower.includes('গ্যাস') ||
+    lower.includes('ভ্রমণ') ||
+    lower.includes('travel') ||
+    lower.includes('life')
+  ) {
+    return CURATED_THEMES.lifestyle;
+  }
+  if (
+    lower.includes('গল্প') ||
+    lower.includes('story') ||
+    lower.includes('জীবনী') ||
+    lower.includes('অনুপ্রেরণা') ||
+    lower.includes('psychology')
+  ) {
+    return CURATED_THEMES.story;
+  }
+  if (
+    lower.includes('ai') ||
+    lower.includes('টুল') ||
+    lower.includes('tech') ||
+    lower.includes('ভিডিও') ||
+    lower.includes('edit')
+  ) {
+    return CURATED_THEMES.tech;
+  }
+  return CURATED_THEMES.default;
+}
+
+/**
+ * Derives 3 photorealistic, topic-specific 9:16 visual prompts
+ */
+export function deriveTopicVisualPrompts(topic: string, pillarCategory?: string): [string, string, string] {
+  const query = `${topic} ${pillarCategory || ''}`.toLowerCase();
+
+  if (
+    query.includes('বিকাশ') ||
+    query.includes('ব্যাংক') ||
+    query.includes('টাকা') ||
+    query.includes('জালিয়াতি') ||
+    query.includes('scam') ||
+    query.includes('কল')
+  ) {
+    return [
+      'Concerned person looking at incoming suspicious phone call on modern smartphone screen, vertical 9:16, cinematic dramatic moody lighting, 8k render, strictly no text',
+      'Cybersecurity digital shield protecting smartphone with glowing neon lock and security verification checkmark, vertical 9:16, dark background, 8k render, strictly no text',
+      'Relieved smiling person holding smartphone safely in hand with secure verified icon on screen, vertical 9:16, soft ambient lighting, 8k render, strictly no text',
+    ];
+  }
+  if (
+    query.includes('স্টোরেজ') ||
+    query.includes('মেমোরি') ||
+    query.includes('মোবাইল') ||
+    query.includes('ফোন') ||
+    query.includes('ফাস্ট') ||
+    query.includes('storage')
+  ) {
+    return [
+      'Modern smartphone in hand displaying low storage warning full memory meter, vertical 9:16, clean studio lighting, 8k render, strictly no text',
+      'Futuristic digital data cleaning animation wiping junk files and cache memory inside glowing smartphone, vertical 9:16, neon blue trails, 8k render, strictly no text',
+      'Super fast ultra responsive glowing smartphone in hand with lightning speed neon particle streaks, vertical 9:16, modern aesthetic, 8k render, strictly no text',
+    ];
+  }
+  if (
+    query.includes('ফেসবুক') ||
+    query.includes('প্রাইভেসি') ||
+    query.includes('ছবি') ||
+    query.includes('সিকিউরিটি') ||
+    query.includes('হ্যাক') ||
+    query.includes('facebook')
+  ) {
+    return [
+      'Mysterious silhouette looking at glowing social media interface on screen in dark room, vertical 9:16, cinematic cyberpunk lighting, 8k render, strictly no text',
+      'Modern smartphone displaying high-tech holographic security lock and encrypted privacy shield settings, vertical 9:16, neon orange and cyan, 8k render, strictly no text',
+      'Confident happy person holding secure smartphone with green shield emblem, vertical 9:16, warm friendly lighting, 8k render, strictly no text',
+    ];
+  }
+  if (
+    query.includes('ট্রেন') ||
+    query.includes('টিকিট') ||
+    query.includes('ভ্রমণ') ||
+    query.includes('ম্যাপ') ||
+    query.includes('travel')
+  ) {
+    return [
+      'Passenger waiting at modern train station platform holding smartphone checking live booking, vertical 9:16, cinematic travel photography, 8k render, strictly no text',
+      'Smartphone screen showing fast digital train ticket booking route map confirmation, vertical 9:16, neon highlights, 8k render, strictly no text',
+      'Happy traveler smiling aboard high speed modern train with scenic landscape outside window, vertical 9:16, golden hour sunlight, 8k render, strictly no text',
+    ];
+  }
+  if (
+    query.includes('গ্যাস') ||
+    query.includes('সিলিন্ডার') ||
+    query.includes('ভোক্তা') ||
+    query.includes('অধিকার') ||
+    query.includes('দাম')
+  ) {
+    return [
+      'Red LPG gas cylinder in clean modern domestic kitchen with digital price check on smartphone, vertical 9:16, natural home lighting, 8k render, strictly no text',
+      'Official consumer protection digital scales and fair pricing authority verified emblem, vertical 9:16, clean professional lighting, 8k render, strictly no text',
+      'Happy Bangladeshi family smiling in modern kitchen with safe energy supply, vertical 9:16, warm cozy lighting, 8k render, strictly no text',
+    ];
+  }
+  if (
+    query.includes('গল্প') ||
+    query.includes('জীবন') ||
+    query.includes('সফল') ||
+    query.includes('অনুপ্রেরণা') ||
+    query.includes('story')
+  ) {
+    return [
+      'Thoughtful person sitting by window at sunrise contemplating future goals, vertical 9:16, inspirational cinematic golden hour lighting, 8k render, strictly no text',
+      'Person working hard with determination under study lamp late at night, vertical 9:16, warm moody cinematic lighting, 8k render, strictly no text',
+      'Triumphant joyful person standing at scenic mountain overlook celebrating breakthrough success, vertical 9:16, majestic sunset sky, 8k render, strictly no text',
+    ];
+  }
+
+  // Default general tech & life-hack prompts
+  return [
+    `Engaging modern scene representing ${topic}, vertical 9:16, professional studio cinematic lighting, ultra-high resolution, strictly no text, no watermark`,
+    `Futuristic smart technology solution and digital innovation for ${topic}, vertical 9:16, glowing cyan and amber accents, 8k render, strictly no text`,
+    `Happy person holding modern smartphone achieving instant success with technology, vertical 9:16, vibrant studio lighting, strictly no text`,
+  ];
+}
+
+/**
+ * Downloads a pristine 9:16 vertical visual frame using Pollinations AI with resilient fallback
+ */
+export async function fetchNarrativeFrame(
+  prompt: string,
+  seed: number,
+  destPath: string,
+  themeUrls: string[],
+  slideIndex: number = 0
+): Promise<void> {
+  const browserHeaders = {
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+  };
+
+  // 1. Primary: Pollinations AI (High quality, 720x1280 vertical 9:16)
+  try {
+    const encoded = encodeURIComponent(prompt);
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=720&height=1280&nologo=true&seed=${seed}`;
+    const res = await axios.get(url, {
+      headers: browserHeaders,
+      responseType: 'arraybuffer',
+      timeout: 18000,
+    });
+    if (res.data && res.data.length > 3000) {
+      fs.writeFileSync(destPath, Buffer.from(res.data));
+      console.log(`[Video Engine] 🎨 AI narrative frame ${slideIndex + 1} generated successfully via Pollinations AI.`);
+      return;
+    }
+  } catch (err: any) {
+    console.warn(`[Video Engine Notice] AI frame ${slideIndex + 1} Pollinations notice: ${err.message}. Trying curated theme fallback...`);
+  }
+
+  // 2. Curated theme photography fallback
+  const candidates = [
+    themeUrls[slideIndex % themeUrls.length],
+    ...themeUrls,
+    ...CURATED_THEMES.default,
+  ];
+
+  for (const candidateUrl of candidates) {
+    try {
+      const res = await axios.get(candidateUrl, {
+        headers: browserHeaders,
+        responseType: 'arraybuffer',
+        timeout: 15000,
+      });
+      if (res.data && res.data.length > 2000) {
+        fs.writeFileSync(destPath, Buffer.from(res.data));
+        console.log(`[Video Engine] 📷 Curated theme photo frame ${slideIndex + 1} downloaded.`);
+        return;
+      }
+    } catch {}
+  }
+
+  // 3. Fallback: Local assets
+  const localFallbacks = getAvailableMediaVideos();
+  if (localFallbacks.length > 0) {
+    try {
+      const fallbackVid = localFallbacks[slideIndex % localFallbacks.length];
+      const ffmpegBin = ffmpegInstaller?.path || 'ffmpeg';
+      const { execSync } = require('child_process');
+      execSync(`"${ffmpegBin}" -y -ss 0.5 -i "${fallbackVid}" -vframes 1 "${destPath}"`, { stdio: 'ignore' });
+      if (fs.existsSync(destPath)) return;
+    } catch {}
+  }
+
+  // 4. Last resort: Dark gradient canvas
+  const ffmpegBin = ffmpegInstaller?.path || 'ffmpeg';
+  const { execSync } = require('child_process');
+  execSync(`"${ffmpegBin}" -f lavfi -i "color=c=0x0f172a:s=1080x1920:d=1,format=yuv420p" -vframes 1 -y "${destPath}"`, { stdio: 'ignore' });
+}
+
+/**
+ * Renders lightweight Ken Burns dynamic camera motion for a single scene
+ * Engineered with ultrafast preset, 2 threads, and pre-scaling to prevent cloud memory OOM
+ */
+export function renderKenBurnsScene(
+  imgPath: string,
+  durationSec: number,
+  outPath: string,
+  motionType: 'zoomIn' | 'zoomOut' | 'panUp'
+): Promise<string> {
+  const frames = Math.max(15, Math.round(durationSec * 30));
+  let filter = `zoompan=z='min(zoom+0.0010,1.15)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`;
+  if (motionType === 'zoomOut') {
+    filter = `zoompan=z='max(1.15-0.0010*on,1.0)':d=${frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30`;
+  } else if (motionType === 'panUp') {
+    filter = `zoompan=z=1.08:d=${frames}:x='iw/2-(iw/zoom/2)':y='max(ih-(ih/zoom)-(on*0.4),0)':s=1080x1920:fps=30`;
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    ffmpeg(imgPath)
+      .loop(durationSec)
+      .videoFilters([
+        'scale=1080:1920:force_original_aspect_ratio=increase',
+        'crop=1080:1920',
+        filter,
+      ])
+      .outputOptions([
+        `-t ${durationSec}`,
+        '-pix_fmt yuv420p',
+        '-c:v libx264',
+        '-preset ultrafast',
+        '-threads 2',
+        '-r 30',
+      ])
+      .save(outPath)
+      .on('end', () => resolve(outPath))
+      .on('error', (err: any) => reject(err));
+  });
+}
+
+/**
+ * Prepares 3 Narrative AI Visual Scenes matching the topic and compiles them into a seamless motion background
+ */
+export async function prepareNarrativeMotionBackground(
+  topic: string,
+  pillarCategory: string | undefined,
+  imagePrompts: string[] | undefined,
+  totalDurationSec: number,
+  tempDir: string
+): Promise<{ bgVideoPath: string; firstFramePath: string }> {
+  const themeUrls = getThemeByTopic(topic, pillarCategory);
+  const derivedPrompts = deriveTopicVisualPrompts(topic, pillarCategory);
+
+  const p1 = imagePrompts?.[0] || derivedPrompts[0];
+  const p2 = imagePrompts?.[1] || derivedPrompts[1];
+  const p3 = imagePrompts?.[2] || derivedPrompts[2];
+
+  const slide1Path = path.join(tempDir, 'slide1.jpg');
+  const slide2Path = path.join(tempDir, 'slide2.jpg');
+  const slide3Path = path.join(tempDir, 'slide3.jpg');
+
+  const seed = Math.floor(Math.random() * 900000);
+  console.log(`[Video Engine] 🎨 Preparing 3 narrative AI visual frames for "${topic}"...`);
+
+  await Promise.all([
+    fetchNarrativeFrame(p1, seed, slide1Path, themeUrls, 0),
+    fetchNarrativeFrame(p2, seed + 1, slide2Path, themeUrls, 1),
+    fetchNarrativeFrame(p3, seed + 2, slide3Path, themeUrls, 2),
+  ]);
+
+  // Dynamic Pacing Breakdown (Hook ~25%, Solution ~50%, CTA ~25%)
+  const hookDur = Math.max(2.5, Math.round(totalDurationSec * 0.25 * 10) / 10);
+  const bodyDur = Math.max(4.0, Math.round(totalDurationSec * 0.50 * 10) / 10);
+  const ctaDur = Math.max(2.5, Math.round((totalDurationSec - hookDur - bodyDur) * 10) / 10);
+
+  console.log(
+    `[Video Engine] 🎞️ Pacing breakdown: Hook (${hookDur}s) | Solution (${bodyDur}s) | CTA (${ctaDur}s) [Total: ${totalDurationSec.toFixed(1)}s]`
+  );
+
+  const v1 = path.join(tempDir, 'scene1.mp4');
+  const v2 = path.join(tempDir, 'scene2.mp4');
+  const v3 = path.join(tempDir, 'scene3.mp4');
+
+  await renderKenBurnsScene(slide1Path, hookDur, v1, 'zoomIn');
+  await renderKenBurnsScene(slide2Path, bodyDur, v2, 'zoomOut');
+  await renderKenBurnsScene(slide3Path, ctaDur, v3, 'zoomIn');
+
+  const concatListPath = path.join(tempDir, 'motion_concat.txt');
+  fs.writeFileSync(
+    concatListPath,
+    [
+      `file '${v1.replace(/\\/g, '/')}'`,
+      `file '${v2.replace(/\\/g, '/')}'`,
+      `file '${v3.replace(/\\/g, '/')}'`,
+    ].join('\n')
+  );
+
+  return { bgVideoPath: concatListPath, firstFramePath: slide1Path };
+}
+
+/**
+ * Dynamically picks a video from `./media/` (fallback mode):
  * 1. Matches toolBrand, pillar category, or topic keyword if found in filename
  * 2. Prioritizes vertical 9:16 videos (e.g. 2160_4096 or 2160_3840)
  * 3. Rotational selection ensuring consecutive posts NEVER repeat the same video file
@@ -656,6 +1016,10 @@ export function selectBackgroundMusicByMood(category?: string, topic?: string): 
  */
 function hasAudioStream(videoPath: string): Promise<boolean> {
   return new Promise((resolve) => {
+    if (!fs.existsSync(videoPath) || videoPath.endsWith('.txt')) {
+      resolve(false);
+      return;
+    }
     ffmpeg.ffprobe(videoPath, (err, metadata) => {
       if (err || !metadata || !metadata.streams) {
         resolve(false);
@@ -668,48 +1032,14 @@ function hasAudioStream(videoPath: string): Promise<boolean> {
 }
 
 /**
- * Composites a transparent UI frame PNG on top of a 1080x1920 @ 30fps looped video
- */
-function renderMotionSceneWithOverlay(
-  bgVideoPath: string,
-  scenePngPath: string,
-  startOffsetSec: number,
-  durationSec: number,
-  outPath: string
-): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    ffmpeg()
-      .input(bgVideoPath)
-      .inputOptions([`-ss ${startOffsetSec}`, '-stream_loop -1'])
-      .input(scenePngPath)
-      .complexFilter(
-        [
-          '[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30,colorchannelmixer=rr=0.75:gg=0.75:bb=0.75[bg]',
-          '[bg][1:v]overlay=0:0[vout]',
-        ],
-        ['vout']
-      )
-      .outputOptions([
-        `-t ${durationSec}`,
-        '-pix_fmt yuv420p',
-        '-c:v libx264',
-        '-r 30',
-        '-preset ultrafast',
-        '-threads 2',
-      ])
-      .save(outPath)
-      .on('end', () => resolve(outPath))
-      .on('error', (err: any) => reject(err));
-  });
-}
-
-/**
  * Generates a polished, high-converting 9:16 vertical Facebook Reel (MP4)
  * Powered by:
- * 1. 100% Real High-Quality Moving Background Video dynamically picked from ./media/ (ZERO static image cards)
+ * 1. 3 Narrative AI-generated 9:16 visual scenes with Ken Burns dynamic motion matching the topic
  * 2. Top-center: Single sleek floating glass badge indicating the trend / topic
- * 3. Center Safe Zone (MarginV: 920): Large, bold, single-line kinetic subtitles (Hind Siliguri Bold, 65px, vibrant yellow with 4px black outline)
- * 4. Microsoft Edge Neural Voiceover (bn-BD-PradeepNeural at +8% speed) with ambient background music (-22dB)
+ * 3. Center Safe Zone: Large, bold, single-line kinetic subtitles (Hind Siliguri Bold, 75px, vibrant yellow with solid black outline)
+ * 4. Microsoft Edge Neural Voiceover (bn-BD-PradeepNeural at +8% speed) with dynamic mood background music (-22dB)
+ * 5. Dedicated High-Impact Reel Cover Thumbnail baked on Frame 0 for Facebook feed previews
+ * 6. Persistent copy saved to data/reels/latest_reel.mp4 for immediate dashboard preview
  */
 export async function generateReelVideo(input: ReelGenerationInput): Promise<GeneratedReel> {
   const tempDir = path.resolve(process.cwd(), 'data', 'temp_reels', `reel_${Date.now()}`);
@@ -718,7 +1048,7 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   const audioPath = path.join(tempDir, 'voiceover.mp3');
   const outputPath = path.join(tempDir, 'output_reel.mp4');
 
-  console.log(`[Video Engine] 🎬 Initiating 100% Kinetic Moving-Reel for: "${input.topic}"...`);
+  console.log(`[Video Engine] 🎬 Initiating 100% Kinetic Narrative Reel for: "${input.topic}"...`);
 
   // 1. Synthesize Human Neural Voiceover with Word Timestamp Cues
   let speechText = '';
@@ -750,7 +1080,7 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   console.log(`[Video Engine] ✍️ Rendering ${phrases.length} Bengali Subtitle Cards (100% unbroken ligatures, 75px, bright yellow)...`);
   const { concatPath: subsConcatPath } = await renderReelSubtitleCards(phrases, exactDuration, subsDir);
 
-  // 3. Render ONLY the Single Sleek Top Floating Glass Badge (Zero ugly static cards)
+  // 3. Render ONLY the Single Sleek Top Floating Glass Badge
   let badgeText = '🔥 আজকের ভাইরাল ট্রেন্ড';
   const topicLower = `${input.pillarCategory || ''} ${input.topic} ${input.headlineEn || ''}`.toLowerCase();
   if (
@@ -786,22 +1116,37 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   const badgeOverlayPath = path.join(tempDir, 'badge_overlay.png');
   await renderTopGlassBadge(badgeText, badgeOverlayPath);
 
-  // 4. Select Local Moving Background Video from ./media/
-  const motionBgPath = selectMediaBackgroundVideo(input.toolBrand, input.topic);
+  // 4. Synthesize 3 Narrative Visual Scenes with Ken Burns Dynamic Camera Motion
+  let motionBgPath = '';
+  let bgFramePath = path.join(tempDir, 'bg_frame.jpg');
 
-  // 5. Extract background frame from video at t=0.5s to generate custom cover
-  const bgFramePath = path.join(tempDir, 'bg_frame.jpg');
-  await new Promise<void>((resolve) => {
-    ffmpeg(motionBgPath)
-      .seekInput(0.5)
-      .frames(1)
-      .outputOptions(['-q:v 2'])
-      .save(bgFramePath)
-      .on('end', () => resolve())
-      .on('error', () => resolve());
-  });
+  try {
+    const motion = await prepareNarrativeMotionBackground(
+      input.topic,
+      input.pillarCategory,
+      input.imagePrompts,
+      exactDuration,
+      tempDir
+    );
+    motionBgPath = motion.bgVideoPath;
+    if (fs.existsSync(motion.firstFramePath)) {
+      bgFramePath = motion.firstFramePath;
+    }
+  } catch (motionErr: any) {
+    console.warn(`[Video Engine Notice] Narrative AI motion notice: ${motionErr.message}. Falling back to local B-roll...`);
+    motionBgPath = selectMediaBackgroundVideo(input.toolBrand, input.topic);
+    await new Promise<void>((resolve) => {
+      ffmpeg(motionBgPath)
+        .seekInput(0.5)
+        .frames(1)
+        .outputOptions(['-q:v 2'])
+        .save(bgFramePath)
+        .on('end', () => resolve())
+        .on('error', () => resolve());
+    });
+  }
 
-  // 6. Enforce High-Impact Dedicated Reel Cover Thumbnail (output/cover.jpg)
+  // 5. Enforce High-Impact Dedicated Reel Cover Thumbnail (output/cover.jpg)
   const outputCoverDir = path.resolve(process.cwd(), 'output');
   ensureDir(outputCoverDir);
   const dedicatedCoverPath = path.join(outputCoverDir, 'cover.jpg');
@@ -831,7 +1176,7 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     }
   }
 
-  // 7. Dynamic Multi-Mood Background Music setup (-22dB / linear volume 0.08)
+  // 6. Dynamic Multi-Mood Background Music setup (-22dB / linear volume 0.08)
   const bgMusicPath = selectBackgroundMusicByMood(input.pillarCategory, input.topic);
   const videoHasAudio = await hasAudioStream(motionBgPath);
 
@@ -840,12 +1185,18 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
   const relBadge = path.relative(process.cwd(), badgeOverlayPath).replace(/\\/g, '/');
   const relCover = path.relative(process.cwd(), dedicatedCoverPath).replace(/\\/g, '/');
 
-  console.log(`[Video Engine] 🚀 Compiling 1080x1920 Clean Kinetic MP4 Reel (Frame 0 Cover Baked + 75px Unbroken Bengali Subs + Mood BGM)...`);
+  console.log(`[Video Engine] 🚀 Compiling 1080x1920 Clean Kinetic MP4 Reel (Narrative AI Scenes + Bengali Subs + Mood BGM)...`);
 
   await new Promise<void>((resolve, reject) => {
-    let command = ffmpeg()
-      .input(motionBgPath)
-      .inputOptions(['-stream_loop -1'])
+    let command = ffmpeg();
+
+    if (motionBgPath.endsWith('.txt')) {
+      command = command.input(motionBgPath).inputOptions(['-f concat', '-safe 0']);
+    } else {
+      command = command.input(motionBgPath).inputOptions(['-stream_loop -1']);
+    }
+
+    command = command
       .input(relBadge)
       .input(relConcat)
       .inputOptions(['-f concat', '-safe 0'])
@@ -909,21 +1260,46 @@ export async function generateReelVideo(input: ReelGenerationInput): Promise<Gen
     } catch {}
   }
 
+  // 7. Save persistent copy for Web Dashboard preview & immediate playback across all possible root directories
+  const previewDirs = [
+    path.resolve(process.cwd(), 'data', 'reels'),
+    path.resolve(process.cwd(), 'auto-fb-bot', 'data', 'reels'),
+    path.resolve(__dirname, '..', '..', 'data', 'reels'),
+  ];
+
+  let primaryPreviewVideo = outputPath;
+  for (const pDir of previewDirs) {
+    try {
+      ensureDir(pDir);
+      const vPath = path.join(pDir, 'latest_reel.mp4');
+      const aPath = path.join(pDir, 'latest_audio.mp3');
+      fs.copyFileSync(outputPath, vPath);
+      if (fs.existsSync(audioPath)) {
+        fs.copyFileSync(audioPath, aPath);
+      }
+      if (primaryPreviewVideo === outputPath) {
+        primaryPreviewVideo = vPath;
+      }
+    } catch {}
+  }
+  console.log(`[Video Engine] 💾 Saved persistent preview to ${primaryPreviewVideo}`);
+
   const videoBuffer = fs.readFileSync(outputPath);
   console.log(
-    `[Video Engine] ✅ 1080x1920 30FPS Clean Kinetic Reel synthesized successfully! (${(videoBuffer.length / (1024 * 1024)).toFixed(2)} MB, Duration: ${exactDuration.toFixed(1)}s)`
+    `[Video Engine] ✅ 1080x1920 30FPS Narrative Reel synthesized successfully! (${(videoBuffer.length / (1024 * 1024)).toFixed(2)} MB, Duration: ${exactDuration.toFixed(1)}s)`
   );
 
   const cleanup = () => {
     try {
       if (fs.existsSync(tempDir)) {
         fs.rmSync(tempDir, { recursive: true, force: true });
+        console.log(`[Video Engine] 🧹 Cleaned up temporary video working directory.`);
       }
     } catch {}
   };
 
   return {
-    videoPath: outputPath,
+    videoPath: fs.existsSync(primaryPreviewVideo) ? primaryPreviewVideo : outputPath,
     videoBuffer,
     durationSeconds: exactDuration,
     voiceModel,

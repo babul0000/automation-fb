@@ -153,6 +153,11 @@ Return ONLY a valid JSON object without markdown code fences:
   "twoWordHook": "২-৩ শব্দের আকর্ষণীয় হুক",
   "actionKeycap": "২-৩ শব্দের অ্যাকশন টেকঅ্যাওয়ে বা কী-ক্যাপ",
   "actionLabel": "ছোট অ্যাকশন লেবেল",
+  "reelsVisualPrompts": [
+    "Scene 1 Hook: High quality English visual prompt for photorealistic 9:16 vertical image, cinematic lighting, strictly no text, no watermark",
+    "Scene 2 Solution: High quality English visual prompt for photorealistic 9:16 vertical image explaining the solution/action, strictly no text, no watermark",
+    "Scene 3 Result/CTA: High quality English visual prompt for photorealistic 9:16 vertical image showing positive resolution/result, strictly no text, no watermark"
+  ],
   "reelsScript": {
     "headlineEn": "3-5 word uppercase English headline for video (e.g. VIRAL BANGLADESH TREND, SMART PHONE HACK, DIGITAL SAFETY ALERT)",
     "hookStyle": "Viral Trend Hook" or "Curiosity Question" or "Story Suspense" or "Reality Warning" or "Direct Value",
@@ -251,6 +256,11 @@ Return ONLY a valid JSON object without markdown code fences:
           const pillarCategory = parsed.pillarCategory || 'Viral Bangladesh Trend';
           const floatingBadge = parsed.floatingBadge || '🔥 আজকের ভাইরাল ট্রেন্ড';
 
+          const reelsVisualPrompts =
+            Array.isArray(parsed.reelsVisualPrompts) && parsed.reelsVisualPrompts.length >= 3
+              ? parsed.reelsVisualPrompts.slice(0, 3).map((p: any) => String(p).trim())
+              : undefined;
+
           console.log(`[AI Service] ✅ Generated mass-market bundle (${finalCaption.length} chars caption, ${fullScript.split(/\s+/).length} words script).`);
 
           return {
@@ -264,6 +274,7 @@ Return ONLY a valid JSON object without markdown code fences:
             actionLabel,
             practicalSnippet: actionKeycap,
             snippetType: 'SHORTCUT',
+            reelsVisualPrompts,
             reelsScript: {
               headlineEn: parsed.reelsScript?.headlineEn || 'VIRAL BANGLADESH TREND',
               hookStyle: parsed.reelsScript?.hookStyle || 'Viral Trend Hook',
