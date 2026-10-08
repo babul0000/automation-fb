@@ -24,7 +24,11 @@
       "type": "REEL",
       "category": "Viral Bangladesh Trend",
       "categoryBn": "আজকের ভাইরাল লাইফ হ্যাক ও এআই",
-      "enabled": true
+      "enabled": true,
+      "lastRun": "2026-10-08T16:23:19.325Z",
+      "lastStatus": "SUCCESS",
+      "lastPostId": "2199764067614577",
+      "lastTopic": "বিকাশ বা ব্যাংকের কল সেজে প্রতারণা চক্রের নতুন ফাঁদ! যে ৫টি লক্ষণ দেখলেই ফোন কেটে দেবেন"
     },
     {
       "id": "slot_reel_evening",
@@ -37,5 +41,5 @@
       "enabled": true
     }
   ],
-  "updatedAt": "2026-10-08T16:10:00.000Z"
+  "updatedAt": "2026-10-08T16:23:19.325Z"
 }

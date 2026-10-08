@@ -1,6 +1,24 @@
 {
   "topics": [
     {
+      "title": "ফেসবুক বা মেসেঞ্জারে অচেনা নম্বর থেকে আসা কল ও লিংকের ফাঁদ থেকে বাঁচার এই সেটিংসটি আজই আপনার ফোনে অন করে রাখুন!",
+      "titleHash": "be3d13ab4d1092f7856e1e6e8a6d81f28a940882b8e12452a9b8e36a0f75447b",
+      "category": "Digital Safety & Fraud Alert",
+      "score": 96,
+      "status": "DISCOVERED",
+      "id": "topic_1791476743757_pdr2m",
+      "createdAt": "2026-10-08T16:25:43.757Z"
+    },
+    {
+      "title": "বিকাশ বা ব্যাংকের কল সেজে প্রতারণা চক্রের নতুন ফাঁদ! যে ৫টি লক্ষণ দেখলেই ফোন কেটে দেবেন",
+      "titleHash": "5752d17fc618b177cf68b42072646c7d646097956dff93b12e7b5c1238bb1b9a",
+      "category": "Digital Safety & Fraud Alert",
+      "score": 98,
+      "status": "DISCOVERED",
+      "id": "topic_1791476356585_yp3ig",
+      "createdAt": "2026-10-08T16:19:16.585Z"
+    },
+    {
       "title": "বিকাশ বা ব্যাংকের নামে আসা ফেক কল ধরবেন না! প্রতারকদের আসল নম্বর চেনার গোপন ট্রিক",
       "titleHash": "92e24d3f622b62d2120f26cefa132422bc2819191920900d718c816bc18eb163",
       "category": "Consumer Tech & Fraud Prevention",
@@ -281,6 +299,13 @@
     }
   ],
   "posts": [
+    {
+      "facebookPostId": "2199764067614577",
+      "caption": "বিকাশ বা ব্যাংকের আসল কর্মকর্তা সেজে যেভাবে প্রতারণা করা হচ্ছে, এই ৫টি লক্ষণ দেখলেই সাথে সাথে ফোন কেটে দিন!\n\nপ্রতিদিন শত শত মানুষ এই প্রতারক চক্রের ফাঁদে পড়ে সর্বস্বান্ত হচ্ছেন, তাই নিজের কষ্টের টাকা নিরাপদ রাখতে বিষয়টি এখনই জেনে রাখা ভীষণ জরুরি। প্রথমত, ফোন করে কখনো পিন নম্বর বা ওটিপি চাইবে না আসল ব্যাংক। দ্বিতীয়ত, অ্যাকাউন্ট ব্লক হওয়ার ভয় দেখালেই বুঝবেন এটা বড় কোনো প্রতারণার ফাঁদ।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
+      "status": "PUBLISHED_REEL",
+      "id": "post_1791476599320_1zw96",
+      "publishedAt": "2026-10-08T16:23:19.320Z"
+    },
     {
       "facebookPostId": "1788056832316663",
       "caption": "আজকে ফেসবুক জুড়ে ভুয়া পুলিশ কর্মকর্তা সেজে প্রতারণা ও বিয়ের ফাঁদের যে ভয়ঙ্কর খবর ছড়িয়েছে, তা থেকে বাঁচতে ভিডিওটি শেষ পর্যন্ত দেখুন!\n\nঅপরিচিত কেউ হুট করে পুলিশ বা সরকারি কর্মকর্তা পরিচয়ে ভুয়া আইডি থেকে নক করলে আমাদের অনেকেরই বুঝতে ভুল হয় যে এটি একটি বড় প্রতারণার ফাঁদ। তাই এখনই আপনার ফেসবুকের প্রোফাইল লক করুন, অচেনা মানুষের ফ্রেন্ড রিকোয়েস্ট ব্লক করুন এবং ব্যক্তিগত তথ্য কখনোই মেসেঞ্জারে শেয়ার করবেন না।\n\n👉 📌 দরকারি এই তথ্যটি পরে কাজে লাগবে, তাই ভিডিওটি এখনই Save করে রাখুন আর বন্ধুদের সাথে Share করুন! এমন সব ট্রেন্ডিং টেক আপডেটের জন্য সাথে থাকুন বাইট বাংলার!\n\n#ByteBangla #LifeHacks #BanglaTips #Bangladesh #ViralReels #ReelsBD",
@@ -591,6 +616,27 @@
     }
   ],
   "jobLogs": [
+    {
+      "id": "log_1791476748766",
+      "jobName": "CRITIC_AUDIT_FEED",
+      "status": "COMPLETED",
+      "details": "Topic: \"ফেসবুক বা মেসেঞ্জারে অচেনা নম্বর থেকে আসা কল ও লিংকের ফাঁদ থেকে বাঁচার এই সেটিংসটি আজই আপনার ফোনে অন করে রাখুন!\", Score: 85/100, Revised: true, Feedback: The draft is clean and meets all criteria, but the call-to-action mentions 'ভিডিওটি এখনই Save করে রাখুন' while the format is a text/image post, not a video. Also, the Bengali flow can be made slightly more conversational and native to Dhaka's mass-market tone.",
+      "createdAt": "2026-10-08T16:25:48.766Z"
+    },
+    {
+      "id": "log_1791476599327",
+      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
+      "status": "SUCCESS",
+      "details": "Reel ID: 2199764067614577, Topic: বিকাশ বা ব্যাংকের কল সেজে প্রতারণা চক্রের নতুন ফাঁদ! যে ৫টি লক্ষণ দেখলেই ফোন কেটে দেবেন, Critic: 85/100, Duration: 36.72s",
+      "createdAt": "2026-10-08T16:23:19.327Z"
+    },
+    {
+      "id": "log_1791476360907",
+      "jobName": "CRITIC_AUDIT_REEL",
+      "status": "COMPLETED",
+      "details": "Topic: \"বিকাশ বা ব্যাংকের কল সেজে প্রতারণা চক্রের নতুন ফাঁদ! যে ৫টি লক্ষণ দেখলেই ফোন কেটে দেবেন\", Score: 85/100, Revised: false, Feedback: The script uses natural conversational Bengali, avoids all banned developer jargon and abstract placeholders, and includes the exact mandatory CTA. However, it only lists 2 warning signs out of the promised 5 within the compressed time limit, which slightly impacts value delivery. Minor adjustments made to flow and pacing.",
+      "createdAt": "2026-10-08T16:19:20.907Z"
+    },
     {
       "id": "log_1791474346254",
       "jobName": "CRITIC_AUDIT_REEL",
@@ -919,27 +965,6 @@
       "status": "COMPLETED",
       "details": "Topic: \"লং-ভিডিও থেকে সেরা অংশ কেটে অটোমেটিক ভাইরাল শর্টস বানিয়ে দিচ্ছে ওপেন-সোর্সের এই ট্রেন্ডিং AI টুলটি! 🔥\", Score: 88/100, Revised: true, Feedback: The original draft is strong, clear, and follows ByteBangla's content style. However, the hook can be slightly punchier and the Bengali flow can be polished to sound more native and engaging for social media users.",
       "createdAt": "2026-10-01T17:09:08.894Z"
-    },
-    {
-      "id": "log_1790873921907",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান! Product Hunt-এ ঝড় তোলা এই ফ্রি AI ভিডিও জেনারেটর ব্যবহার করুন\", Score: 90/100, Revised: true, Feedback: The draft is strong, engaging, and hits all ByteBangla tone requirements. The hook is punchy, the steps are clear, and the CTA utilizes a proven engagement loop. Slight polishing applied to make the Bengali flow even more conversational and native.",
-      "createdAt": "2026-10-01T16:58:41.907Z"
-    },
-    {
-      "id": "log_1790873120808",
-      "jobName": "AUTONOMOUS_REEL_PUBLISHER",
-      "status": "SUCCESS",
-      "details": "Reel ID: 963111449652782, Topic: ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান! Product Hunt-এ ট্রেন্ডিং এই ফ্রি AI টুলটি বদলে দেবে আপনার কন্টেন্ট তৈরির অভিজ্ঞতা, Critic: 90/100, Duration: 36.12s",
-      "createdAt": "2026-10-01T16:45:20.808Z"
-    },
-    {
-      "id": "log_1790873061735",
-      "jobName": "CRITIC_AUDIT",
-      "status": "COMPLETED",
-      "details": "Topic: \"ভিডিও এডিটিং ছাড়াই ৩০ সেকেন্ডে ভাইরাল শর্টস বানান! Product Hunt-এ ট্রেন্ডিং এই ফ্রি AI টুলটি বদলে দেবে আপনার কন্টেন্ট তৈরির অভিজ্ঞতা\", Score: 90/100, Revised: true, Feedback: The draft is already strong with a punchy hook, clear steps, and effective engagement bait (comment 'AI'). Minor polish makes the Bengali flow even more native and conversational for the ByteBangla audience.",
-      "createdAt": "2026-10-01T16:44:21.735Z"
     }
   ]
 }
